@@ -1,0 +1,80 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+body {
+  font-family:
+    -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  min-height: 100vh;
+}
+/* ==================== FORM CONTROLS - BOLJI KONTRAST ==================== */
+.ant-input,
+.ant-input-number-input,
+.ant-select-selector,
+.ant-picker {
+  border-color: #b0b0b0 !important;
+}
+
+.ant-input::placeholder,
+.ant-input-number-input::placeholder,
+.ant-select-selection-placeholder,
+.ant-picker-input > input::placeholder {
+  color: #999 !important;
+}
+
+.ant-input:hover,
+.ant-input-number:hover .ant-input-number-input,
+.ant-select:hover .ant-select-selector,
+.ant-picker:hover {
+  border-color: #666 !important;
+}
+.ant-input-number-disabled .ant-input-number-input {
+  color: rgba(0, 0, 0, 0.85) !important;
+  font-weight: 600;
+}
+
+/* ==================== SIDEBAR MENI - VEĆI FONT ==================== */
+.ant-menu-inline .ant-menu-item {
+  font-size: 15px !important;
+  height: 48px !important;
+  line-height: 48px !important;
+  margin-block: 4px !important;
+}
+
+.ant-menu-inline .ant-menu-item .anticon {
+  font-size: 18px !important;
+}
+
+/* ==================== TABELE - VEĆI FONT ==================== */
+.ant-table {
+  font-size: 15px !important;
+}
+
+/* ==================== TABELE - ZEBRA REDOVI ==================== */
+.light-theme .zebra-even td {
+  background-color: #e8f0fa !important;
+}
+
+.dark-theme .zebra-even td {
+  background-color: #1e2a3a !important;
+}
+
+/* ==================== TABELE - MANJA VISINA REDOVA ==================== */
+.ant-table-tbody > tr > td {
+  padding: 8px 16px !important;
+}
+/* ==================== TABELE - HOVER REDOVA ==================== */
+.light-theme .ant-table-tbody > tr:hover > td {
+  background-color: #cdd8e8 !important;
+}
+
+.dark-theme .ant-table-tbody > tr:hover > td {
+  background-color: #2e3f55 !important;
+}

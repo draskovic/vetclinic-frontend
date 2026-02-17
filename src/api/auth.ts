@@ -1,0 +1,11 @@
+import apiClient from './client';
+import type { LoginRequest, LoginResponse } from '@/types';
+
+export const authApi = {
+  login: (data: LoginRequest) => apiClient.post<LoginResponse>('/auth/login', data),
+
+  logout: () => apiClient.post('/auth/logout'),
+
+  refresh: (refreshToken: string) =>
+    apiClient.post<LoginResponse>('/auth/refresh', { refreshToken }),
+};
