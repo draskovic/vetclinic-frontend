@@ -22,13 +22,13 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
 
   const { data: treatmentsData, refetch } = useQuery({
     queryKey: ['treatments', medicalRecordId],
-    queryFn: () => treatmentsApi.getByMedicalRecord(medicalRecordId!).then((r) => r.data),
+    queryFn: () => treatmentsApi.getByMedicalRecord(medicalRecordId!),
     enabled: !!medicalRecordId,
   });
 
   useEffect(() => {
     if (treatmentsData) {
-      setTreatments(treatmentsData);
+      setTreatments(treatmentsData.data);
     }
   }, [treatmentsData]);
 
