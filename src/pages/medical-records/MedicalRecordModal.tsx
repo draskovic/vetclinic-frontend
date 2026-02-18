@@ -10,6 +10,7 @@ import {
   Switch,
   DatePicker,
   Row,
+  Divider,
   Col,
 } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +24,7 @@ import type {
   UpdateMedicalRecordRequest,
 } from '@/types';
 import dayjs from 'dayjs';
+import TreatmentItemsTable from './TreatmentItemsTable';
 
 interface MedicalRecordModalProps {
   open: boolean;
@@ -124,11 +126,12 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
       onCancel={onClose}
       footer={null}
       destroyOnHidden
-      width={600}
+      width={900}
     >
       <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
-        <Row gutter={16}>
-          <Col span={12}>
+        {/* Red 1: Termin, Veterinar, Ljubimac, Simptomi */}
+        <Row gutter={12}>
+          <Col span={6}>
             <Form.Item name='appointmentId' label='Termin (opciono)'>
               <Select
                 placeholder='Izaberite termin...'
@@ -140,23 +143,8 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
                 }
               />
             </Form.Item>
-
-            <Form.Item
-              name='petId'
-              label='Ljubimac'
-              rules={[{ required: true, message: 'Izaberite ljubimca!' }]}
-            >
-              <Select
-                placeholder='Izaberite ljubimca...'
-                options={petOptions}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </Form.Item>
           </Col>
-          <Col span={12}>
+          <Col span={6}>
             <Form.Item
               name='vetId'
               label='Veterinar'
@@ -172,27 +160,51 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
               />
             </Form.Item>
           </Col>
+          <Col span={6}>
+            <Form.Item
+              name='petId'
+              label='Ljubimac'
+              rules={[{ required: true, message: 'Izaberite ljubimca!' }]}
+            >
+              <Select
+                placeholder='Izaberite ljubimca...'
+                options={petOptions}
+                showSearch
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+              />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
+            <Form.Item name='symptoms' label='Simptomi'>
+              <Input placeholder='Simptomi...' />
+            </Form.Item>
+          </Col>
         </Row>
 
-        <Form.Item name='symptoms' label='Simptomi'>
-          <Input.TextArea placeholder='Simptomi...' rows={2} />
-        </Form.Item>
+        {/* Red 2: Dijagnoza, Beleške sa pregleda */}
+        <Row gutter={12}>
+          <Col span={12}>
+            <Form.Item name='diagnosis' label='Dijagnoza'>
+              <Input.TextArea placeholder='Dijagnoza...' rows={2} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
+            <Form.Item name='examinationNotes' label='Beleške sa pregleda'>
+              <Input.TextArea placeholder='Beleške...' rows={2} />
+            </Form.Item>
+          </Col>
+        </Row>
 
-        <Form.Item name='diagnosis' label='Dijagnoza'>
-          <Input.TextArea placeholder='Dijagnoza...' rows={2} />
-        </Form.Item>
-
-        <Form.Item name='examinationNotes' label='Beleške sa pregleda'>
-          <Input.TextArea placeholder='Beleške...' rows={2} />
-        </Form.Item>
-
-        <Row gutter={16}>
-          <Col span={8}>
+        {/* Red 3: Težina, Temperatura, Puls, Preporučena kontrola, Datum kontrole */}
+        <Row gutter={12}>
+          <Col span={4}>
             <Form.Item name='weightKg' label='Težina (kg)'>
               <InputNumber style={{ width: '100%' }} min={0} step={0.1} placeholder='0.0' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={4}>
             <Form.Item name='temperatureC' label='Temperatura (°C)'>
               <InputNumber
                 style={{ width: '100%' }}
@@ -203,29 +215,29 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
               />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={4}>
             <Form.Item name='heartRate' label='Puls (bpm)'>
               <InputNumber style={{ width: '100%' }} min={0} max={300} placeholder='80' />
             </Form.Item>
           </Col>
-        </Row>
-
-        <Row gutter={16}>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item
               name='followUpRecommended'
-              label='Kontrola preporučena'
+              label='Preporučena kontrola'
               valuePropName='checked'
             >
               <Switch />
             </Form.Item>
           </Col>
-          <Col span={16}>
+          <Col span={6}>
             <Form.Item name='followUpDate' label='Datum kontrole'>
               <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
             </Form.Item>
           </Col>
         </Row>
+
+        <Divider style={{ marginBottom: 8 }}>Usluge</Divider>
+        <TreatmentItemsTable medicalRecordId={record?.id ?? null} vetId={record?.vetId ?? ''} />
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button onClick={onClose} style={{ marginRight: 8 }}>

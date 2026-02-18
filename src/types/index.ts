@@ -745,3 +745,35 @@ export interface PdfParseResult {
   requestedAt: string | null;
   completedAt: string | null;
 }
+
+// ==================== TREATMENT ====================
+export interface Treatment {
+  id: string;
+  medicalRecordId: string;
+  serviceId: string | null;
+  serviceName: string | null;
+  vetId: string;
+  vetName: string;
+  name: string;
+  description: string | null;
+  result: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTreatmentRequest {
+  medicalRecordId: string;
+  serviceId?: string;
+  vetId: string;
+  name: string;
+  description?: string;
+  result?: string;
+}
+
+export interface UpdateTreatmentRequest {
+  serviceId?: string | null;
+  vetId?: string;
+  name?: string;
+  description?: string;
+  result?: string;
+}
