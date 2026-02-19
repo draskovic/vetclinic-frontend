@@ -127,7 +127,7 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
       onCancel={onClose}
       footer={null}
       destroyOnHidden
-      width={1300}
+      width={1400}
     >
       <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
         {/* Red 1: Termin, Veterinar, Ljubimac, Simptomi */}
