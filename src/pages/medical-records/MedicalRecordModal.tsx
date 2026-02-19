@@ -25,6 +25,7 @@ import type {
 } from '@/types';
 import dayjs from 'dayjs';
 import TreatmentItemsTable from './TreatmentItemsTable';
+import LabReportItemsTable from './LabReportItemsTable';
 
 interface MedicalRecordModalProps {
   open: boolean;
@@ -126,7 +127,7 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
       onCancel={onClose}
       footer={null}
       destroyOnHidden
-      width={900}
+      width={1300}
     >
       <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
         {/* Red 1: Termin, Veterinar, Ljubimac, Simptomi */}
@@ -236,8 +237,16 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
           </Col>
         </Row>
 
-        <Divider style={{ marginBottom: 8 }}>Usluge</Divider>
-        <TreatmentItemsTable medicalRecordId={record?.id ?? null} vetId={record?.vetId ?? ''} />
+        <Row gutter={16}>
+          <Col span={12}>
+            <Divider style={{ marginBottom: 8 }}>Usluge</Divider>
+            <TreatmentItemsTable medicalRecordId={record?.id ?? null} vetId={record?.vetId ?? ''} />
+          </Col>
+          <Col span={12}>
+            <Divider style={{ marginBottom: 8 }}>Lab izveštaji</Divider>
+            <LabReportItemsTable medicalRecordId={record?.id ?? null} petId={record?.petId ?? ''} />
+          </Col>
+        </Row>
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button onClick={onClose} style={{ marginRight: 8 }}>

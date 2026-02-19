@@ -62,9 +62,17 @@ interface LabReportModalProps {
   open: boolean;
   labReport: LabReport | null;
   onClose: () => void;
+  medicalRecordId?: string; // dodaj ovo
+  petId?: string; // da se sakrije select za ljubimca
 }
 
-export default function LabReportModal({ open, labReport, onClose }: LabReportModalProps) {
+export default function LabReportModal({
+  open,
+  labReport,
+  onClose,
+  medicalRecordId,
+  petId,
+}: LabReportModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!labReport;
@@ -93,12 +101,14 @@ export default function LabReportModal({ open, labReport, onClose }: LabReportMo
         });
       } else {
         form.resetFields();
+        if (medicalRecordId) form.setFieldValue('medicalRecordId', medicalRecordId);
+        if (petId) form.setFieldValue('petId', petId);
       }
       setFileToUpload(null);
       setFileList([]);
       setIsParsing(false);
     }
-  }, [open, labReport, form]);
+  }, [open, labReport, form, medicalRecordId, petId]);
 
   const uploadFileMutation = useMutation({
     mutationFn: ({ id, file }: { id: string; file: File }) => labReportsApi.uploadFile(id, file),
@@ -167,6 +177,8 @@ export default function LabReportModal({ open, labReport, onClose }: LabReportMo
       if (result.petId) fieldsToSet.petId = result.petId;
       if (result.vetId) fieldsToSet.vetId = result.vetId;
 
+      if (petId) fieldsToSet.petId = petId;
+      if (medicalRecordId) fieldsToSet.medicalRecordId = medicalRecordId;
       form.setFieldsValue(fieldsToSet);
 
       const messages: string[] = [];
@@ -190,11 +202,14 @@ export default function LabReportModal({ open, labReport, onClose }: LabReportMo
   };
 
   const handleSubmit = (values: Record<string, unknown>) => {
+    console.log('Form values:', values);
+    console.log('petId prop:', petId);
     const payload = {
       ...values,
+      petId: values.petId ?? petId, // koristi prop ako forma nema vrednost
+      medicalRecordId: (values.medicalRecordId as string) ?? medicalRecordId ?? null,
       requestedAt: (values.requestedAt as dayjs.Dayjs)?.format('YYYY-MM-DD'),
       completedAt: (values.completedAt as dayjs.Dayjs)?.format('YYYY-MM-DD') ?? undefined,
-      medicalRecordId: (values.medicalRecordId as string) ?? null,
     };
     if (isEditing) {
       updateMutation.mutate(payload as UpdateLabReportRequest);
@@ -376,22 +391,25 @@ export default function LabReportModal({ open, labReport, onClose }: LabReportMo
               <Input placeholder='npr. Opšti profil' />
             </Form.Item>
           </Col>
-          <Col span={6}>
-            <Form.Item
-              name='petId'
-              label='Ljubimac'
-              rules={[{ required: true, message: 'Izaberite ljubimca!' }]}
-            >
-              <Select
-                placeholder='Izaberite ljubimca...'
-                options={petOptions}
-                showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </Form.Item>
-          </Col>
+          {!petId && (
+            <Col span={6}>
+              <Form.Item
+                name='petId'
+                label='Ljubimac'
+                rules={[{ required: true, message: 'Izaberite ljubimca!' }]}
+              >
+                <Select
+                  placeholder='Izaberite ljubimca...'
+                  options={petOptions}
+                  showSearch
+                  filterOption={(input, option) =>
+                    (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                  }
+                />
+              </Form.Item>
+            </Col>
+          )}
+
           <Col span={6}>
             <Form.Item
               name='vetId'

@@ -23,6 +23,9 @@ export const labReportsApi = {
 
   getByVet: (vetId: string) => apiClient.get<LabReport[]>(`/lab-reports/by-vet/${vetId}`),
 
+  getByMedicalRecord: (medicalRecordId: string) =>
+    apiClient.get<LabReport[]>(`/lab-reports/by-medical-record/${medicalRecordId}`),
+
   create: (data: CreateLabReportRequest) => apiClient.post<LabReport>('/lab-reports', data),
 
   update: (id: string, data: UpdateLabReportRequest) =>
