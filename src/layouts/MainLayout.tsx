@@ -22,6 +22,7 @@ import { usePermissions } from '@/hooks/usePermissions';
 import { SunOutlined, MoonOutlined } from '@ant-design/icons';
 import { useThemeStore } from '@/store/themeStore';
 import { ExperimentOutlined } from '@ant-design/icons';
+import NotificationBell from '../components/NotificationBell';
 
 const { Header, Sider, Content } = Layout;
 
@@ -189,6 +190,7 @@ export default function MainLayout() {
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <NotificationBell />
             <Button
               type='text'
               icon={darkMode ? <SunOutlined /> : <MoonOutlined />}
