@@ -14,6 +14,9 @@ export const vaccinationsApi = {
 
   getByPet: (petId: string) => apiClient.get<Vaccination[]>(`/vaccinations/by-pet/${petId}`),
 
+  getByMedicalRecord: (medicalRecordId: string) =>
+    apiClient.get<Vaccination[]>(`/vaccinations/by-medical-record/${medicalRecordId}`),
+
   getDue: (before: string) => apiClient.get<Vaccination[]>(`/vaccinations/due?before=${before}`),
 
   create: (data: CreateVaccinationRequest) => apiClient.post<Vaccination>('/vaccinations', data),

@@ -101,37 +101,39 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
         ]}
         title={() =>
           adding ? (
-            <Space>
+            <div>
+              <Space style={{ marginBottom: 8 }}>
+                <Button
+                  type='primary'
+                  icon={<SaveOutlined />}
+                  disabled={!selectedServiceId}
+                  loading={createMutation.isPending}
+                  onClick={() => selectedServiceId && createMutation.mutate(selectedServiceId)}
+                >
+                  Sačuvaj
+                </Button>
+                <Button
+                  icon={<CloseOutlined />}
+                  onClick={() => {
+                    setAdding(false);
+                    setSelectedServiceId(null);
+                  }}
+                >
+                  Otkaži
+                </Button>
+              </Space>
               <Select
                 placeholder='Izaberite uslugu...'
                 options={serviceOptions}
                 showSearch
-                style={{ width: 300 }}
+                style={{ width: '100%' }}
                 value={selectedServiceId}
                 onChange={setSelectedServiceId}
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
               />
-              <Button
-                type='primary'
-                icon={<SaveOutlined />}
-                disabled={!selectedServiceId}
-                loading={createMutation.isPending}
-                onClick={() => selectedServiceId && createMutation.mutate(selectedServiceId)}
-              >
-                Sačuvaj
-              </Button>
-              <Button
-                icon={<CloseOutlined />}
-                onClick={() => {
-                  setAdding(false);
-                  setSelectedServiceId(null);
-                }}
-              >
-                Otkaži
-              </Button>
-            </Space>
+            </div>
           ) : (
             <Button type='dashed' icon={<PlusOutlined />} onClick={() => setAdding(true)}>
               Dodaj uslugu

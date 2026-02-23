@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   Form,
@@ -26,6 +26,7 @@ import type {
 import dayjs from 'dayjs';
 import TreatmentItemsTable from './TreatmentItemsTable';
 import LabReportItemsTable from './LabReportItemsTable';
+import VaccinationItemsTable from './VaccinationItemsTable';
 
 interface MedicalRecordModalProps {
   open: boolean;
@@ -36,7 +37,11 @@ interface MedicalRecordModalProps {
 export default function MedicalRecordModal({ open, record, onClose }: MedicalRecordModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
-  const isEditing = !!record;
+
+  const [createdRecord, setCreatedRecord] = useState<MedicalRecord | null>(null);
+  const currentRecord = record ?? createdRecord;
+
+  const isEditMode = !!currentRecord;
 
   const { data: petsData } = useQuery({
     queryKey: ['pets-all'],
@@ -62,22 +67,26 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
         });
       } else {
         form.resetFields();
+        setCreatedRecord(null);
       }
     }
   }, [open, record, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateMedicalRecordRequest) => medicalRecordsApi.create(data),
-    onSuccess: () => {
-      message.success('Intervencija je kreirana!');
+    onSuccess: (response) => {
+      message.success(
+        'Intervencija je kreirana! Sada možete dodati usluge, vakcinacije i lab izveštaje.',
+      );
       queryClient.invalidateQueries({ queryKey: ['medical-records'] });
-      onClose();
+      setCreatedRecord(response.data);
     },
     onError: () => message.error('Greška pri kreiranju!'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: UpdateMedicalRecordRequest) => medicalRecordsApi.update(record!.id, data),
+    mutationFn: (data: UpdateMedicalRecordRequest) =>
+      medicalRecordsApi.update(currentRecord!.id, data),
     onSuccess: () => {
       message.success('Intervencija je izmenjena!');
       queryClient.invalidateQueries({ queryKey: ['medical-records'] });
@@ -93,7 +102,7 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
       followUpRecommended: values.followUpRecommended ?? false,
       followUpDate: values.followUpDate ? values.followUpDate.format('YYYY-MM-DD') : null,
     };
-    if (isEditing) {
+    if (isEditMode) {
       updateMutation.mutate(payload);
     } else {
       createMutation.mutate(payload);
@@ -122,12 +131,12 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
 
   return (
     <Modal
-      title={isEditing ? 'Izmeni intervenciju' : 'Nova intervencija'}
+      title={isEditMode ? 'Izmeni intervenciju' : 'Nova intervencija'}
       open={open}
       onCancel={onClose}
       footer={null}
       destroyOnHidden
-      width={1400}
+      width={1600}
     >
       <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
         {/* Red 1: Termin, Veterinar, Ljubimac, Simptomi */}
@@ -238,13 +247,27 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
         </Row>
 
         <Row gutter={16}>
-          <Col span={12}>
+          <Col span={5}>
             <Divider style={{ marginBottom: 8 }}>Usluge</Divider>
-            <TreatmentItemsTable medicalRecordId={record?.id ?? null} vetId={record?.vetId ?? ''} />
+            <TreatmentItemsTable
+              medicalRecordId={currentRecord?.id ?? null}
+              vetId={currentRecord?.vetId ?? ''}
+            />
           </Col>
-          <Col span={12}>
+          <Col span={10}>
+            <Divider style={{ marginBottom: 8 }}>Vakcinacije</Divider>
+            <VaccinationItemsTable
+              medicalRecordId={currentRecord?.id ?? null}
+              petId={currentRecord?.petId ?? ''}
+              vetId={currentRecord?.vetId ?? ''}
+            />
+          </Col>
+          <Col span={9}>
             <Divider style={{ marginBottom: 8 }}>Lab izveštaji</Divider>
-            <LabReportItemsTable medicalRecordId={record?.id ?? null} petId={record?.petId ?? ''} />
+            <LabReportItemsTable
+              medicalRecordId={currentRecord?.id ?? null}
+              petId={currentRecord?.petId ?? ''}
+            />
           </Col>
         </Row>
 
@@ -253,7 +276,7 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
             Otkaži
           </Button>
           <Button type='primary' htmlType='submit' loading={isLoading}>
-            {isEditing ? 'Sačuvaj izmene' : 'Kreiraj intervenciju'}
+            {isEditMode ? 'Sačuvaj izmene' : 'Kreiraj intervenciju'}
           </Button>
         </Form.Item>
       </Form>
