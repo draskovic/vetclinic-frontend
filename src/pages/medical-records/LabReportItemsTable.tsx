@@ -59,6 +59,8 @@ export default function LabReportItemsTable({ medicalRecordId, petId }: LabRepor
         rowKey='id'
         pagination={false}
         size='small'
+        scroll={{ x: 'max-content' }}
+        tableLayout='auto'
         columns={[
           {
             title: 'Broj izveštaja',
@@ -96,7 +98,7 @@ export default function LabReportItemsTable({ medicalRecordId, petId }: LabRepor
               ),
           },
           {
-            title: '',
+            title: 'Akcije',
             key: 'actions',
             width: 80,
             render: (_, record) => (
