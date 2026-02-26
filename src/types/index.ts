@@ -777,3 +777,45 @@ export interface UpdateTreatmentRequest {
   description?: string;
   result?: string;
 }
+
+// ==================== PRESCRIPTION ====================
+export interface Prescription {
+  id: string;
+  medicalRecordId: string;
+  petId: string;
+  petName: string;
+  vetId: string;
+  vetName: string;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  durationDays: number | null;
+  startDate: string;
+  endDate: string | null;
+  instructions: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePrescriptionRequest {
+  medicalRecordId: string;
+  petId: string;
+  vetId: string;
+  medicationName: string;
+  dosage: string;
+  frequency: string;
+  durationDays?: number;
+  startDate: string;
+  endDate?: string;
+  instructions?: string;
+}
+
+export interface UpdatePrescriptionRequest {
+  medicationName?: string;
+  dosage?: string;
+  frequency?: string;
+  durationDays?: number;
+  startDate?: string;
+  endDate?: string;
+  instructions?: string;
+}
