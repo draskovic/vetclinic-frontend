@@ -30,4 +30,6 @@ export const appointmentsApi = {
     apiClient.put<Appointment>(`/appointments/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/appointments/${id}`),
+
+  getByPet: (petId: string) => apiClient.get<Appointment[]>(`/appointments/by-pet/${petId}`),
 };

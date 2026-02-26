@@ -10,7 +10,7 @@ import {
   Switch,
   DatePicker,
   Row,
-  Divider,
+  Tabs,
   Col,
 } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -27,6 +27,7 @@ import dayjs from 'dayjs';
 import TreatmentItemsTable from './TreatmentItemsTable';
 import LabReportItemsTable from './LabReportItemsTable';
 import VaccinationItemsTable from './VaccinationItemsTable';
+import PrescriptionItemsTable from './PrescriptionItemsTable';
 
 interface MedicalRecordModalProps {
   open: boolean;
@@ -136,7 +137,7 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
       onCancel={onClose}
       footer={null}
       destroyOnHidden
-      width={1600}
+      width={1000}
     >
       <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
         {/* Red 1: Termin, Veterinar, Ljubimac, Simptomi */}
@@ -246,30 +247,55 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
           </Col>
         </Row>
 
-        <Row gutter={16}>
-          <Col span={5}>
-            <Divider style={{ marginBottom: 8 }}>Usluge</Divider>
-            <TreatmentItemsTable
-              medicalRecordId={currentRecord?.id ?? null}
-              vetId={currentRecord?.vetId ?? ''}
-            />
-          </Col>
-          <Col span={10}>
-            <Divider style={{ marginBottom: 8 }}>Vakcinacije</Divider>
-            <VaccinationItemsTable
-              medicalRecordId={currentRecord?.id ?? null}
-              petId={currentRecord?.petId ?? ''}
-              vetId={currentRecord?.vetId ?? ''}
-            />
-          </Col>
-          <Col span={9}>
-            <Divider style={{ marginBottom: 8 }}>Lab izveštaji</Divider>
-            <LabReportItemsTable
-              medicalRecordId={currentRecord?.id ?? null}
-              petId={currentRecord?.petId ?? ''}
-            />
-          </Col>
-        </Row>
+        {isEditMode && (
+          <Tabs
+            style={{ marginTop: 8 }}
+            items={[
+              {
+                key: 'treatments',
+                label: 'Usluge',
+                children: (
+                  <TreatmentItemsTable
+                    medicalRecordId={currentRecord?.id ?? null}
+                    vetId={currentRecord?.vetId ?? ''}
+                  />
+                ),
+              },
+              {
+                key: 'vaccinations',
+                label: 'Vakcinacije',
+                children: (
+                  <VaccinationItemsTable
+                    medicalRecordId={currentRecord?.id ?? null}
+                    petId={currentRecord?.petId ?? ''}
+                    vetId={currentRecord?.vetId ?? ''}
+                  />
+                ),
+              },
+              {
+                key: 'lab-reports',
+                label: 'Lab izveštaji',
+                children: (
+                  <LabReportItemsTable
+                    medicalRecordId={currentRecord?.id ?? null}
+                    petId={currentRecord?.petId ?? ''}
+                  />
+                ),
+              },
+              {
+                key: 'prescriptions',
+                label: 'Recepti',
+                children: (
+                  <PrescriptionItemsTable
+                    medicalRecordId={currentRecord?.id ?? null}
+                    petId={currentRecord?.petId ?? ''}
+                    vetId={currentRecord?.vetId ?? ''}
+                  />
+                ),
+              },
+            ]}
+          />
+        )}
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button onClick={onClose} style={{ marginRight: 8 }}>

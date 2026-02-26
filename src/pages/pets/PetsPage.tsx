@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Table, Button, Space, Input, Card, Typography, Popconfirm, message } from 'antd';
 import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -20,6 +21,7 @@ export default function PetsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
     queryKey: ['pets', page],
@@ -49,6 +51,9 @@ export default function PetsPage() {
       dataIndex: 'name',
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
+      render: (name: string, record: Pet) => (
+        <a onClick={() => navigate(`/pets/${record.id}`)}>{name}</a>
+      ),
     },
     {
       title: 'Vlasnik',

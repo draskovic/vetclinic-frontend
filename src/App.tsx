@@ -24,6 +24,7 @@ import InventoryTransactionsPage from './pages/inventory/InventoryTransactionsPa
 import ServicesPage from '@/pages/admin/ServicesPage';
 import { useThemeStore } from '@/store/themeStore';
 import LabReportsPage from '@/pages/lab-reports/LabReportsPage';
+import PetProfilePage from './pages/pets/PetProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -86,6 +87,14 @@ export default function App() {
                     element={
                       <PermissionGuard permission='manage_pets'>
                         <PetsPage />
+                      </PermissionGuard>
+                    }
+                  />
+                  <Route
+                    path='pets/:petId'
+                    element={
+                      <PermissionGuard permission='manage_pets'>
+                        <PetProfilePage />
                       </PermissionGuard>
                     }
                   />
