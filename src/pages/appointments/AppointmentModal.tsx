@@ -13,6 +13,7 @@ interface AppointmentModalProps {
   open: boolean;
   appointment: Appointment | null;
   onClose: () => void;
+  initialDates?: { start: string; end: string } | null;
 }
 
 const typeOptions = [
@@ -33,7 +34,12 @@ const statusOptions = [
   { label: 'Nije došao', value: 'NO_SHOW' },
 ];
 
-export default function AppointmentModal({ open, appointment, onClose }: AppointmentModalProps) {
+export default function AppointmentModal({
+  open,
+  appointment,
+  onClose,
+  initialDates,
+}: AppointmentModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!appointment;
@@ -72,9 +78,15 @@ export default function AppointmentModal({ open, appointment, onClose }: Appoint
       } else {
         form.resetFields();
         setSelectedOwnerId(null);
+        if (initialDates) {
+          form.setFieldsValue({
+            startTime: dayjs(initialDates.start),
+            endTime: dayjs(initialDates.end),
+          });
+        }
       }
     }
-  }, [open, appointment, form]);
+  }, [open, appointment, form, initialDates]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAppointmentRequest) => appointmentsApi.create(data),
@@ -233,7 +245,18 @@ export default function AppointmentModal({ open, appointment, onClose }: Appoint
             <Form.Item
               name='startTime'
               label='Početak'
-              rules={[{ required: true, message: 'Izaberite početak!' }]}
+              rules={[
+                { required: true, message: 'Izaberite početak!' },
+                {
+                  validator: (_, value) => {
+                    if (value && value.isBefore(dayjs())) {
+                      return Promise.reject('Izabrali ste datum u prošlosti!');
+                    }
+                    return Promise.resolve();
+                  },
+                  warningOnly: true,
+                },
+              ]}
             >
               <DatePicker
                 showTime={{ format: 'HH:mm' }}
@@ -246,7 +269,22 @@ export default function AppointmentModal({ open, appointment, onClose }: Appoint
             <Form.Item
               name='endTime'
               label='Kraj'
-              rules={[{ required: true, message: 'Izaberite kraj!' }]}
+              dependencies={['startTime']}
+              rules={[
+                { required: true, message: 'Izaberite kraj!' },
+                ({ getFieldValue }) => ({
+                  validator(_, value) {
+                    const startTime = getFieldValue('startTime');
+                    if (!value || !startTime) {
+                      return Promise.resolve();
+                    }
+                    if (value.isAfter(startTime)) {
+                      return Promise.resolve();
+                    }
+                    return Promise.reject('Kraj mora biti posle početka!');
+                  },
+                }),
+              ]}
             >
               <DatePicker
                 showTime={{ format: 'HH:mm' }}

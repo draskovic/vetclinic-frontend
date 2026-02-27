@@ -52,6 +52,13 @@ const allMenuItems = [
     permission: 'manage_appointments',
   },
   {
+    key: '/calendar',
+    icon: <CalendarOutlined style={{ color: '#13c2c2' }} />,
+    label: 'Kalendar',
+    permission: 'manage_appointments',
+  },
+
+  {
     key: '/medical-records',
     icon: <FileTextOutlined style={{ color: '#13c2c2' }} />,
     label: 'Intervencije',

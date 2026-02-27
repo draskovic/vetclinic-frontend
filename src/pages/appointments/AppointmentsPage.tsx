@@ -1,12 +1,20 @@
 import { useState, useDeferredValue } from 'react';
-import { Table, Button, Space, Input, Card, Typography, Popconfirm, message } from 'antd';
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Input, Card, Typography, Tooltip, Popconfirm, message } from 'antd';
+import {
+  PlusOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  CalendarOutlined,
+} from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { appointmentsApi } from '@/api/appointments';
 import type { Appointment, AppointmentStatus, AppointmentType } from '@/types';
 import dayjs from 'dayjs';
 import AppointmentModal from './AppointmentModal';
+import {} from '@ant-design/icons';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -36,6 +44,7 @@ export default function AppointmentsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
 
   // When searching, load all data (size=1000) so client-side filter works across all appointments
   // When not searching, paginate normally (10 per page)
@@ -184,6 +193,12 @@ export default function AppointmentsPage() {
           style={{ marginBottom: 16, maxWidth: 400 }}
           allowClear
         />
+        <Tooltip title='Kalendarski prikaz'>
+          <CalendarOutlined
+            style={{ fontSize: '20px', cursor: 'pointer', marginRight: '12px' }}
+            onClick={() => navigate('/calendar')}
+          />
+        </Tooltip>
 
         <Table
           rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
