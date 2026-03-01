@@ -30,6 +30,7 @@ import type {
   CreateLabReportRequest,
   UpdateLabReportRequest,
   LabReportStatus,
+  TestCategory,
 } from '@/types';
 import type { UploadFile } from 'antd/es/upload/interface';
 import dayjs from 'dayjs';
@@ -41,6 +42,11 @@ const statusOptions: { label: string; value: LabReportStatus }[] = [
   { label: 'Na čekanju', value: 'PENDING' },
   { label: 'Završen', value: 'COMPLETED' },
   { label: 'Otkazan', value: 'CANCELLED' },
+];
+
+const testCategoryOptions: { label: string; value: TestCategory }[] = [
+  { label: 'Laboratorijski', value: 'LABORATORY' },
+  { label: 'Brzi test', value: 'RAPID_TEST' },
 ];
 
 const formatFileSize = (bytes: number | null): string => {
@@ -255,7 +261,7 @@ export default function LabReportModal({
         form={form}
         layout='vertical'
         onFinish={handleSubmit}
-        initialValues={{ status: 'PENDING', isAbnormal: false }}
+        initialValues={{ status: 'PENDING', isAbnormal: false, testCategory: 'LABORATORY' }}
         style={{ marginTop: 16 }}
       >
         {/* === PDF Upload sekcija — NA VRHU === */}
@@ -430,6 +436,22 @@ export default function LabReportModal({
 
         <Row gutter={16}>
           <Col span={6}>
+            <Form.Item name='testCategory' label='Kategorija testa'>
+              <Select
+                options={testCategoryOptions}
+                onChange={(value) => {
+                  if (value === 'RAPID_TEST') {
+                    form.setFieldsValue({
+                      laboratoryName: 'In-house',
+                      status: 'COMPLETED',
+                      completedAt: dayjs(),
+                    });
+                  }
+                }}
+              />
+            </Form.Item>
+          </Col>
+          <Col span={6}>
             <Form.Item name='laboratoryName' label='Laboratorija'>
               <Input placeholder='Naziv laboratorije' />
             </Form.Item>
@@ -448,6 +470,8 @@ export default function LabReportModal({
               <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
             </Form.Item>
           </Col>
+        </Row>
+        <Row gutter={16}>
           <Col span={6}>
             <Form.Item name='completedAt' label='Datum završetka'>
               <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />

@@ -677,6 +677,7 @@ export interface UpdateServiceRequest {
 
 // ==================== LAB REPORT ====================
 export type LabReportStatus = 'PENDING' | 'COMPLETED' | 'CANCELLED';
+export type TestCategory = 'LABORATORY' | 'RAPID_TEST';
 
 export interface LabReport {
   id: string;
@@ -688,6 +689,7 @@ export interface LabReport {
   vetId: string;
   vetName: string;
   medicalRecordId: string | null;
+  testCategory: TestCategory;
   laboratoryName: string | null;
   status: LabReportStatus;
   requestedAt: string;
@@ -709,6 +711,7 @@ export interface CreateLabReportRequest {
   petId: string;
   vetId: string;
   medicalRecordId?: string | null;
+  testCategory?: TestCategory;
   laboratoryName?: string;
   status?: LabReportStatus;
   requestedAt: string;
@@ -724,6 +727,7 @@ export interface UpdateLabReportRequest {
   petId?: string;
   vetId?: string;
   medicalRecordId?: string | null;
+  testCategory?: TestCategory;
   laboratoryName?: string;
   status?: LabReportStatus;
   requestedAt?: string;

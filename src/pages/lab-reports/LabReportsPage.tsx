@@ -1,6 +1,12 @@
 import { useState } from 'react';
 import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined, FilePdfOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  FilePdfOutlined,
+} from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { labReportsApi } from '@/api/lab-reports';
@@ -60,6 +66,22 @@ export default function LabReportsPage() {
       dataIndex: 'analysisType',
       key: 'analysisType',
     },
+    {
+      title: 'Kategorija',
+      dataIndex: 'testCategory',
+      key: 'testCategory',
+      render: (val: string) => (
+        <span style={{ color: val === 'RAPID_TEST' ? '#fa8c16' : '#13c2c2', fontWeight: 600 }}>
+          {val === 'RAPID_TEST' ? 'Brzi test' : 'Laboratorijski'}
+        </span>
+      ),
+      filters: [
+        { text: 'Laboratorijski', value: 'LABORATORY' },
+        { text: 'Brzi test', value: 'RAPID_TEST' },
+      ],
+      onFilter: (value, record) => record.testCategory === value,
+    },
+
     {
       title: 'Ljubimac',
       dataIndex: 'petName',

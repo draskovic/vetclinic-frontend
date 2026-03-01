@@ -73,6 +73,17 @@ export default function LabReportItemsTable({ medicalRecordId, petId }: LabRepor
             key: 'analysisType',
           },
           {
+            title: 'Kategorija',
+            dataIndex: 'testCategory',
+            key: 'testCategory',
+            render: (val: string) => (
+              <Tag color={val === 'RAPID_TEST' ? 'orange' : 'cyan'}>
+                {val === 'RAPID_TEST' ? 'Brzi test' : 'Laboratorijski'}
+              </Tag>
+            ),
+          },
+
+          {
             title: 'Datum',
             dataIndex: 'requestedAt',
             key: 'requestedAt',
