@@ -15,3 +15,4 @@ export { inventoryItemsApi, inventoryTransactionsApi } from './inventory';
 export { servicesApi } from './services';
 export { labReportsApi } from './lab-reports';
 export { treatmentsApi } from './treatments';
+export { documentsApi } from './documents';

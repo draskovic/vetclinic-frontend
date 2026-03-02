@@ -14,6 +14,7 @@ import {
   LogoutOutlined,
   UserOutlined,
   MenuFoldOutlined,
+  FolderOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
@@ -74,6 +75,12 @@ const allMenuItems = [
     key: '/lab-reports',
     icon: <ExperimentOutlined style={{ color: '#13c2c2' }} />,
     label: 'Lab izveštaji',
+    permission: 'manage_medical_records',
+  },
+  {
+    key: '/documents',
+    icon: <FolderOutlined style={{ color: '#597ef7' }} />,
+    label: 'Dokumenti',
     permission: 'manage_medical_records',
   },
 

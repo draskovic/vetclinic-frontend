@@ -823,3 +823,43 @@ export interface UpdatePrescriptionRequest {
   endDate?: string;
   instructions?: string;
 }
+
+// ===== Documents =====
+export type FileType = 'IMAGE' | 'PDF' | 'LAB_RESULT' | 'XRAY' | 'OTHER';
+
+export interface DocumentRecord {
+  id: string;
+  petId: string | null;
+  petName: string | null;
+  medicalRecordId: string | null;
+  uploadedBy: string;
+  uploadedByName: string | null;
+  fileName: string | null;
+  fileType: FileType;
+  mimeType: string | null;
+  fileSizeBytes: number | null;
+  storagePath: string | null;
+  description: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDocumentRequest {
+  petId?: string | null;
+  medicalRecordId?: string | null;
+  uploadedBy: string;
+  fileName?: string;
+  fileType: FileType;
+  mimeType?: string;
+  fileSizeBytes?: number;
+  storagePath?: string;
+  description?: string;
+}
+
+export interface UpdateDocumentRequest {
+  petId?: string | null;
+  medicalRecordId?: string | null;
+  fileName?: string;
+  fileType?: FileType;
+  description?: string;
+}

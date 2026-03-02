@@ -26,6 +26,7 @@ import { useThemeStore } from '@/store/themeStore';
 import LabReportsPage from '@/pages/lab-reports/LabReportsPage';
 import PetProfilePage from './pages/pets/PetProfilePage';
 import AppointmentCalendarPage from './pages/appointments/AppointmentCalendarPage';
+import DocumentsPage from '@/pages/documents/DocumentsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -138,6 +139,15 @@ export default function App() {
                     element={
                       <PermissionGuard permission='manage_medical_records'>
                         <LabReportsPage />
+                      </PermissionGuard>
+                    }
+                  />
+
+                  <Route
+                    path='documents'
+                    element={
+                      <PermissionGuard permission='manage_medical_records'>
+                        <DocumentsPage />
                       </PermissionGuard>
                     }
                   />
