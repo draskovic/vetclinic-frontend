@@ -7,6 +7,7 @@ import { invoicesApi } from '@/api/invoices';
 import type { Invoice, InvoiceStatus } from '@/types';
 import dayjs from 'dayjs';
 import InvoiceModal from './InvoiceModal';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const { Title } = Typography;
 
@@ -27,13 +28,14 @@ const formatCurrency = (amount: number, currency: string) => {
 export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['invoices', page],
-    queryFn: () => invoicesApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['invoices', page, debouncedSearch],
+    queryFn: () => invoicesApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -45,13 +47,7 @@ export default function InvoicesPage() {
     onError: () => message.error('Greška pri brisanju!'),
   });
 
-  const filteredData = search
-    ? data?.content.filter(
-        (i) =>
-          i.invoiceNumber.toLowerCase().includes(search.toLowerCase()) ||
-          i.ownerName.toLowerCase().includes(search.toLowerCase()),
-      )
-    : data?.content;
+  const filteredData = data?.content;
 
   const columns: ColumnsType<Invoice> = [
     {

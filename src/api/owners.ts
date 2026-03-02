@@ -2,8 +2,8 @@ import apiClient from './client';
 import type { Owner, CreateOwnerRequest, UpdateOwnerRequest, PageResponse } from '@/types';
 
 export const ownersApi = {
-  getAll: (page = 0, size = 10) =>
-    apiClient.get<PageResponse<Owner>>(`/owners?page=${page}&size=${size}`),
+  getAll: (page = 0, size = 10, search?: string) =>
+    apiClient.get<PageResponse<Owner>>('/owners', { params: { page, size, search } }),
 
   getById: (id: string) => apiClient.get<Owner>(`/owners/${id}`),
 

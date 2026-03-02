@@ -2,8 +2,8 @@ import apiClient from './client';
 import type { Pet, CreatePetRequest, UpdatePetRequest, PageResponse } from '@/types';
 
 export const petsApi = {
-  getAll: (page = 0, size = 10) =>
-    apiClient.get<PageResponse<Pet>>(`/pets?page=${page}&size=${size}`),
+  getAll: (page = 0, size = 10, search?: string) =>
+    apiClient.get<PageResponse<Pet>>('/pets', { params: { page, size, search } }),
 
   getById: (id: string) => apiClient.get<Pet>(`/pets/${id}`),
 

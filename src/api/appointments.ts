@@ -7,10 +7,10 @@ import type {
 } from '@/types';
 
 export const appointmentsApi = {
-  getAll: (page = 0, size = 10, sort = 'startTime,desc') =>
-    apiClient.get<PageResponse<Appointment>>(
-      `/appointments?page=${page}&size=${size}&sort=${sort}`,
-    ),
+  getAll: (page = 0, size = 10, sort = 'startTime,desc', search?: string) =>
+    apiClient.get<PageResponse<Appointment>>('/appointments', {
+      params: { page, size, sort, search },
+    }),
 
   getById: (id: string) => apiClient.get<Appointment>(`/appointments/${id}`),
 

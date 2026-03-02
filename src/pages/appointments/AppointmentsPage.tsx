@@ -1,4 +1,4 @@
-import { useState, useDeferredValue } from 'react';
+import { useState } from 'react';
 import { Table, Button, Space, Input, Card, Typography, Tooltip, Popconfirm, message } from 'antd';
 import {
   PlusOutlined,
@@ -15,6 +15,7 @@ import dayjs from 'dayjs';
 import AppointmentModal from './AppointmentModal';
 import {} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const { Title } = Typography;
 
@@ -39,8 +40,9 @@ const typeConfig: Record<AppointmentType, string> = {
 export default function AppointmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
-  const deferredSearch = useDeferredValue(search);
-  const isSearching = deferredSearch.trim().length > 0;
+
+  const debouncedSearch = useDebouncedValue(search);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const queryClient = useQueryClient();
@@ -49,11 +51,9 @@ export default function AppointmentsPage() {
   // When searching, load all data (size=1000) so client-side filter works across all appointments
   // When not searching, paginate normally (10 per page)
   const { data, isLoading } = useQuery({
-    queryKey: ['appointments', isSearching ? 'search' : page],
+    queryKey: ['appointments', page, debouncedSearch],
     queryFn: () =>
-      isSearching
-        ? appointmentsApi.getAll(0, 1000).then((r) => r.data)
-        : appointmentsApi.getAll(page - 1, 10).then((r) => r.data),
+      appointmentsApi.getAll(page - 1, 10, 'startTime,desc', debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -65,14 +65,7 @@ export default function AppointmentsPage() {
     onError: () => message.error('Greška pri brisanju!'),
   });
 
-  const filteredData = isSearching
-    ? data?.content.filter(
-        (a) =>
-          a.petName.toLowerCase().includes(deferredSearch.toLowerCase()) ||
-          a.ownerName.toLowerCase().includes(deferredSearch.toLowerCase()) ||
-          a.vetName.toLowerCase().includes(deferredSearch.toLowerCase()),
-      )
-    : data?.content;
+  const filteredData = data?.content;
 
   const columns: ColumnsType<Appointment> = [
     {
@@ -206,20 +199,13 @@ export default function AppointmentsPage() {
           dataSource={filteredData}
           rowKey='id'
           loading={isLoading}
-          pagination={
-            isSearching
-              ? {
-                  pageSize: 10,
-                  showTotal: (total) => `Pronađeno: ${total} termina`,
-                }
-              : {
-                  current: page,
-                  total: data?.totalElements,
-                  pageSize: 10,
-                  onChange: setPage,
-                  showTotal: (total) => `Ukupno: ${total} termina`,
-                }
-          }
+          pagination={{
+            current: page,
+            total: data?.totalElements,
+            pageSize: 10,
+            onChange: setPage,
+            showTotal: (total) => `Ukupno: ${total} termina`,
+          }}
         />
       </Card>
 

@@ -11,8 +11,8 @@ import type {
 import type { InvoiceStatus } from '@/types';
 
 export const invoicesApi = {
-  getAll: (page = 0, size = 10) =>
-    apiClient.get<PageResponse<Invoice>>(`/invoices?page=${page}&size=${size}`),
+  getAll: (page = 0, size = 10, search?: string) =>
+    apiClient.get<PageResponse<Invoice>>('/invoices', { params: { page, size, search } }),
 
   getById: (id: string) => apiClient.get<Invoice>(`/invoices/${id}`),
 

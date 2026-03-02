@@ -6,20 +6,22 @@ import type { ColumnsType } from 'antd/es/table';
 import { ownersApi } from '@/api/owners';
 import type { Owner } from '@/types';
 import OwnerModal from './OwnerModal';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const { Title } = Typography;
 
 export default function OwnersPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
 
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['owners', page],
-    queryFn: () => ownersApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['owners', page, debouncedSearch],
+    queryFn: () => ownersApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -46,13 +48,7 @@ export default function OwnersPage() {
     setEditingOwner(null);
   };
 
-  const filteredData = search
-    ? data?.content.filter(
-        (o) =>
-          `${o.firstName} ${o.lastName}`.toLowerCase().includes(search.toLowerCase()) ||
-          o.phone.includes(search),
-      )
-    : data?.content;
+  const filteredData = data?.content;
 
   const columns: ColumnsType<Owner> = [
     {

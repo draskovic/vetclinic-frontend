@@ -7,8 +7,8 @@ import type {
 } from '../types';
 
 export const documentsApi = {
-  getAll: (page = 0, size = 10) =>
-    apiClient.get<PageResponse<DocumentRecord>>('/documents', { params: { page, size } }),
+  getAll: (page = 0, size = 10, search?: string) =>
+    apiClient.get<PageResponse<DocumentRecord>>('/documents', { params: { page, size, search } }),
 
   getById: (id: string) => apiClient.get<DocumentRecord>(`/documents/${id}`),
 

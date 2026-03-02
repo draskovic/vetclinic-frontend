@@ -7,6 +7,7 @@ import type { ColumnsType } from 'antd/es/table';
 import { petsApi } from '@/api/pets';
 import type { Pet } from '@/types';
 import PetModal from './PetModal';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const { Title } = Typography;
 
@@ -18,14 +19,16 @@ const genderLabels: Record<string, { label: string; color: string }> = {
 export default function PetsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPet, setEditingPet] = useState<Pet | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['pets', page],
-    queryFn: () => petsApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['pets', page, debouncedSearch],
+    queryFn: () => petsApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -37,13 +40,7 @@ export default function PetsPage() {
     onError: () => message.error('Greška pri brisanju!'),
   });
 
-  const filteredData = search
-    ? data?.content.filter(
-        (p) =>
-          p.name.toLowerCase().includes(search.toLowerCase()) ||
-          p.ownerName.toLowerCase().includes(search.toLowerCase()),
-      )
-    : data?.content;
+  const filteredData = data?.content;
 
   const columns: ColumnsType<Pet> = [
     {

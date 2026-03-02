@@ -26,6 +26,7 @@ import { documentsApi } from '@/api/documents';
 import type { DocumentRecord, FileType } from '@/types';
 import dayjs from 'dayjs';
 import DocumentModal from './DocumentModal';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const { Title } = Typography;
 
@@ -60,14 +61,15 @@ function getFileIcon(fileType: FileType) {
 export default function DocumentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingDocument, setEditingDocument] = useState<DocumentRecord | null>(null);
 
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['documents', page],
-    queryFn: () => documentsApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['documents', page, debouncedSearch],
+    queryFn: () => documentsApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -79,15 +81,7 @@ export default function DocumentsPage() {
     onError: () => message.error('Greška pri brisanju!'),
   });
 
-  const filteredData = search
-    ? data?.content.filter(
-        (r) =>
-          (r.fileName ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          (r.petName ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          (r.uploadedByName ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          (r.description ?? '').toLowerCase().includes(search.toLowerCase()),
-      )
-    : data?.content;
+  const filteredData = data?.content;
 
   const columns: ColumnsType<DocumentRecord> = [
     {

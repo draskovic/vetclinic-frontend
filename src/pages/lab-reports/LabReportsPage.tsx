@@ -13,6 +13,7 @@ import { labReportsApi } from '@/api/lab-reports';
 import type { LabReport, LabReportStatus } from '@/types';
 import dayjs from 'dayjs';
 import LabReportModal from './LabReportModal';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const { Title } = Typography;
 
@@ -25,13 +26,15 @@ const statusConfig: Record<LabReportStatus, { label: string; color: string }> = 
 export default function LabReportsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<LabReport | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['lab-reports', page],
-    queryFn: () => labReportsApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['lab-reports', page, debouncedSearch],
+    queryFn: () => labReportsApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -43,17 +46,7 @@ export default function LabReportsPage() {
     onError: () => message.error('Greška pri brisanju!'),
   });
 
-  const filteredData = search
-    ? data?.content.filter(
-        (r) =>
-          r.reportNumber.toLowerCase().includes(search.toLowerCase()) ||
-          r.analysisType.toLowerCase().includes(search.toLowerCase()) ||
-          r.petName.toLowerCase().includes(search.toLowerCase()) ||
-          (r.ownerName ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          r.vetName.toLowerCase().includes(search.toLowerCase()) ||
-          (r.laboratoryName ?? '').toLowerCase().includes(search.toLowerCase()),
-      )
-    : data?.content;
+  const filteredData = data?.content;
 
   const columns: ColumnsType<LabReport> = [
     {

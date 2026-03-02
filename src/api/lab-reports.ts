@@ -9,10 +9,10 @@ import type {
 } from '@/types';
 
 export const labReportsApi = {
-  getAll: (page = 0, size = 10) =>
-    apiClient.get<PageResponse<LabReport>>(
-      `/lab-reports?page=${page}&size=${size}&sort=requestedAt,desc`,
-    ),
+  getAll: (page = 0, size = 10, search?: string) =>
+    apiClient.get<PageResponse<LabReport>>('/lab-reports', {
+      params: { page, size, sort: 'requestedAt,desc', search },
+    }),
 
   getById: (id: string) => apiClient.get<LabReport>(`/lab-reports/${id}`),
 
