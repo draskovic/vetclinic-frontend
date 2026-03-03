@@ -26,6 +26,11 @@ export const invoicesApi = {
     apiClient.put<Invoice>(`/invoices/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/invoices/${id}`),
+
+  downloadPdf: (id: string) =>
+    apiClient.get<Blob>(`/invoices/${id}/pdf`, {
+      responseType: 'blob',
+    }),
 };
 
 export const invoiceItemsApi = {
