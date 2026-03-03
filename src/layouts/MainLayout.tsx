@@ -15,6 +15,7 @@ import {
   UserOutlined,
   MenuFoldOutlined,
   FolderOutlined,
+  AuditOutlined,
   MenuUnfoldOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
@@ -101,6 +102,18 @@ const allMenuItems = [
     icon: <SettingOutlined style={{ color: '#8c8c8c' }} />,
     label: 'Administracija',
     permission: 'admin',
+    children: [
+      {
+        key: '/admin',
+        icon: <SettingOutlined style={{ color: '#8c8c8c' }} />,
+        label: 'Podešavanja',
+      },
+      {
+        key: '/audit-logs',
+        icon: <AuditOutlined style={{ color: '#8c8c8c' }} />,
+        label: 'Audit logovi',
+      },
+    ],
   },
 ];
 

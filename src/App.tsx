@@ -27,6 +27,7 @@ import LabReportsPage from '@/pages/lab-reports/LabReportsPage';
 import PetProfilePage from './pages/pets/PetProfilePage';
 import AppointmentCalendarPage from './pages/appointments/AppointmentCalendarPage';
 import DocumentsPage from '@/pages/documents/DocumentsPage';
+import AuditLogsPage from '@/pages/audit-logs/AuditLogsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -148,6 +149,15 @@ export default function App() {
                     element={
                       <PermissionGuard permission='manage_medical_records'>
                         <DocumentsPage />
+                      </PermissionGuard>
+                    }
+                  />
+
+                  <Route
+                    path='audit-logs'
+                    element={
+                      <PermissionGuard permission='*'>
+                        <AuditLogsPage />
                       </PermissionGuard>
                     }
                   />

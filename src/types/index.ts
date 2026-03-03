@@ -863,3 +863,21 @@ export interface UpdateDocumentRequest {
   fileType?: FileType;
   description?: string;
 }
+
+// ==================== AUDIT LOG ====================
+export type AuditAction = 'CREATE' | 'UPDATE' | 'DELETE' | 'LOGIN' | 'LOGOUT';
+
+export interface AuditLog {
+  id: string;
+  clinicId: string;
+  userId: string;
+  userName: string | null;
+  action: AuditAction;
+  entityType: string;
+  entityId: string;
+  oldValues: string | null;
+  newValues: string | null;
+  ipAddress: string | null;
+  userAgent: string | null;
+  createdAt: string;
+}
