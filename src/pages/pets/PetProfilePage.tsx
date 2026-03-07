@@ -115,6 +115,7 @@ export default function PetProfilePage() {
     queryKey: ['documents', 'by-pet', petId],
     queryFn: () => documentsApi.getByPet(petId!).then((r) => r.data),
     enabled: !!petId,
+    refetchInterval: qrModalOpen ? 5000 : false,
   });
 
   const appointmentColumns: ColumnsType<Appointment> = [
