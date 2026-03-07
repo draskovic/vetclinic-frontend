@@ -1,7 +1,20 @@
+import { useState } from 'react';
+import QrUploadModal from '@/components/QrUploadModal';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { Card, Tabs, Table, Tag, Descriptions, Spin, Button, Space, Typography } from 'antd';
-import { ArrowLeftOutlined } from '@ant-design/icons';
+import {
+  Card,
+  Tabs,
+  Table,
+  Tag,
+  Descriptions,
+  Spin,
+  Button,
+  Space,
+  Typography,
+  message,
+} from 'antd';
+import { ArrowLeftOutlined, QrcodeOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { petsApi } from '@/api/pets';
@@ -9,7 +22,8 @@ import { appointmentsApi } from '@/api/appointments';
 import { medicalRecordsApi } from '@/api/medical-records';
 import { vaccinationsApi } from '@/api/vaccinations';
 import { labReportsApi } from '@/api/lab-reports';
-import type { Appointment, MedicalRecord, Vaccination, LabReport } from '@/types';
+import { documentsApi } from '@/api/documents';
+import type { Appointment, MedicalRecord, Vaccination, LabReport, DocumentRecord } from '@/types';
 
 const { Title } = Typography;
 
@@ -65,6 +79,7 @@ const getVaccinationStatus = (nextDueDate: string | null) => {
 export default function PetProfilePage() {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
+  const [qrModalOpen, setQrModalOpen] = useState(false);
 
   const { data: pet, isLoading: petLoading } = useQuery({
     queryKey: ['pet', petId],
@@ -93,6 +108,12 @@ export default function PetProfilePage() {
   const { data: labReports = [], isLoading: labLoading } = useQuery({
     queryKey: ['lab-reports', 'by-pet', petId],
     queryFn: () => labReportsApi.getByPet(petId!).then((r) => r.data),
+    enabled: !!petId,
+  });
+
+  const { data: documents = [], isLoading: docLoading } = useQuery({
+    queryKey: ['documents', 'by-pet', petId],
+    queryFn: () => documentsApi.getByPet(petId!).then((r) => r.data),
     enabled: !!petId,
   });
 
@@ -223,6 +244,59 @@ export default function PetProfilePage() {
         v ? <Tag color='red'>Nenormalan</Tag> : <Tag color='green'>U redu</Tag>,
     },
   ];
+  const documentColumns: ColumnsType<DocumentRecord> = [
+    { title: 'Naziv fajla', dataIndex: 'fileName', key: 'fileName' },
+    {
+      title: 'Tip',
+      dataIndex: 'fileType',
+      key: 'fileType',
+      render: (v: string) => <Tag>{v}</Tag>,
+    },
+    {
+      title: 'Opis',
+      dataIndex: 'description',
+      key: 'description',
+      render: (v: string | null) => v ?? '-',
+    },
+    {
+      title: 'Datum',
+      dataIndex: 'createdAt',
+      key: 'createdAt',
+      render: (v: string) => dayjs(v).format('DD.MM.YYYY HH:mm'),
+    },
+    {
+      title: 'Akcije',
+      key: 'actions',
+      render: (_: unknown, record: DocumentRecord) => (
+        <Button
+          type='link'
+          size='small'
+          onClick={() => {
+            const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+            const token = localStorage.getItem('accessToken');
+            const clinicId = localStorage.getItem('clinicId');
+            const url = `${baseUrl}/documents/${record.id}/download`;
+
+            // Otvori u novom tabu sa auth headerima kroz fetch
+            fetch(url, {
+              headers: {
+                Authorization: `Bearer ${token}`,
+                'X-Clinic-Id': clinicId || '',
+              },
+            })
+              .then((res) => res.blob())
+              .then((blob) => {
+                const objectUrl = window.URL.createObjectURL(blob);
+                window.open(objectUrl, '_blank');
+              })
+              .catch(() => message.error('Greška pri otvaranju fajla'));
+          }}
+        >
+          Otvori
+        </Button>
+      ),
+    },
+  ];
 
   if (petLoading) return <Spin size='large' style={{ display: 'block', marginTop: 80 }} />;
   if (!pet) return null;
@@ -284,6 +358,21 @@ export default function PetProfilePage() {
         />
       ),
     },
+
+    {
+      key: 'documents',
+      label: `Dokumenti (${documents.length})`,
+      children: (
+        <Table
+          dataSource={documents}
+          columns={documentColumns}
+          rowKey='id'
+          loading={docLoading}
+          pagination={{ pageSize: 10 }}
+          size='small'
+        />
+      ),
+    },
   ];
 
   return (
@@ -291,6 +380,9 @@ export default function PetProfilePage() {
       <Space style={{ marginBottom: 16 }}>
         <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/pets')}>
           Nazad na ljubimce
+        </Button>
+        <Button icon={<QrcodeOutlined />} onClick={() => setQrModalOpen(true)} disabled={!pet}>
+          Upload sa telefona
         </Button>
       </Space>
 
@@ -340,6 +432,15 @@ export default function PetProfilePage() {
       <Card>
         <Tabs items={tabItems} />
       </Card>
+
+      {pet && (
+        <QrUploadModal
+          open={qrModalOpen}
+          onClose={() => setQrModalOpen(false)}
+          petId={pet.id}
+          petName={pet.name}
+        />
+      )}
     </div>
   );
 }

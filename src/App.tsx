@@ -28,6 +28,7 @@ import PetProfilePage from './pages/pets/PetProfilePage';
 import AppointmentCalendarPage from './pages/appointments/AppointmentCalendarPage';
 import DocumentsPage from '@/pages/documents/DocumentsPage';
 import AuditLogsPage from '@/pages/audit-logs/AuditLogsPage';
+import QuickUploadPage from './pages/quick-upload/QuickUploadPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -67,6 +68,7 @@ export default function App() {
             <BrowserRouter>
               <Routes>
                 <Route path='/login' element={<LoginPage />} />
+                <Route path='/quick-upload' element={<QuickUploadPage />} />
                 <Route
                   path='/'
                   element={
