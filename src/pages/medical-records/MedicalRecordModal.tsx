@@ -33,9 +33,15 @@ interface MedicalRecordModalProps {
   open: boolean;
   record: MedicalRecord | null;
   onClose: () => void;
+  defaultValues?: { petId?: string; vetId?: string };
 }
 
-export default function MedicalRecordModal({ open, record, onClose }: MedicalRecordModalProps) {
+export default function MedicalRecordModal({
+  open,
+  record,
+  onClose,
+  defaultValues,
+}: MedicalRecordModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
 
@@ -69,6 +75,9 @@ export default function MedicalRecordModal({ open, record, onClose }: MedicalRec
       } else {
         form.resetFields();
         setCreatedRecord(null);
+        if (defaultValues) {
+          form.setFieldsValue(defaultValues);
+        }
       }
     }
   }, [open, record, form]);

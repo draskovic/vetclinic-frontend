@@ -14,7 +14,12 @@ import {
   Typography,
   message,
 } from 'antd';
-import { ArrowLeftOutlined, QrcodeOutlined, FilePdfOutlined } from '@ant-design/icons';
+import {
+  ArrowLeftOutlined,
+  QrcodeOutlined,
+  FilePdfOutlined,
+  PlusOutlined,
+} from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { petsApi } from '@/api/pets';
@@ -24,6 +29,8 @@ import { vaccinationsApi } from '@/api/vaccinations';
 import { labReportsApi } from '@/api/lab-reports';
 import { documentsApi } from '@/api/documents';
 import type { Appointment, MedicalRecord, Vaccination, LabReport, DocumentRecord } from '@/types';
+import MedicalRecordModal from '../medical-records/MedicalRecordModal';
+import { useAuthStore } from '@/store/authStore';
 
 const { Title } = Typography;
 
@@ -80,12 +87,16 @@ export default function PetProfilePage() {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
+  const [recordModalOpen, setRecordModalOpen] = useState(false);
 
   const { data: pet, isLoading: petLoading } = useQuery({
     queryKey: ['pet', petId],
     queryFn: () => petsApi.getById(petId!).then((r) => r.data),
     enabled: !!petId,
   });
+
+  const user = useAuthStore((s) => s.user);
 
   const { data: appointments = [], isLoading: apptLoading } = useQuery({
     queryKey: ['appointments', 'by-pet', petId],
@@ -190,6 +201,22 @@ export default function PetProfilePage() {
         record.followUpRecommended && record.followUpDate
           ? dayjs(record.followUpDate).format('DD.MM.YYYY')
           : '-',
+    },
+    {
+      title: 'Akcije',
+      key: 'actions',
+      render: (_: unknown, record: MedicalRecord) => (
+        <Button
+          type='link'
+          size='small'
+          onClick={() => {
+            setSelectedRecord(record);
+            setRecordModalOpen(true);
+          }}
+        >
+          Otvori
+        </Button>
+      ),
     },
   ];
 
@@ -336,16 +363,31 @@ export default function PetProfilePage() {
       key: 'medical-records',
       label: `Medicinski kartoni (${medicalRecords.length})`,
       children: (
-        <Table
-          dataSource={medicalRecords}
-          columns={medicalRecordColumns}
-          rowKey='id'
-          loading={mrLoading}
-          pagination={{ pageSize: 10 }}
-          size='small'
-        />
+        <>
+          <div style={{ marginBottom: 12, textAlign: 'right' }}>
+            <Button
+              type='primary'
+              icon={<PlusOutlined />}
+              onClick={() => {
+                setSelectedRecord(null);
+                setRecordModalOpen(true);
+              }}
+            >
+              Nova intervencija
+            </Button>
+          </div>
+          <Table
+            dataSource={medicalRecords}
+            columns={medicalRecordColumns}
+            rowKey='id'
+            loading={mrLoading}
+            pagination={{ pageSize: 10 }}
+            size='small'
+          />
+        </>
       ),
     },
+
     {
       key: 'vaccinations',
       label: `Vakcinacije (${vaccinations.length})`,
@@ -409,7 +451,7 @@ export default function PetProfilePage() {
           Nazad na ljubimce
         </Button>
         <Button icon={<QrcodeOutlined />} onClick={() => setQrModalOpen(true)} disabled={!pet}>
-          Upload sa telefona
+          Upload dokumenata sa telefona
         </Button>
       </Space>
 
@@ -468,6 +510,15 @@ export default function PetProfilePage() {
           petName={pet.name}
         />
       )}
+      <MedicalRecordModal
+        open={recordModalOpen}
+        record={selectedRecord}
+        onClose={() => {
+          setRecordModalOpen(false);
+          setSelectedRecord(null);
+        }}
+        defaultValues={{ petId: petId, vetId: user?.id }}
+      />
     </div>
   );
 }

@@ -51,7 +51,7 @@ const QrUploadModal: React.FC<QrUploadModalProps> = ({ open, onClose, petId, pet
       title={
         <Space>
           <QrcodeOutlined />
-          <span>Upload sa telefona — {petName}</span>
+          <span>Upload dokumenata sa telefona — {petName}</span>
         </Space>
       }
       open={open}

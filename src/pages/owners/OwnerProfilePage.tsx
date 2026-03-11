@@ -1,4 +1,5 @@
 import React from 'react';
+import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { Card, Descriptions, Tabs, Table, Tag, Button, Spin, Typography } from 'antd';
@@ -10,6 +11,8 @@ import { invoicesApi } from '../../api';
 import type { Pet } from '../../types';
 import dayjs from 'dayjs';
 import { medicalRecordsApi } from '../../api';
+import MedicalRecordModal from '../medical-records/MedicalRecordModal';
+import type { MedicalRecord } from '../../types';
 
 const { Title } = Typography;
 
@@ -46,6 +49,8 @@ const OwnerProfilePage: React.FC = () => {
     queryFn: () => medicalRecordsApi.getByOwner(ownerId!).then((res) => res.data),
     enabled: !!ownerId,
   });
+  const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
+  const [modalOpen, setModalOpen] = useState(false);
 
   if (ownerLoading) return <Spin size='large' style={{ display: 'block', margin: '100px auto' }} />;
   if (!owner) return <div>Vlasnik nije pronađen</div>;
@@ -71,6 +76,21 @@ const OwnerProfilePage: React.FC = () => {
       key: 'symptoms',
       render: (text: string) =>
         text ? (text.length > 50 ? text.substring(0, 50) + '...' : text) : '-',
+    },
+    {
+      title: 'Akcije',
+      key: 'actions',
+      render: (_: any, record: any) => (
+        <Button
+          type='link'
+          onClick={() => {
+            setSelectedRecord(record);
+            setModalOpen(true);
+          }}
+        >
+          Otvori
+        </Button>
+      ),
     },
   ];
 
@@ -256,6 +276,14 @@ const OwnerProfilePage: React.FC = () => {
             ),
           },
         ]}
+      />
+      <MedicalRecordModal
+        open={modalOpen}
+        record={selectedRecord}
+        onClose={() => {
+          setModalOpen(false);
+          setSelectedRecord(null);
+        }}
       />
     </div>
   );

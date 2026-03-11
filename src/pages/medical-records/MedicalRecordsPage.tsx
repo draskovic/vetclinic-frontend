@@ -37,16 +37,12 @@ export default function MedicalRecordsPage() {
     onError: () => message.error('Greška pri brisanju!'),
   });
 
-  const handleDownloadPdf = async (id: string, petName: string) => {
+  const handleDownloadPdf = async (id: string, _petName: string) => {
     try {
       const response = await medicalRecordsApi.downloadPdf(id);
       const blob = new Blob([response.data], { type: 'application/pdf' });
       const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `karton-${petName}.pdf`;
-      link.click();
-      window.URL.revokeObjectURL(url);
+      window.open(url, '_blank');
     } catch {
       message.error('Greška pri preuzimanju PDF-a');
     }
