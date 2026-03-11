@@ -1,4 +1,4 @@
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { App as AntApp, ConfigProvider, theme } from 'antd';
 import srRS from 'antd/locale/sr_RS';
@@ -29,6 +29,8 @@ import AppointmentCalendarPage from './pages/appointments/AppointmentCalendarPag
 import DocumentsPage from '@/pages/documents/DocumentsPage';
 import AuditLogsPage from '@/pages/audit-logs/AuditLogsPage';
 import QuickUploadPage from './pages/quick-upload/QuickUploadPage';
+import ErrorBoundary from './components/ErrorBoundary';
+import NotFoundPage from './pages/NotFoundPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -45,214 +47,216 @@ export default function App() {
   return (
     <div className={darkMode ? 'dark-theme' : 'light-theme'}>
       <QueryClientProvider client={queryClient}>
-        <ConfigProvider
-          theme={{
-            algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
-            token: darkMode
-              ? {
-                  colorBgContainer: '#1e2433',
-                  colorBgElevated: '#252d3d',
-                  colorBgLayout: '#161b26',
-                  colorBorderSecondary: '#2d3548',
-                }
-              : {
-                  colorBgContainer: '#edf0f5',
-                  colorBgElevated: '#f5f6fa',
-                  colorBgLayout: '#e2e6ee',
-                  colorBorderSecondary: '#d0d5df',
-                },
-          }}
-          locale={srRS}
-        >
-          <AntApp>
-            <BrowserRouter>
-              <Routes>
-                <Route path='/login' element={<LoginPage />} />
-                <Route path='/quick-upload' element={<QuickUploadPage />} />
-                <Route
-                  path='/'
-                  element={
-                    <ProtectedRoute>
-                      <MainLayout />
-                    </ProtectedRoute>
+        <ErrorBoundary>
+          <ConfigProvider
+            theme={{
+              algorithm: darkMode ? theme.darkAlgorithm : theme.defaultAlgorithm,
+              token: darkMode
+                ? {
+                    colorBgContainer: '#1e2433',
+                    colorBgElevated: '#252d3d',
+                    colorBgLayout: '#161b26',
+                    colorBorderSecondary: '#2d3548',
                   }
-                >
-                  <Route index element={<Dashboard />} />
+                : {
+                    colorBgContainer: '#edf0f5',
+                    colorBgElevated: '#f5f6fa',
+                    colorBgLayout: '#e2e6ee',
+                    colorBorderSecondary: '#d0d5df',
+                  },
+            }}
+            locale={srRS}
+          >
+            <AntApp>
+              <BrowserRouter>
+                <Routes>
+                  <Route path='/login' element={<LoginPage />} />
+                  <Route path='/quick-upload' element={<QuickUploadPage />} />
+                  <Route
+                    path='/'
+                    element={
+                      <ProtectedRoute>
+                        <MainLayout />
+                      </ProtectedRoute>
+                    }
+                  >
+                    <Route index element={<Dashboard />} />
 
-                  <Route
-                    path='owners'
-                    element={
-                      <PermissionGuard permission='manage_owners'>
-                        <OwnersPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='pets'
-                    element={
-                      <PermissionGuard permission='manage_pets'>
-                        <PetsPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='pets/:petId'
-                    element={
-                      <PermissionGuard permission='manage_pets'>
-                        <PetProfilePage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='appointments'
-                    element={
-                      <PermissionGuard permission='manage_appointments'>
-                        <AppointmentsPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='owners'
+                      element={
+                        <PermissionGuard permission='manage_owners'>
+                          <OwnersPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='pets'
+                      element={
+                        <PermissionGuard permission='manage_pets'>
+                          <PetsPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='pets/:petId'
+                      element={
+                        <PermissionGuard permission='manage_pets'>
+                          <PetProfilePage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='appointments'
+                      element={
+                        <PermissionGuard permission='manage_appointments'>
+                          <AppointmentsPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='calendar'
-                    element={
-                      <PermissionGuard permission='manage_appointments'>
-                        <AppointmentCalendarPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='calendar'
+                      element={
+                        <PermissionGuard permission='manage_appointments'>
+                          <AppointmentCalendarPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='medical-records'
-                    element={
-                      <PermissionGuard permission='manage_medical_records'>
-                        <MedicalRecordsPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='vaccinations'
-                    element={
-                      <PermissionGuard permission='manage_vaccinations'>
-                        <VaccinationsPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='lab-reports'
-                    element={
-                      <PermissionGuard permission='manage_medical_records'>
-                        <LabReportsPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='medical-records'
+                      element={
+                        <PermissionGuard permission='manage_medical_records'>
+                          <MedicalRecordsPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='vaccinations'
+                      element={
+                        <PermissionGuard permission='manage_vaccinations'>
+                          <VaccinationsPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='lab-reports'
+                      element={
+                        <PermissionGuard permission='manage_medical_records'>
+                          <LabReportsPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='documents'
-                    element={
-                      <PermissionGuard permission='manage_medical_records'>
-                        <DocumentsPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='documents'
+                      element={
+                        <PermissionGuard permission='manage_medical_records'>
+                          <DocumentsPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='audit-logs'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <AuditLogsPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='audit-logs'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <AuditLogsPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='invoices'
-                    element={
-                      <PermissionGuard permission='manage_invoices'>
-                        <InvoicesPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='invoices'
+                      element={
+                        <PermissionGuard permission='manage_invoices'>
+                          <InvoicesPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='/inventory'
-                    element={
-                      <PermissionGuard permission='manage_inventory'>
-                        <InventoryPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='/inventory-transactions'
-                    element={
-                      <PermissionGuard permission='manage_inventory'>
-                        <InventoryTransactionsPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='/inventory'
+                      element={
+                        <PermissionGuard permission='manage_inventory'>
+                          <InventoryPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='/inventory-transactions'
+                      element={
+                        <PermissionGuard permission='manage_inventory'>
+                          <InventoryTransactionsPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='admin'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <AdminPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='admin/species'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <SpeciesPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='admin/breeds'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <BreedPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='admin/users'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <UsersPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='admin/roles'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <RolesPage />
-                      </PermissionGuard>
-                    }
-                  />
-                  <Route
-                    path='admin/services'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <ServicesPage />
-                      </PermissionGuard>
-                    }
-                  />
+                    <Route
+                      path='admin'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <AdminPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='admin/species'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <SpeciesPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='admin/breeds'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <BreedPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='admin/users'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <UsersPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='admin/roles'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <RolesPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='admin/services'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <ServicesPage />
+                        </PermissionGuard>
+                      }
+                    />
 
-                  <Route
-                    path='admin/clinics'
-                    element={
-                      <PermissionGuard permission='*'>
-                        <ClinicsPage />
-                      </PermissionGuard>
-                    }
-                  />
-                </Route>
-                <Route path='*' element={<Navigate to='/' replace />} />
-              </Routes>
-            </BrowserRouter>
-          </AntApp>
-        </ConfigProvider>
+                    <Route
+                      path='admin/clinics'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <ClinicsPage />
+                        </PermissionGuard>
+                      }
+                    />
+                  </Route>
+                  <Route path='*' element={<NotFoundPage />} />
+                </Routes>
+              </BrowserRouter>
+            </AntApp>
+          </ConfigProvider>
+        </ErrorBoundary>
       </QueryClientProvider>
     </div>
   );

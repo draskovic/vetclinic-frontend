@@ -260,3 +260,6 @@ body {
   color: #7a7f8a !important;
   opacity: 1 !important;
 }
+.compact-invoice-form .ant-form-item {
+  margin-bottom: 8px;
+}

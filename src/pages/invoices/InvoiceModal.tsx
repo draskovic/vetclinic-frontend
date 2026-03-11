@@ -9,6 +9,7 @@ import {
   InputNumber,
   DatePicker,
   Row,
+  Tabs,
   Col,
 } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -18,6 +19,7 @@ import { clinicLocationsApi } from '@/api/clinic-locations';
 import type { Invoice, CreateInvoiceRequest, UpdateInvoiceRequest } from '@/types';
 import InvoiceItemsTable from './InvoiceItemsTable';
 import dayjs from 'dayjs';
+import PaymentItemsTable from './PaymentItemsTable';
 
 interface InvoiceModalProps {
   open: boolean;
@@ -100,11 +102,16 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
   const handleSubmit = (
     values: CreateInvoiceRequest & { issuedAt?: dayjs.Dayjs; dueDate?: dayjs.Dayjs },
   ) => {
+    const { status, ...rest } = values as any;
+    const manualStatuses = ['CANCELLED', 'REFUNDED', 'OVERDUE'];
     const payload = {
-      ...values,
+      ...rest,
+      ...(isEditing && manualStatuses.includes(status) ? { status } : {}),
+
       issuedAt: values.issuedAt ? values.issuedAt.toISOString() : undefined,
       dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : undefined,
     };
+
     if (isEditing) {
       updateMutation.mutate(payload);
     } else {
@@ -134,12 +141,14 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
       footer={null}
       destroyOnHidden
       width={900}
+      style={{ top: 20 }}
     >
       <Form
         form={form}
         layout='vertical'
         onFinish={handleSubmit}
-        style={{ marginTop: 16 }}
+        style={{ marginTop: 4 }}
+        className='compact-invoice-form'
         initialValues={{
           status: 'DRAFT',
           currency: 'RSD',
@@ -168,9 +177,10 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
           </Col>
           <Col span={6}>
             <Form.Item name='status' label='Status'>
-              <Select options={statusOptions} />
+              <Select options={statusOptions} disabled={isEditing} />
             </Form.Item>
           </Col>
+
           <Col span={6}>
             <Form.Item name='issuedAt' label='Datum izdavanja'>
               <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
@@ -248,34 +258,50 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
         </Row>
 
         {isEditing && (
-          <div style={{ marginTop: 16, marginBottom: 16 }}>
-            <InvoiceItemsTable
-              invoiceId={invoice!.id}
-              onItemsChanged={(items) => {
-                const subtotal = items.reduce((sum, item) => {
-                  const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
-                  const discount = base * ((item.discountPercent ?? 0) / 100);
-                  return sum + (base - discount);
-                }, 0);
-                const taxAmount = items.reduce((sum, item) => {
-                  const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
-                  const discount = base * ((item.discountPercent ?? 0) / 100);
-                  const net = base - discount;
-                  return sum + net * ((item.taxRate ?? 0) / 100);
-                }, 0);
-                const discountAmount = items.reduce((sum, item) => {
-                  const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
-                  return sum + base * ((item.discountPercent ?? 0) / 100);
-                }, 0);
-                form.setFieldsValue({
-                  subtotal: +subtotal.toFixed(2),
-                  taxAmount: +taxAmount.toFixed(2),
-                  discountAmount: +discountAmount.toFixed(2),
-                  total: +(subtotal + taxAmount).toFixed(2),
-                });
-              }}
-            />
-          </div>
+          <Tabs
+            style={{ marginTop: 0, marginBottom: 0 }}
+            items={[
+              {
+                key: 'items',
+                label: 'Stavke fakture',
+                children: (
+                  <InvoiceItemsTable
+                    invoiceId={invoice!.id}
+                    onItemsChanged={(items) => {
+                      const subtotal = items.reduce((sum, item) => {
+                        const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
+                        const discount = base * ((item.discountPercent ?? 0) / 100);
+                        return sum + (base - discount);
+                      }, 0);
+                      const taxAmount = items.reduce((sum, item) => {
+                        const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
+                        const discount = base * ((item.discountPercent ?? 0) / 100);
+                        const net = base - discount;
+                        return sum + net * ((item.taxRate ?? 0) / 100);
+                      }, 0);
+                      const discountAmount = items.reduce((sum, item) => {
+                        const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
+                        return sum + base * ((item.discountPercent ?? 0) / 100);
+                      }, 0);
+                      form.setFieldsValue({
+                        subtotal: +subtotal.toFixed(2),
+                        taxAmount: +taxAmount.toFixed(2),
+                        discountAmount: +discountAmount.toFixed(2),
+                        total: +(subtotal + taxAmount).toFixed(2),
+                      });
+                    }}
+                  />
+                ),
+              },
+              {
+                key: 'payments',
+                label: 'Plaćanja',
+                children: (
+                  <PaymentItemsTable invoiceId={invoice!.id} invoiceTotal={invoice!.total ?? 0} />
+                ),
+              },
+            ]}
+          />
         )}
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>

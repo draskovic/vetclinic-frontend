@@ -18,4 +18,9 @@ export const prescriptionsApi = {
     apiClient.put<Prescription>(`/prescriptions/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/prescriptions/${id}`),
+
+  downloadPdf: (id: string) =>
+    apiClient.get<Blob>(`/prescriptions/${id}/pdf`, {
+      responseType: 'blob',
+    }),
 };

@@ -881,3 +881,36 @@ export interface AuditLog {
   userAgent: string | null;
   createdAt: string;
 }
+
+// Payments
+export type PaymentMethod = 'CASH' | 'CARD' | 'TRANSFER' | 'OTHER';
+
+export interface Payment {
+  id: string;
+  invoiceId: string;
+  amount: number;
+  method: PaymentMethod;
+  paidAt: string;
+  referenceNumber?: string;
+  note?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePaymentRequest {
+  invoiceId: string;
+  amount: number;
+  method: PaymentMethod;
+  paidAt: string;
+  referenceNumber?: string;
+  note?: string;
+}
+
+export interface UpdatePaymentRequest {
+  invoiceId?: string;
+  amount?: number;
+  method?: PaymentMethod;
+  paidAt?: string;
+  referenceNumber?: string;
+  note?: string;
+}

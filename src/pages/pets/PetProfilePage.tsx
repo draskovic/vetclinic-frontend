@@ -14,7 +14,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { ArrowLeftOutlined, QrcodeOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, QrcodeOutlined, FilePdfOutlined } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { petsApi } from '@/api/pets';
@@ -117,6 +117,21 @@ export default function PetProfilePage() {
     enabled: !!petId,
     refetchInterval: qrModalOpen ? 5000 : false,
   });
+
+  const handleDownloadVaccinationPdf = async () => {
+    try {
+      const response = await vaccinationsApi.downloadPdfByPet(petId!);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `vakcinacije-${pet?.name || petId}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      message.error('Greška pri preuzimanju PDF-a');
+    }
+  };
 
   const appointmentColumns: ColumnsType<Appointment> = [
     {
@@ -335,14 +350,25 @@ export default function PetProfilePage() {
       key: 'vaccinations',
       label: `Vakcinacije (${vaccinations.length})`,
       children: (
-        <Table
-          dataSource={vaccinations}
-          columns={vaccinationColumns}
-          rowKey='id'
-          loading={vacLoading}
-          pagination={{ pageSize: 10 }}
-          size='small'
-        />
+        <>
+          <div style={{ marginBottom: 12, textAlign: 'right' }}>
+            <Button
+              icon={<FilePdfOutlined />}
+              onClick={handleDownloadVaccinationPdf}
+              disabled={vaccinations.length === 0}
+            >
+              Štampaj vakcinacioni list
+            </Button>
+          </div>
+          <Table
+            dataSource={vaccinations}
+            columns={vaccinationColumns}
+            rowKey='id'
+            loading={vacLoading}
+            pagination={{ pageSize: 10 }}
+            size='small'
+          />
+        </>
       ),
     },
     {

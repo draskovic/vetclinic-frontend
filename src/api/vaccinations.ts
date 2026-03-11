@@ -25,4 +25,9 @@ export const vaccinationsApi = {
     apiClient.put<Vaccination>(`/vaccinations/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/vaccinations/${id}`),
+
+  downloadPdfByPet: (petId: string) =>
+    apiClient.get<Blob>(`/vaccinations/pet/${petId}/pdf`, {
+      responseType: 'blob',
+    }),
 };

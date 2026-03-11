@@ -17,3 +17,4 @@ export { labReportsApi } from './lab-reports';
 export { treatmentsApi } from './treatments';
 export { documentsApi } from './documents';
 export { auditLogsApi } from './audit-logs';
+export * as payments from './payments';

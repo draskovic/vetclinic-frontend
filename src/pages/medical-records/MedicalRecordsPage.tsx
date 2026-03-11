@@ -1,6 +1,12 @@
 import { useState } from 'react';
-import { Table, Button, Space, Input, Card, Typography, Popconfirm, message } from 'antd';
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
+import {
+  PlusOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  FilePdfOutlined,
+} from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { medicalRecordsApi } from '@/api/medical-records';
@@ -30,6 +36,21 @@ export default function MedicalRecordsPage() {
     },
     onError: () => message.error('Greška pri brisanju!'),
   });
+
+  const handleDownloadPdf = async (id: string, petName: string) => {
+    try {
+      const response = await medicalRecordsApi.downloadPdf(id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `karton-${petName}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      message.error('Greška pri preuzimanju PDF-a');
+    }
+  };
 
   const filteredData = search
     ? data?.content.filter(
@@ -89,9 +110,17 @@ export default function MedicalRecordsPage() {
     {
       title: 'Akcije',
       key: 'actions',
-      width: 120,
+      width: 160,
       render: (_, record) => (
         <Space>
+          <Tooltip title='Preuzmi PDF'>
+            <Button
+              type='text'
+              icon={<FilePdfOutlined style={{ color: '#ff4d4f' }} />}
+              onClick={() => handleDownloadPdf(record.id, record.petName)}
+            />
+          </Tooltip>
+
           <Button
             type='text'
             icon={<EditOutlined />}

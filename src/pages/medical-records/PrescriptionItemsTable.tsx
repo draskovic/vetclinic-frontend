@@ -11,8 +11,15 @@ import {
   Col,
   Typography,
   InputNumber,
+  Tooltip,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  FilePdfOutlined,
+} from '@ant-design/icons';
 import { prescriptionsApi } from '@/api/prescriptions';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import type { Prescription } from '@/types';
@@ -93,6 +100,21 @@ export default function PrescriptionItemsTable({
     onError: () => message.error('Greška pri brisanju!'),
   });
 
+  const handleDownloadPdf = async (id: string, medicationName: string) => {
+    try {
+      const response = await prescriptionsApi.downloadPdf(id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = window.URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `recept-${medicationName}.pdf`;
+      link.click();
+      window.URL.revokeObjectURL(url);
+    } catch {
+      message.error('Greška pri preuzimanju PDF-a');
+    }
+  };
+
   const isFormValid = medicationName.trim() && dosage.trim() && frequency.trim() && startDate;
 
   if (!medicalRecordId) {
@@ -138,11 +160,24 @@ export default function PrescriptionItemsTable({
           {
             title: '',
             key: 'actions',
-            width: 50,
+            width: 80,
             render: (_, rec) => (
-              <Popconfirm title='Ukloniti recept?' onConfirm={() => deleteMutation.mutate(rec.id)}>
-                <Button type='text' danger icon={<DeleteOutlined />} size='small' />
-              </Popconfirm>
+              <Space>
+                <Tooltip title='Preuzmi PDF'>
+                  <Button
+                    type='text'
+                    icon={<FilePdfOutlined style={{ color: '#ff4d4f' }} />}
+                    size='small'
+                    onClick={() => handleDownloadPdf(rec.id, rec.medicationName)}
+                  />
+                </Tooltip>
+                <Popconfirm
+                  title='Ukloniti recept?'
+                  onConfirm={() => deleteMutation.mutate(rec.id)}
+                >
+                  <Button type='text' danger icon={<DeleteOutlined />} size='small' />
+                </Popconfirm>
+              </Space>
             ),
           },
         ]}

@@ -24,4 +24,9 @@ export const medicalRecordsApi = {
     apiClient.put<MedicalRecord>(`/medical-records/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/medical-records/${id}`),
+
+  downloadPdf: (id: string) =>
+    apiClient.get<Blob>(`/medical-records/${id}/pdf`, {
+      responseType: 'blob',
+    }),
 };
