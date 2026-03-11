@@ -31,6 +31,7 @@ import AuditLogsPage from '@/pages/audit-logs/AuditLogsPage';
 import QuickUploadPage from './pages/quick-upload/QuickUploadPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFoundPage from './pages/NotFoundPage';
+import OwnerProfilePage from './pages/owners/OwnerProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -90,6 +91,8 @@ export default function App() {
                         </PermissionGuard>
                       }
                     />
+                    <Route path='owners/:ownerId' element={<OwnerProfilePage />} />
+
                     <Route
                       path='pets'
                       element={

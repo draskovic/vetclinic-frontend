@@ -32,4 +32,7 @@ export const appointmentsApi = {
   delete: (id: string) => apiClient.delete(`/appointments/${id}`),
 
   getByPet: (petId: string) => apiClient.get<Appointment[]>(`/appointments/by-pet/${petId}`),
+
+  getByOwner: (ownerId: string) =>
+    apiClient.get<Appointment[]>(`/appointments/by-owner/${ownerId}`),
 };

@@ -29,4 +29,7 @@ export const medicalRecordsApi = {
     apiClient.get<Blob>(`/medical-records/${id}/pdf`, {
       responseType: 'blob',
     }),
+
+  getByOwner: (ownerId: string) =>
+    apiClient.get<MedicalRecord[]>(`/medical-records/by-owner/${ownerId}`),
 };

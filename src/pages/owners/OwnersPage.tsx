@@ -7,6 +7,7 @@ import { ownersApi } from '@/api/owners';
 import type { Owner } from '@/types';
 import OwnerModal from './OwnerModal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useNavigate } from 'react-router-dom';
 
 const { Title } = Typography;
 
@@ -16,6 +17,7 @@ export default function OwnersPage() {
   const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
+  const navigate = useNavigate();
 
   const queryClient = useQueryClient();
 
@@ -54,7 +56,11 @@ export default function OwnersPage() {
     {
       title: 'Ime i prezime',
       key: 'name',
-      render: (_, record) => `${record.firstName} ${record.lastName}`,
+      render: (_: any, record: any) => (
+        <a onClick={() => navigate(`/owners/${record.id}`)}>
+          {record.firstName} {record.lastName}
+        </a>
+      ),
       sorter: (a, b) => a.lastName.localeCompare(b.lastName),
     },
     {
