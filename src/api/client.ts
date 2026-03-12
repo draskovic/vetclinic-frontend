@@ -7,7 +7,7 @@ const apiClient = axios.create({
   },
 });
 
-// REQUEST INTERCEPTOR - dodaje token i clinic ID na svaki request
+// REQUEST INTERCEPTOR
 apiClient.interceptors.request.use(
   (config) => {
     const token = localStorage.getItem('accessToken');
@@ -16,17 +16,33 @@ apiClient.interceptors.request.use(
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
-
     if (clinicId) {
       config.headers['X-Clinic-Id'] = clinicId;
     }
-
     return config;
   },
   (error) => Promise.reject(error),
 );
 
-// RESPONSE INTERCEPTOR - hvata 401 greške i refreshuje token
+// REFRESH MUTEX — sprečava višestruke refresh pozive
+let isRefreshing = false;
+let failedQueue: Array<{
+  resolve: (token: string) => void;
+  reject: (error: unknown) => void;
+}> = [];
+
+const processQueue = (error: unknown, token: string | null) => {
+  failedQueue.forEach((prom) => {
+    if (token) {
+      prom.resolve(token);
+    } else {
+      prom.reject(error);
+    }
+  });
+  failedQueue = [];
+};
+
+// RESPONSE INTERCEPTOR
 apiClient.interceptors.response.use(
   (response) => response,
   async (error) => {
@@ -36,7 +52,23 @@ apiClient.interceptors.response.use(
       (error.response?.status === 401 || error.response?.status === 403) &&
       !originalRequest._retry
     ) {
+      // Ako refresh već traje, stavi request u red čekanja
+      if (isRefreshing) {
+        return new Promise((resolve, reject) => {
+          failedQueue.push({
+            resolve: (token: string) => {
+              originalRequest.headers.Authorization = `Bearer ${token}`;
+              resolve(apiClient(originalRequest));
+            },
+            reject: (err: unknown) => {
+              reject(err);
+            },
+          });
+        });
+      }
+
       originalRequest._retry = true;
+      isRefreshing = true;
 
       try {
         const refreshToken = localStorage.getItem('refreshToken');
@@ -50,11 +82,16 @@ apiClient.interceptors.response.use(
           localStorage.setItem('refreshToken', newRefreshToken);
         }
 
+        processQueue(null, accessToken);
         originalRequest.headers.Authorization = `Bearer ${accessToken}`;
         return apiClient(originalRequest);
-      } catch {
+      } catch (refreshError) {
+        processQueue(refreshError, null);
         localStorage.clear();
         window.location.href = '/login';
+        return Promise.reject(refreshError);
+      } finally {
+        isRefreshing = false;
       }
     }
 
