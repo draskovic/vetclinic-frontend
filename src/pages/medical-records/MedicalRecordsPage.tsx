@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
 import {
   PlusOutlined,
@@ -13,6 +13,7 @@ import { medicalRecordsApi } from '@/api/medical-records';
 import type { MedicalRecord } from '@/types';
 import dayjs from 'dayjs';
 import MedicalRecordModal from './MedicalRecordModal';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const { Title } = Typography;
 
@@ -22,10 +23,14 @@ export default function MedicalRecordsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
   const queryClient = useQueryClient();
+  const debouncedSearch = useDebouncedValue(search, 300);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['medical-records', page],
-    queryFn: () => medicalRecordsApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['medical-records', page, debouncedSearch],
+    queryFn: () => medicalRecordsApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -48,23 +53,12 @@ export default function MedicalRecordsPage() {
     }
   };
 
-  const filteredData = search
-    ? data?.content.filter(
-        (r) =>
-          r.petName.toLowerCase().includes(search.toLowerCase()) ||
-          r.vetName.toLowerCase().includes(search.toLowerCase()) ||
-          (r.symptoms ?? '').toLowerCase().includes(search.toLowerCase()) ||
-          (r.diagnosis ?? '').toLowerCase().includes(search.toLowerCase()),
-      )
-    : data?.content;
-
   const columns: ColumnsType<MedicalRecord> = [
     {
       title: 'Datum',
       dataIndex: 'createdAt',
       key: 'createdAt',
       render: (val) => dayjs(val).format('DD.MM.YYYY'),
-      sorter: (a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
       defaultSortOrder: 'descend',
     },
     {
@@ -178,7 +172,7 @@ export default function MedicalRecordsPage() {
         <Table
           rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
           columns={columns}
-          dataSource={filteredData}
+          dataSource={data?.content}
           rowKey='id'
           loading={isLoading}
           pagination={{

@@ -7,8 +7,10 @@ import type {
 } from '@/types';
 
 export const medicalRecordsApi = {
-  getAll: (page = 0, size = 10) =>
-    apiClient.get<PageResponse<MedicalRecord>>(`/medical-records?page=${page}&size=${size}`),
+  getAll: (page = 0, size = 10, search?: string) =>
+    apiClient.get<PageResponse<MedicalRecord>>('/medical-records', {
+      params: { page, size, search: search || undefined },
+    }),
 
   getById: (id: string) => apiClient.get<MedicalRecord>(`/medical-records/${id}`),
 
