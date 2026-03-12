@@ -14,4 +14,15 @@ export const usersApi = {
   update: (id: string, data: UpdateUserRequest) => apiClient.put<User>(`/users/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/users/${id}`),
+
+  updateProfile: (data: {
+    firstName: string;
+    lastName: string;
+    phone?: string;
+    licenseNumber?: string;
+    specialization?: string;
+  }) => apiClient.put<User>('/users/me', data),
+
+  changePassword: (data: { currentPassword: string; newPassword: string }) =>
+    apiClient.post('/users/change-password', data),
 };

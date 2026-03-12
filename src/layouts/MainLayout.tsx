@@ -146,6 +146,7 @@ export default function MainLayout() {
       key: 'profile',
       icon: <UserOutlined />,
       label: 'Profil',
+      onClick: () => navigate('/profile'),
     },
     {
       type: 'divider' as const,

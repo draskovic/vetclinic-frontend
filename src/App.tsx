@@ -32,6 +32,7 @@ import QuickUploadPage from './pages/quick-upload/QuickUploadPage';
 import ErrorBoundary from './components/ErrorBoundary';
 import NotFoundPage from './pages/NotFoundPage';
 import OwnerProfilePage from './pages/owners/OwnerProfilePage';
+import ProfilePage from './pages/profile/ProfilePage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -82,6 +83,7 @@ export default function App() {
                     }
                   >
                     <Route index element={<Dashboard />} />
+                    <Route path='profile' element={<ProfilePage />} />
 
                     <Route
                       path='owners'
