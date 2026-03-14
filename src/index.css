@@ -263,3 +263,7 @@ body {
 .compact-invoice-form .ant-form-item {
   margin-bottom: 8px;
 }
+
+.compact-medical-form .ant-form-item {
+  margin-bottom: 8px;
+}

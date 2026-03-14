@@ -31,6 +31,9 @@ export const invoicesApi = {
     apiClient.get<Blob>(`/invoices/${id}/pdf`, {
       responseType: 'blob',
     }),
+
+  getByMedicalRecord: (medicalRecordId: string) =>
+    apiClient.get<Invoice>(`/invoices/by-medical-record/${medicalRecordId}`),
 };
 
 export const invoiceItemsApi = {

@@ -110,6 +110,8 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
         taxRate: service.taxRate,
       });
       calculateLineTotal();
+      // Auto-save posle izbora usluge
+      setTimeout(() => handleSave(), 0);
     }
   };
 

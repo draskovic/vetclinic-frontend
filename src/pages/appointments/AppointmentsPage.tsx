@@ -16,6 +16,8 @@ import AppointmentModal from './AppointmentModal';
 import {} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { MedicineBoxOutlined } from '@ant-design/icons';
+import MedicalRecordModal from '../medical-records/MedicalRecordModal';
 
 const { Title } = Typography;
 
@@ -47,6 +49,8 @@ export default function AppointmentsPage() {
   const [editingAppointment, setEditingAppointment] = useState<Appointment | null>(null);
   const queryClient = useQueryClient();
   const navigate = useNavigate();
+  const [medRecordModalOpen, setMedRecordModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   // When searching, load all data (size=1000) so client-side filter works across all appointments
   // When not searching, paginate normally (10 per page)
@@ -123,9 +127,20 @@ export default function AppointmentsPage() {
     {
       title: 'Akcije',
       key: 'actions',
-      width: 120,
+      width: 160,
       render: (_, record) => (
         <Space>
+          <Tooltip title='Kreiraj intervenciju'>
+            <Button
+              type='text'
+              icon={<MedicineBoxOutlined />}
+              onClick={() => {
+                setSelectedAppointment(record);
+                setMedRecordModalOpen(true);
+              }}
+            />
+          </Tooltip>
+
           <Button
             type='text'
             icon={<EditOutlined />}
@@ -216,6 +231,24 @@ export default function AppointmentsPage() {
           setModalOpen(false);
           setEditingAppointment(null);
         }}
+      />
+      <MedicalRecordModal
+        open={medRecordModalOpen}
+        record={null}
+        onClose={() => {
+          setMedRecordModalOpen(false);
+          setSelectedAppointment(null);
+        }}
+        defaultValues={
+          selectedAppointment
+            ? {
+                petId: selectedAppointment.petId,
+                vetId: selectedAppointment.vetId,
+                appointmentId: selectedAppointment.id,
+                symptoms: selectedAppointment.reason || '',
+              }
+            : undefined
+        }
       />
     </div>
   );

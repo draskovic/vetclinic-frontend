@@ -6,14 +6,17 @@ import {
   EditOutlined,
   DeleteOutlined,
   FilePdfOutlined,
+  DollarOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { medicalRecordsApi } from '@/api/medical-records';
-import type { MedicalRecord } from '@/types';
 import dayjs from 'dayjs';
 import MedicalRecordModal from './MedicalRecordModal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import InvoiceModal from '../invoices/InvoiceModal';
+import { invoicesApi } from '@/api';
+import type { MedicalRecord, Invoice } from '@/types';
 
 const { Title } = Typography;
 
@@ -22,6 +25,12 @@ export default function MedicalRecordsPage() {
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
+  const [invoiceDefaults, setInvoiceDefaults] = useState<
+    { ownerId?: string; medicalRecordId?: string } | undefined
+  >(undefined);
+  const [existingInvoice, setExistingInvoice] = useState<Invoice | null>(null);
+
   const queryClient = useQueryClient();
   const debouncedSearch = useDebouncedValue(search, 300);
   useEffect(() => {
@@ -111,6 +120,24 @@ export default function MedicalRecordsPage() {
             />
           </Tooltip>
 
+          <Tooltip title='Faktura'>
+            <Button
+              type='text'
+              icon={<DollarOutlined style={{ color: '#52c41a' }} />}
+              onClick={async () => {
+                try {
+                  const res = await invoicesApi.getByMedicalRecord(record.id);
+                  setExistingInvoice(res.data);
+                  setInvoiceDefaults(undefined);
+                } catch {
+                  setExistingInvoice(null);
+                  setInvoiceDefaults({ ownerId: record.ownerId, medicalRecordId: record.id });
+                }
+                setInvoiceModalOpen(true);
+              }}
+            />
+          </Tooltip>
+
           <Button
             type='text'
             icon={<EditOutlined />}
@@ -192,6 +219,16 @@ export default function MedicalRecordsPage() {
           setModalOpen(false);
           setEditingRecord(null);
         }}
+      />
+      <InvoiceModal
+        open={invoiceModalOpen}
+        invoice={existingInvoice}
+        onClose={() => {
+          setInvoiceModalOpen(false);
+          setInvoiceDefaults(undefined);
+          setExistingInvoice(null);
+        }}
+        defaultValues={invoiceDefaults}
       />
     </div>
   );

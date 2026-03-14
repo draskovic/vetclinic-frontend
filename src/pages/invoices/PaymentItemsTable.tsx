@@ -36,9 +36,14 @@ const methodColors: Record<PaymentMethod, string> = {
 interface PaymentItemsTableProps {
   invoiceId: string;
   invoiceTotal: number;
+  invoiceNumber?: string;
 }
 
-export default function PaymentItemsTable({ invoiceId, invoiceTotal }: PaymentItemsTableProps) {
+export default function PaymentItemsTable({
+  invoiceId,
+  invoiceTotal,
+  invoiceNumber,
+}: PaymentItemsTableProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
   const [form] = Form.useForm();
@@ -90,6 +95,9 @@ export default function PaymentItemsTable({ invoiceId, invoiceTotal }: PaymentIt
   const openCreate = () => {
     setEditingPayment(null);
     form.resetFields();
+    if (invoiceNumber) {
+      form.setFieldsValue({ referenceNumber: invoiceNumber || '', paidAt: dayjs() });
+    }
     setModalOpen(true);
   };
 

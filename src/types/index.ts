@@ -295,6 +295,8 @@ export interface MedicalRecord {
   appointmentId: string | null;
   petId: string;
   petName: string;
+  ownerId: string;
+  ownerName: string;
   vetId: string;
   vetName: string;
   symptoms: string | null;
@@ -392,6 +394,7 @@ export type InvoiceStatus =
 export interface Invoice {
   id: string;
   appointmentId: string | null;
+  medicalRecordId?: string | null;
   ownerId: string;
   ownerName: string;
   locationId: string | null;
@@ -413,6 +416,7 @@ export interface Invoice {
 export interface CreateInvoiceRequest {
   appointmentId?: string;
   ownerId: string;
+  medicalRecordId?: string;
   locationId?: string;
   status?: InvoiceStatus;
   issuedAt?: string;

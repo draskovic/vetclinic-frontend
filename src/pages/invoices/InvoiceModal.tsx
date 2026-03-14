@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   Form,
@@ -20,11 +20,15 @@ import type { Invoice, CreateInvoiceRequest, UpdateInvoiceRequest } from '@/type
 import InvoiceItemsTable from './InvoiceItemsTable';
 import dayjs from 'dayjs';
 import PaymentItemsTable from './PaymentItemsTable';
+import { treatmentsApi } from '@/api/treatments';
+import { servicesApi } from '@/api/services';
+import { invoiceItemsApi } from '@/api/invoices';
 
 interface InvoiceModalProps {
   open: boolean;
   invoice: Invoice | null;
   onClose: () => void;
+  defaultValues?: { ownerId?: string; medicalRecordId?: string };
 }
 
 const statusOptions = [
@@ -43,10 +47,12 @@ const currencyOptions = [
   { label: 'USD', value: 'USD' },
 ];
 
-export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalProps) {
+export default function InvoiceModal({ open, invoice, onClose, defaultValues }: InvoiceModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
-  const isEditing = !!invoice;
+  const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
+  const currentInvoice = invoice ?? createdInvoice;
+  const isEditing = !!currentInvoice;
 
   const { data: ownersData } = useQuery({
     queryKey: ['owners-all'],
@@ -68,22 +74,79 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
         });
       } else {
         form.resetFields();
+        setCreatedInvoice(null);
+        form.setFieldsValue({
+          status: 'DRAFT',
+          currency: 'RSD',
+          issuedAt: dayjs(),
+          dueDate: dayjs(),
+        });
+        if (defaultValues) {
+          form.setFieldsValue(defaultValues);
+        }
       }
     }
   }, [open, invoice, form]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateInvoiceRequest) => invoicesApi.create(data),
-    onSuccess: () => {
+    onSuccess: async (response) => {
       message.success('Faktura je kreirana!');
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      onClose();
+      const newInvoice = response.data;
+
+      // Auto-kreiranje stavki iz usluga intervencije
+      if (defaultValues?.medicalRecordId) {
+        try {
+          const treatmentsRes = await treatmentsApi.getByMedicalRecord(
+            defaultValues.medicalRecordId,
+          );
+          const treatments = treatmentsRes.data;
+
+          for (let i = 0; i < treatments.length; i++) {
+            const t = treatments[i];
+            if (t.serviceId) {
+              const service = await servicesApi.getById(t.serviceId);
+              const quantity = 1;
+              const unitPrice = service.price;
+              const taxRate = service.taxRate ?? 20;
+              const lineTotal = quantity * unitPrice * (1 + taxRate / 100);
+
+              await invoiceItemsApi.create({
+                invoiceId: newInvoice.id,
+                serviceId: t.serviceId,
+                description: t.name,
+                quantity,
+                unitPrice,
+                taxRate,
+                discountPercent: 0,
+                lineTotal: +lineTotal.toFixed(2),
+                sortOrder: i + 1,
+              });
+            }
+          }
+
+          queryClient.invalidateQueries({ queryKey: ['invoice-items', newInvoice.id] });
+        } catch (e) {
+          message.warning('Stavke fakture nisu automatski dodate');
+        }
+      }
+
+      setCreatedInvoice(newInvoice);
     },
-    onError: () => message.error('Greška pri kreiranju!'),
+
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || '';
+      if (msg.includes('uq_invoice_medical_record_id')) {
+        message.warning('Za ovu intervenciju već postoji faktura!');
+      } else {
+        message.error('Greška pri kreiranju!');
+      }
+    },
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: UpdateInvoiceRequest) => invoicesApi.update(invoice!.id, data),
+    mutationFn: (data: UpdateInvoiceRequest) => invoicesApi.update(currentInvoice!.id, data),
     onSuccess: () => {
       message.success('Faktura je izmenjena!');
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
@@ -92,24 +155,20 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
     onError: () => message.error('Greška pri izmeni!'),
   });
 
-  const handleSubtotalChange = () => {
-    const subtotal = form.getFieldValue('subtotal') ?? 0;
-    const taxAmount = form.getFieldValue('taxAmount') ?? 0;
-    const discountAmount = form.getFieldValue('discountAmount') ?? 0;
-    form.setFieldValue('total', subtotal + taxAmount - discountAmount);
-  };
-
   const handleSubmit = (
     values: CreateInvoiceRequest & { issuedAt?: dayjs.Dayjs; dueDate?: dayjs.Dayjs },
   ) => {
-    const { status, ...rest } = values as any;
+    const { status: formStatus, ...rest } = values as any;
+    const autoStatus = !isEditing ? (values.issuedAt ? 'ISSUED' : 'DRAFT') : formStatus;
     const manualStatuses = ['CANCELLED', 'REFUNDED', 'OVERDUE'];
     const payload = {
       ...rest,
-      ...(isEditing && manualStatuses.includes(status) ? { status } : {}),
-
+      ...(!isEditing || manualStatuses.includes(autoStatus) ? { status: autoStatus } : {}),
       issuedAt: values.issuedAt ? values.issuedAt.toISOString() : undefined,
       dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : undefined,
+      ...(!isEditing && defaultValues?.medicalRecordId
+        ? { medicalRecordId: defaultValues.medicalRecordId }
+        : {}),
     };
 
     if (isEditing) {
@@ -135,7 +194,7 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
 
   return (
     <Modal
-      title={isEditing ? 'Izmeni fakturu' : 'Nova faktura'}
+      title={currentInvoice ? `Izmeni fakturu — ${currentInvoice.invoiceNumber}` : 'Nova faktura'}
       open={open}
       onCancel={onClose}
       footer={null}
@@ -196,32 +255,17 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
         <Row gutter={16}>
           <Col span={5}>
             <Form.Item name='subtotal' label='Iznos bez PDV-a'>
-              <InputNumber
-                style={{ width: '100%' }}
-                min={0}
-                step={0.01}
-                onChange={handleSubtotalChange}
-              />
+              <InputNumber style={{ width: '100%' }} min={0} step={0.01} disabled />
             </Form.Item>
           </Col>
           <Col span={5}>
             <Form.Item name='taxAmount' label='Porez'>
-              <InputNumber
-                style={{ width: '100%' }}
-                min={0}
-                step={0.01}
-                onChange={handleSubtotalChange}
-              />
+              <InputNumber style={{ width: '100%' }} min={0} step={0.01} disabled />
             </Form.Item>
           </Col>
           <Col span={5}>
             <Form.Item name='discountAmount' label='Popust'>
-              <InputNumber
-                style={{ width: '100%' }}
-                min={0}
-                step={0.01}
-                onChange={handleSubtotalChange}
-              />
+              <InputNumber style={{ width: '100%' }} min={0} step={0.01} disabled />
             </Form.Item>
           </Col>
           <Col span={5}>
@@ -257,7 +301,7 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
           </Col>
         </Row>
 
-        {isEditing && (
+        {!!currentInvoice && (
           <Tabs
             style={{ marginTop: 0, marginBottom: 0 }}
             items={[
@@ -266,29 +310,22 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
                 label: 'Stavke fakture',
                 children: (
                   <InvoiceItemsTable
-                    invoiceId={invoice!.id}
-                    onItemsChanged={(items) => {
-                      const subtotal = items.reduce((sum, item) => {
-                        const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
-                        const discount = base * ((item.discountPercent ?? 0) / 100);
-                        return sum + (base - discount);
-                      }, 0);
-                      const taxAmount = items.reduce((sum, item) => {
-                        const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
-                        const discount = base * ((item.discountPercent ?? 0) / 100);
-                        const net = base - discount;
-                        return sum + net * ((item.taxRate ?? 0) / 100);
-                      }, 0);
-                      const discountAmount = items.reduce((sum, item) => {
-                        const base = (item.quantity ?? 0) * (item.unitPrice ?? 0);
-                        return sum + base * ((item.discountPercent ?? 0) / 100);
-                      }, 0);
-                      form.setFieldsValue({
-                        subtotal: +subtotal.toFixed(2),
-                        taxAmount: +taxAmount.toFixed(2),
-                        discountAmount: +discountAmount.toFixed(2),
-                        total: +(subtotal + taxAmount).toFixed(2),
-                      });
+                    invoiceId={currentInvoice!.id}
+                    onItemsChanged={async () => {
+                      // Backend automatski preračunava totals
+                      // Refetch fakturu da dobijemo ažurirane iznose
+                      try {
+                        const res = await invoicesApi.getById(currentInvoice!.id);
+                        const inv = res.data;
+                        form.setFieldsValue({
+                          subtotal: inv.subtotal,
+                          taxAmount: inv.taxAmount,
+                          discountAmount: inv.discountAmount,
+                          total: inv.total,
+                        });
+                      } catch (e) {
+                        // ignore
+                      }
                     }}
                   />
                 ),
@@ -297,7 +334,11 @@ export default function InvoiceModal({ open, invoice, onClose }: InvoiceModalPro
                 key: 'payments',
                 label: 'Plaćanja',
                 children: (
-                  <PaymentItemsTable invoiceId={invoice!.id} invoiceTotal={invoice!.total ?? 0} />
+                  <PaymentItemsTable
+                    invoiceId={currentInvoice!.id}
+                    invoiceTotal={currentInvoice!.total ?? 0}
+                    invoiceNumber={currentInvoice!.invoiceNumber}
+                  />
                 ),
               },
             ]}

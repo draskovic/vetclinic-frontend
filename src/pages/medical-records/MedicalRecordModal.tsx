@@ -33,7 +33,7 @@ interface MedicalRecordModalProps {
   open: boolean;
   record: MedicalRecord | null;
   onClose: () => void;
-  defaultValues?: { petId?: string; vetId?: string };
+  defaultValues?: { petId?: string; vetId?: string; appointmentId?: string; symptoms?: string };
 }
 
 export default function MedicalRecordModal({
@@ -91,7 +91,14 @@ export default function MedicalRecordModal({
       queryClient.invalidateQueries({ queryKey: ['medical-records'] });
       setCreatedRecord(response.data);
     },
-    onError: () => message.error('Greška pri kreiranju!'),
+    onError: (error: any) => {
+      const msg = error?.response?.data?.message || '';
+      if (msg.includes('medical_record_appointment_id_key')) {
+        message.warning('Za ovaj termin već postoji intervencija!');
+      } else {
+        message.error('Greška pri kreiranju!');
+      }
+    },
   });
 
   const updateMutation = useMutation({
@@ -147,8 +154,15 @@ export default function MedicalRecordModal({
       footer={null}
       destroyOnHidden
       width={1000}
+      style={{ top: 20 }}
     >
-      <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
+      <Form
+        form={form}
+        layout='vertical'
+        onFinish={handleSubmit}
+        style={{ marginTop: 4 }}
+        className='compact-medical-form'
+      >
         {/* Red 1: Termin, Veterinar, Ljubimac, Simptomi */}
         <Row gutter={12}>
           <Col span={6}>

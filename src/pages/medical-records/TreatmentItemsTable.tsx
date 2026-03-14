@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Space, Popconfirm, message, Select, Typography } from 'antd';
-import { PlusOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import { Table, Button, Popconfirm, message, Select, Typography } from 'antd';
+import { DeleteOutlined } from '@ant-design/icons';
 import { servicesApi, treatmentsApi } from '@/api';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import type { Treatment } from '@/types';
@@ -12,8 +12,6 @@ interface TreatmentItemsTableProps {
 
 export default function TreatmentItemsTable({ medicalRecordId, vetId }: TreatmentItemsTableProps) {
   const [treatments, setTreatments] = useState<Treatment[]>([]);
-  const [adding, setAdding] = useState(false);
-  const [selectedServiceId, setSelectedServiceId] = useState<string | null>(null);
 
   const { data: servicesData } = useQuery({
     queryKey: ['services-all'],
@@ -48,8 +46,6 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
       }),
     onSuccess: () => {
       message.success('Usluga dodata!');
-      setAdding(false);
-      setSelectedServiceId(null);
       refetch();
     },
     onError: () => message.error('Greška pri dodavanju usluge!'),
@@ -99,47 +95,24 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
             ),
           },
         ]}
-        title={() =>
-          adding ? (
-            <div>
-              <Space style={{ marginBottom: 8 }}>
-                <Button
-                  type='primary'
-                  icon={<SaveOutlined />}
-                  disabled={!selectedServiceId}
-                  loading={createMutation.isPending}
-                  onClick={() => selectedServiceId && createMutation.mutate(selectedServiceId)}
-                >
-                  Sačuvaj
-                </Button>
-                <Button
-                  icon={<CloseOutlined />}
-                  onClick={() => {
-                    setAdding(false);
-                    setSelectedServiceId(null);
-                  }}
-                >
-                  Otkaži
-                </Button>
-              </Space>
-              <Select
-                placeholder='Izaberite uslugu...'
-                options={serviceOptions}
-                showSearch
-                style={{ width: '100%' }}
-                value={selectedServiceId}
-                onChange={setSelectedServiceId}
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
-              />
-            </div>
-          ) : (
-            <Button type='dashed' icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-              Dodaj uslugu
-            </Button>
-          )
-        }
+        title={() => (
+          <Select
+            placeholder='Dodaj uslugu...'
+            options={serviceOptions}
+            showSearch
+            style={{ width: '100%' }}
+            value={null}
+            onChange={(serviceId) => {
+              if (serviceId) {
+                createMutation.mutate(serviceId);
+              }
+            }}
+            filterOption={(input, option) =>
+              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+            }
+            loading={createMutation.isPending}
+          />
+        )}
       />
     </div>
   );
