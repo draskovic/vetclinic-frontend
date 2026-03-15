@@ -1,23 +1,32 @@
-import { Card, Col, Row, Typography, Table, Tag, Empty } from 'antd';
+import { Card, Col, Row, Typography, Table, Tag, Empty, Button, Space } from 'antd';
 import {
-  TeamOutlined,
-  HeartOutlined,
+  WarningOutlined,
   CalendarOutlined,
   DollarOutlined,
   ClockCircleOutlined,
   MedicineBoxOutlined,
+  UserAddOutlined,
+  FileAddOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
-import { ownersApi } from '@/api/owners';
-import { petsApi } from '@/api/pets';
 import { appointmentsApi } from '@/api/appointments';
+import { medicalRecordsApi } from '@/api/medical-records';
 import { vaccinationsApi } from '@/api/vaccinations';
 import { invoicesApi } from '@/api/invoices';
-import type { Appointment, Vaccination, AppointmentStatus } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useThemeStore } from '@/store/themeStore';
+import { useNavigate, Link } from 'react-router-dom';
+
+import type {
+  Appointment,
+  Vaccination,
+  AppointmentStatus,
+  Invoice,
+  InvoiceStatus,
+  MedicalRecord,
+} from '@/types';
 
 const { Title, Text } = Typography;
 
@@ -30,25 +39,13 @@ const statusConfig: Record<AppointmentStatus, { color: string; label: string }> 
   NO_SHOW: { color: 'default', label: 'Nije došao' },
 };
 
+const invoiceStatusConfig: Record<string, { color: string; label: string }> = {
+  ISSUED: { color: 'blue', label: 'Izdata' },
+  PARTIALLY_PAID: { color: 'orange', label: 'Delimično' },
+  OVERDUE: { color: 'red', label: 'Zakasnela' },
+};
+
 const getStatCards = (dark: boolean) => [
-  {
-    key: 'owners',
-    title: 'Ukupno vlasnika',
-    icon: <TeamOutlined />,
-    gradient: dark
-      ? 'linear-gradient(135deg, #1a2332 0%, #1e3a5f 100%)'
-      : 'linear-gradient(135deg, #e8f4fd 0%, #d0e8fa 100%)',
-    iconBg: '#3b82f6',
-  },
-  {
-    key: 'pets',
-    title: 'Ukupno ljubimaca',
-    icon: <HeartOutlined />,
-    gradient: dark
-      ? 'linear-gradient(135deg, #2a1a2e 0%, #4a2040 100%)'
-      : 'linear-gradient(135deg, #fce8f3 0%, #f5d0e5 100%)',
-    iconBg: '#ec4899',
-  },
   {
     key: 'appointments',
     title: 'Termini danas',
@@ -57,6 +54,24 @@ const getStatCards = (dark: boolean) => [
       ? 'linear-gradient(135deg, #1a2e22 0%, #1e4a30 100%)'
       : 'linear-gradient(135deg, #e8faf0 0%, #d0f0e0 100%)',
     iconBg: '#22c55e',
+  },
+  {
+    key: 'upcoming',
+    title: 'Predstojeći termini (7d)',
+    icon: <ClockCircleOutlined />,
+    gradient: dark
+      ? 'linear-gradient(135deg, #1a2332 0%, #1e3a5f 100%)'
+      : 'linear-gradient(135deg, #e8f4fd 0%, #d0e8fa 100%)',
+    iconBg: '#3b82f6',
+  },
+  {
+    key: 'unpaid',
+    title: 'Neplaćene fakture',
+    icon: <WarningOutlined />,
+    gradient: dark
+      ? 'linear-gradient(135deg, #2e1a1a 0%, #4a1e1e 100%)'
+      : 'linear-gradient(135deg, #fde8e8 0%, #f5d0d0 100%)',
+    iconBg: '#ef4444',
   },
   {
     key: 'revenue',
@@ -73,23 +88,37 @@ export default function Dashboard() {
   const { user } = useAuthStore();
   const { darkMode } = useThemeStore();
   const statCards = getStatCards(darkMode);
+  const navigate = useNavigate();
 
   const todayFrom = dayjs().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
   const todayTo = dayjs().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
 
-  const { data: ownersData } = useQuery({
-    queryKey: ['dashboard-owners'],
-    queryFn: () => ownersApi.getAll(0, 1).then((r) => r.data),
-  });
-
-  const { data: petsData } = useQuery({
-    queryKey: ['dashboard-pets'],
-    queryFn: () => petsApi.getAll(0, 1).then((r) => r.data),
-  });
+  const tomorrowFrom = dayjs().add(1, 'day').startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
+  const weekTo = dayjs().add(7, 'day').endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
 
   const { data: todayAppointments } = useQuery({
     queryKey: ['dashboard-appointments', todayFrom],
     queryFn: () => appointmentsApi.getByDateRange(todayFrom, todayTo).then((r) => r.data),
+  });
+
+  const { data: upcomingAppointments } = useQuery({
+    queryKey: ['dashboard-upcoming-appointments', tomorrowFrom],
+    queryFn: () => appointmentsApi.getByDateRange(tomorrowFrom, weekTo).then((r) => r.data),
+  });
+
+  const { data: issuedInvoices } = useQuery({
+    queryKey: ['dashboard-invoices-issued'],
+    queryFn: () => invoicesApi.getByStatus('ISSUED').then((r) => r.data),
+  });
+
+  const { data: partiallyPaidInvoices } = useQuery({
+    queryKey: ['dashboard-invoices-partially-paid'],
+    queryFn: () => invoicesApi.getByStatus('PARTIALLY_PAID').then((r) => r.data),
+  });
+
+  const { data: overdueInvoices } = useQuery({
+    queryKey: ['dashboard-invoices-overdue'],
+    queryFn: () => invoicesApi.getByStatus('OVERDUE').then((r) => r.data),
   });
 
   const { data: dueVaccinations } = useQuery({
@@ -103,15 +132,25 @@ export default function Dashboard() {
     queryFn: () => invoicesApi.getByStatus('PAID').then((r) => r.data),
   });
 
+  const { data: recentRecords } = useQuery({
+    queryKey: ['dashboard-recent-records'],
+    queryFn: () => medicalRecordsApi.getAll(0, 5).then((r) => r.data),
+  });
+
   const monthlyRevenue =
     paidInvoices
       ?.filter((inv) => dayjs(inv.issuedAt).isSame(dayjs(), 'month'))
       .reduce((sum, inv) => sum + (inv.total ?? 0), 0) ?? 0;
 
+  const unpaidCount =
+    (issuedInvoices?.length ?? 0) +
+    (partiallyPaidInvoices?.length ?? 0) +
+    (overdueInvoices?.length ?? 0);
+
   const statValues: Record<string, number> = {
-    owners: ownersData?.totalElements ?? 0,
-    pets: petsData?.totalElements ?? 0,
     appointments: todayAppointments?.length ?? 0,
+    upcoming: upcomingAppointments?.length ?? 0,
+    unpaid: unpaidCount,
     revenue: monthlyRevenue,
   };
 
@@ -146,6 +185,113 @@ export default function Dashboard() {
       ),
     },
   ];
+  const upcomingColumns: ColumnsType<Appointment> = [
+    {
+      title: 'Datum',
+      dataIndex: 'startTime',
+      width: 90,
+      render: (val: string) => dayjs(val).format('DD.MM.'),
+    },
+    {
+      title: 'Vreme',
+      dataIndex: 'startTime',
+      key: 'time',
+      width: 70,
+      render: (val: string) => dayjs(val).format('HH:mm'),
+    },
+    {
+      title: 'Ljubimac',
+      dataIndex: 'petName',
+    },
+    {
+      title: 'Vlasnik',
+      dataIndex: 'ownerName',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      width: 110,
+      render: (status: AppointmentStatus) => (
+        <Tag color={statusConfig[status]?.color}>{statusConfig[status]?.label ?? status}</Tag>
+      ),
+    },
+  ];
+
+  const unpaidInvoices: Invoice[] = [
+    ...(issuedInvoices ?? []),
+    ...(partiallyPaidInvoices ?? []),
+    ...(overdueInvoices ?? []),
+  ].sort((a, b) => {
+    if (!a.dueDate) return 1;
+    if (!b.dueDate) return -1;
+    return dayjs(a.dueDate).unix() - dayjs(b.dueDate).unix();
+  });
+
+  const unpaidInvoiceColumns: ColumnsType<Invoice> = [
+    {
+      title: 'Br. fakture',
+      dataIndex: 'invoiceNumber',
+      width: 170,
+    },
+    {
+      title: 'Vlasnik',
+      dataIndex: 'ownerName',
+    },
+    {
+      title: 'Status',
+      dataIndex: 'status',
+      width: 105,
+      render: (status: InvoiceStatus) => (
+        <Tag color={invoiceStatusConfig[status]?.color}>
+          {invoiceStatusConfig[status]?.label ?? status}
+        </Tag>
+      ),
+    },
+    {
+      title: 'Iznos',
+      dataIndex: 'total',
+      width: 130,
+      render: (val: number) => `${val?.toLocaleString('sr-RS', { minimumFractionDigits: 2 })} RSD`,
+    },
+    {
+      title: 'Rok',
+      dataIndex: 'dueDate',
+      width: 110,
+      render: (val: string) => {
+        if (!val) return '-';
+        const d = dayjs(val);
+        const isPast = d.isBefore(dayjs(), 'day');
+        return <span style={{ color: isPast ? 'red' : undefined }}>{d.format('DD.MM.YYYY')}</span>;
+      },
+    },
+  ];
+
+  const recentRecordColumns: ColumnsType<MedicalRecord> = [
+    {
+      title: 'Datum',
+      dataIndex: 'createdAt',
+      width: 110,
+      render: (val: string) => dayjs(val).format('DD.MM.YYYY'),
+    },
+    {
+      title: 'Ljubimac',
+      dataIndex: 'petName',
+    },
+    {
+      title: 'Vlasnik',
+      dataIndex: 'ownerName',
+    },
+    {
+      title: 'Dijagnoza',
+      dataIndex: 'diagnosis',
+      ellipsis: true,
+      render: (val: string) => val || '-',
+    },
+    {
+      title: 'Veterinar',
+      dataIndex: 'vetName',
+    },
+  ];
 
   const vaccinationColumns: ColumnsType<Vaccination> = [
     {
@@ -176,10 +322,27 @@ export default function Dashboard() {
         </Title>
         <Text type='secondary'>Pregled stanja klinike</Text>
       </div>
+      <Row style={{ marginBottom: 16 }}>
+        <Space>
+          <Button
+            type='primary'
+            icon={<CalendarOutlined />}
+            onClick={() => navigate('/appointments')}
+          >
+            Novi termin
+          </Button>
+          <Button icon={<UserAddOutlined />} onClick={() => navigate('/owners')}>
+            Nov vlasnik
+          </Button>
+          <Button icon={<FileAddOutlined />} onClick={() => navigate('/medical-records')}>
+            Nova intervencija
+          </Button>
+        </Space>
+      </Row>
 
       <Row gutter={[16, 16]}>
         {statCards.map((card) => (
-          <Col xs={24} sm={12} lg={6} key={card.key}>
+          <Col xs={24} sm={12} lg={card.key === 'revenue' ? 9 : 5} key={card.key}>
             <Card
               style={{
                 borderRadius: 16,
@@ -238,7 +401,7 @@ export default function Dashboard() {
       </Row>
 
       <Row gutter={[16, 16]} style={{ marginTop: 24 }}>
-        <Col xs={24} lg={14}>
+        <Col xs={24} lg={12}>
           <Card
             title={
               <span>
@@ -246,7 +409,7 @@ export default function Dashboard() {
                 Današnji termini
               </span>
             }
-            extra={<a href='/appointments'>Vidi sve</a>}
+            extra={<Link to='/appointments'>Vidi sve</Link>}
             style={{
               borderRadius: 16,
               border: 'none',
@@ -276,6 +439,85 @@ export default function Dashboard() {
             )}
           </Card>
         </Col>
+        <Col xs={24} lg={12}>
+          <Card
+            title={
+              <span>
+                <CalendarOutlined style={{ color: '#22c55e', marginRight: 8, fontSize: 18 }} />
+                Predstojeći termini (7 dana)
+              </span>
+            }
+            extra={<Link to='/appointments'>Vidi sve</Link>}
+            style={{
+              borderRadius: 16,
+              border: 'none',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+              minHeight: 320,
+            }}
+          >
+            {(upcomingAppointments?.length ?? 0) > 0 ? (
+              <Table
+                rowKey='id'
+                columns={upcomingColumns}
+                dataSource={upcomingAppointments}
+                pagination={false}
+                size='small'
+              />
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 220,
+                }}
+              >
+                <Empty description='Nema predstojecih termina u narednih 7 dana' />
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
+
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24} lg={14}>
+          <Card
+            title={
+              <span>
+                <WarningOutlined style={{ color: '#ef4444', marginRight: 8, fontSize: 18 }} />
+                Neplaćene fakture
+              </span>
+            }
+            extra={<Link to='/invoices'>Vidi sve</Link>}
+            style={{
+              borderRadius: 16,
+              border: 'none',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+              minHeight: 320,
+            }}
+          >
+            {unpaidInvoices.length > 0 ? (
+              <Table
+                rowKey='id'
+                columns={unpaidInvoiceColumns}
+                dataSource={unpaidInvoices.slice(0, 10)}
+                pagination={false}
+                size='small'
+              />
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 220,
+                }}
+              >
+                <Empty description='Sve fakture su plaćene' />
+              </div>
+            )}
+          </Card>
+        </Col>
         <Col xs={24} lg={10}>
           <Card
             title={
@@ -284,7 +526,7 @@ export default function Dashboard() {
                 Predstojeće vakcinacije
               </span>
             }
-            extra={<a href='/vaccinations'>Vidi sve</a>}
+            extra={<Link to='/vaccinations'>Vidi sve</Link>}
             style={{
               borderRadius: 16,
               border: 'none',
@@ -310,6 +552,45 @@ export default function Dashboard() {
                 }}
               >
                 <Empty description='Nema vakcinacija u narednih 7 dana' />
+              </div>
+            )}
+          </Card>
+        </Col>
+      </Row>
+      <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+        <Col xs={24}>
+          <Card
+            title={
+              <span>
+                <MedicineBoxOutlined style={{ color: '#8b5cf6', marginRight: 8, fontSize: 18 }} />
+                Nedavne intervencije
+              </span>
+            }
+            extra={<Link to='/medical-records'>Vidi sve</Link>}
+            style={{
+              borderRadius: 16,
+              border: 'none',
+              boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+            }}
+          >
+            {(recentRecords?.content?.length ?? 0) > 0 ? (
+              <Table
+                rowKey='id'
+                columns={recentRecordColumns}
+                dataSource={recentRecords?.content}
+                pagination={false}
+                size='small'
+              />
+            ) : (
+              <div
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  minHeight: 120,
+                }}
+              >
+                <Empty description='Nema intervencija' />
               </div>
             )}
           </Card>
