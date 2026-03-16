@@ -54,6 +54,8 @@ const getStatCards = (dark: boolean) => [
       ? 'linear-gradient(135deg, #1a2e22 0%, #1e4a30 100%)'
       : 'linear-gradient(135deg, #e8faf0 0%, #d0f0e0 100%)',
     iconBg: '#22c55e',
+    lg: 5,
+    valueFontSize: 32,
   },
   {
     key: 'upcoming',
@@ -63,6 +65,8 @@ const getStatCards = (dark: boolean) => [
       ? 'linear-gradient(135deg, #1a2332 0%, #1e3a5f 100%)'
       : 'linear-gradient(135deg, #e8f4fd 0%, #d0e8fa 100%)',
     iconBg: '#3b82f6',
+    lg: 6,
+    valueFontSize: 32,
   },
   {
     key: 'unpaid',
@@ -72,6 +76,8 @@ const getStatCards = (dark: boolean) => [
       ? 'linear-gradient(135deg, #2e1a1a 0%, #4a1e1e 100%)'
       : 'linear-gradient(135deg, #fde8e8 0%, #f5d0d0 100%)',
     iconBg: '#ef4444',
+    lg: 6,
+    valueFontSize: 32,
   },
   {
     key: 'revenue',
@@ -81,6 +87,8 @@ const getStatCards = (dark: boolean) => [
       ? 'linear-gradient(135deg, #2e2a1a 0%, #4a3a1e 100%)'
       : 'linear-gradient(135deg, #fef6e8 0%, #faecd0 100%)',
     iconBg: '#f59e0b',
+    lg: 7,
+    valueFontSize: 24,
   },
 ];
 
@@ -342,7 +350,7 @@ export default function Dashboard() {
 
       <Row gutter={[16, 16]}>
         {statCards.map((card) => (
-          <Col xs={24} sm={12} lg={card.key === 'revenue' ? 9 : 5} key={card.key}>
+          <Col xs={24} sm={12} lg={card.lg} key={card.key}>
             <Card
               style={{
                 borderRadius: 16,
@@ -383,7 +391,7 @@ export default function Dashboard() {
                   </div>
                   <div
                     style={{
-                      fontSize: 32,
+                      fontSize: card.valueFontSize,
                       fontWeight: 700,
                       lineHeight: 1.1,
                       color: darkMode ? '#fff' : 'rgba(0,0,0,0.85)',
