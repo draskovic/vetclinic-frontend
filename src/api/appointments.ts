@@ -7,9 +7,9 @@ import type {
 } from '@/types';
 
 export const appointmentsApi = {
-  getAll: (page = 0, size = 10, sort = 'startTime,desc', search?: string) =>
+  getAll: (page = 0, size = 10, sort = 'startTime,desc', search?: string, status?: string) =>
     apiClient.get<PageResponse<Appointment>>('/appointments', {
-      params: { page, size, sort, search },
+      params: { page, size, sort, search, status },
     }),
 
   getById: (id: string) => apiClient.get<Appointment>(`/appointments/${id}`),

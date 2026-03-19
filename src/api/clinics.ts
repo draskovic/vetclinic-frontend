@@ -1,5 +1,12 @@
 import apiClient from './client';
-import type { Clinic, CreateClinicRequest, UpdateClinicRequest, PageResponse } from '@/types';
+import type {
+  Clinic,
+  CreateClinicRequest,
+  UpdateClinicRequest,
+  PageResponse,
+  ProvisionClinicRequest,
+  ProvisionClinicResponse,
+} from '@/types';
 
 export const clinicsApi = {
   lookup: (email: string) => apiClient.get<Clinic>(`/clinics/lookup?email=${email}`),
@@ -14,4 +21,7 @@ export const clinicsApi = {
   update: (id: string, data: UpdateClinicRequest) => apiClient.put<Clinic>(`/clinics/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/clinics/${id}`),
+
+  provision: (data: ProvisionClinicRequest) =>
+    apiClient.post<ProvisionClinicResponse>('/clinics/provision', data).then((res) => res.data),
 };

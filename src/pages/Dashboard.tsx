@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Card, Col, Row, Typography, Table, Tag, Empty, Button, Space } from 'antd';
 import {
   WarningOutlined,
@@ -18,6 +19,7 @@ import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useThemeStore } from '@/store/themeStore';
 import { useNavigate, Link } from 'react-router-dom';
+import NewPatientModal from '@/components/NewPatientModal';
 
 import type {
   Appointment,
@@ -97,6 +99,7 @@ export default function Dashboard() {
   const { darkMode } = useThemeStore();
   const statCards = getStatCards(darkMode);
   const navigate = useNavigate();
+  const [newPatientModalOpen, setNewPatientModalOpen] = useState(false);
 
   const todayFrom = dayjs().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
   const todayTo = dayjs().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
@@ -344,6 +347,9 @@ export default function Dashboard() {
           </Button>
           <Button icon={<FileAddOutlined />} onClick={() => navigate('/medical-records')}>
             Nova intervencija
+          </Button>
+          <Button icon={<MedicineBoxOutlined />} onClick={() => setNewPatientModalOpen(true)}>
+            Nov pacijent
           </Button>
         </Space>
       </Row>
@@ -604,6 +610,7 @@ export default function Dashboard() {
           </Card>
         </Col>
       </Row>
+      <NewPatientModal open={newPatientModalOpen} onClose={() => setNewPatientModalOpen(false)} />
     </div>
   );
 }

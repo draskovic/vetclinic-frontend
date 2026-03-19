@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Table, Button, Space, Input, Popconfirm, message } from 'antd';
+import { Table, Button, Space, Input, Popconfirm, message, Card, Typography, Select } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryItemsApi } from '../../api';
@@ -7,9 +7,11 @@ import type { InventoryItem, InventoryCategory } from '../../types';
 import type { ColumnsType } from 'antd/es/table';
 import InventoryItemModal from './InventoryItemModal';
 import { useNavigate } from 'react-router-dom';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 import dayjs from 'dayjs';
 
+const { Title } = Typography;
 const categoryConfig: Record<InventoryCategory, { color: string; label: string }> = {
   MEDICATION: { color: '#1890ff', label: 'Lek' },
   SUPPLY: { color: '#52c41a', label: 'Potrošni materijal' },
@@ -21,14 +23,18 @@ export default function InventoryPage() {
 
   const [page, setPage] = useState(0);
   const [search, setSearch] = useState('');
+  const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined);
+  const debouncedSearch = useDebouncedValue(search);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryItem | null>(null);
 
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['inventory-items', page],
-    queryFn: () => inventoryItemsApi.getAll(page, 20).then((r) => r.data),
+    queryKey: ['inventory-items', page, debouncedSearch, categoryFilter],
+    queryFn: () =>
+      inventoryItemsApi.getAll(page, 20, debouncedSearch, categoryFilter).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -39,11 +45,7 @@ export default function InventoryPage() {
     },
   });
 
-  const filtered = data?.content?.filter((item) =>
-    [item.name, item.sku, item.unit]
-      .filter(Boolean)
-      .some((val) => val!.toLowerCase().includes(search.toLowerCase())),
-  );
+  const filteredData = data?.content;
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.quantityOnHand <= 0)
@@ -57,7 +59,6 @@ export default function InventoryPage() {
     {
       title: 'Naziv',
       dataIndex: 'name',
-      sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
       title: 'SKU',
@@ -141,15 +142,17 @@ export default function InventoryPage() {
 
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 16 }}>
-        <Input
-          placeholder='Pretraga po nazivu, SKU, jedinici...'
-          prefix={<SearchOutlined />}
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          style={{ width: 350 }}
-          allowClear
-        />
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 24,
+        }}
+      >
+        <Title level={3} style={{ margin: 0 }}>
+          Inventar
+        </Title>
         <Space>
           <Button onClick={() => navigate('/inventory-transactions')}>Transakcije</Button>
           <Button
@@ -165,21 +168,48 @@ export default function InventoryPage() {
         </Space>
       </div>
 
-      <Table
-        rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
-        rowKey='id'
-        columns={columns}
-        dataSource={filtered}
-        loading={isLoading}
-        pagination={{
-          current: page + 1,
-          pageSize: 20,
-          total: data?.totalElements,
-          onChange: (p) => setPage(p - 1),
-          showTotal: (total) => `Ukupno: ${total}`,
-        }}
-      />
+      <Card>
+        <Input
+          prefix={<SearchOutlined />}
+          placeholder='Pretraži po nazivu, SKU, jedinici...'
+          value={search}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(0);
+          }}
+          style={{ marginBottom: 16, maxWidth: 400 }}
+          allowClear
+        />
+        <Select
+          placeholder='Filtriraj po kategoriji'
+          value={categoryFilter}
+          onChange={(value) => {
+            setCategoryFilter(value);
+            setPage(0);
+          }}
+          allowClear
+          style={{ marginBottom: 16, width: 200, marginLeft: 12 }}
+          options={Object.entries(categoryConfig).map(([key, val]) => ({
+            value: key,
+            label: val.label,
+          }))}
+        />
 
+        <Table
+          rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
+          rowKey='id'
+          columns={columns}
+          dataSource={filteredData}
+          loading={isLoading}
+          pagination={{
+            current: page + 1,
+            pageSize: 20,
+            total: data?.totalElements,
+            onChange: (p) => setPage(p - 1),
+            showTotal: (total) => `Ukupno: ${total}`,
+          }}
+        />
+      </Card>
       <InventoryItemModal
         open={modalOpen}
         item={editing}

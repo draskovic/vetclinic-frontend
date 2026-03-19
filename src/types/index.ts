@@ -918,3 +918,23 @@ export interface UpdatePaymentRequest {
   referenceNumber?: string;
   note?: string;
 }
+export interface ProvisionClinicRequest {
+  name: string;
+  email?: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  country?: string;
+  taxId?: string;
+  adminFirstName: string;
+  adminLastName: string;
+  adminEmail: string;
+  adminPassword: string;
+}
+
+export interface ProvisionClinicResponse {
+  clinicId: string;
+  clinicName: string;
+  adminEmail: string;
+  adminPassword: string;
+}

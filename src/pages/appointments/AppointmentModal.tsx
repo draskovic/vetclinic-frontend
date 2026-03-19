@@ -145,7 +145,7 @@ export default function AppointmentModal({
 
   const locationOptions =
     locationsData?.map((l) => ({
-      label: l.name,
+      label: l.address ? `${l.address}` : l.name,
       value: l.id,
     })) ?? [];
 

@@ -15,8 +15,10 @@ import type {
 // ===================== Inventory Items =====================
 
 export const inventoryItemsApi = {
-  getAll: (page = 0, size = 20) =>
-    apiClient.get<PageResponse<InventoryItem>>('/inventory-items', { params: { page, size } }),
+  getAll: (page = 0, size = 20, search?: string, category?: string) =>
+    apiClient.get<PageResponse<InventoryItem>>('/inventory-items', {
+      params: { page, size, search, category },
+    }),
 
   getById: (id: string) => apiClient.get<InventoryItem>(`/inventory-items/${id}`),
 

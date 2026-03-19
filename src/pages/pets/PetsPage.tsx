@@ -14,6 +14,7 @@ const { Title } = Typography;
 const genderLabels: Record<string, { label: string; color: string }> = {
   MALE: { label: 'Muški', color: '#1890ff' },
   FEMALE: { label: 'Ženski', color: '#eb2f96' },
+  UNKNOWN: { label: 'Nepoznat', color: '#8c8c8c' },
 };
 
 export default function PetsPage() {
@@ -76,9 +77,11 @@ export default function PetsPage() {
       render: (gender) => {
         if (!gender) return '-';
         const g = genderLabels[gender];
+        if (!g) return gender;
         return <span style={{ color: g.color, fontWeight: 600 }}>{g.label}</span>;
       },
     },
+
     {
       title: 'Status',
       key: 'status',

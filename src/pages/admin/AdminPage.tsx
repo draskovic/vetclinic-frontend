@@ -14,6 +14,12 @@ const { Title, Text } = Typography;
 
 const adminSections = [
   {
+    title: 'Podešavanja klinike',
+    description: 'Naziv, adresa, PIB i kontakt podaci klinike',
+    icon: <BankOutlined style={{ fontSize: 32, color: '#722ed1' }} />,
+    path: '/admin/clinic-settings',
+  },
+  {
     title: 'Vrste životinja',
     description: 'Upravljanje vrstama (pas, mačka, ptica...)',
     icon: <AppstoreOutlined style={{ fontSize: 32, color: '#1890ff' }} />,

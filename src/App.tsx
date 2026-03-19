@@ -33,6 +33,7 @@ import ErrorBoundary from './components/ErrorBoundary';
 import NotFoundPage from './pages/NotFoundPage';
 import OwnerProfilePage from './pages/owners/OwnerProfilePage';
 import ProfilePage from './pages/profile/ProfilePage';
+import ClinicSettingsPage from './pages/admin/ClinicSettingsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -252,6 +253,14 @@ export default function App() {
                       element={
                         <PermissionGuard permission='*'>
                           <ClinicsPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='admin/clinic-settings'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <ClinicSettingsPage />
                         </PermissionGuard>
                       }
                     />

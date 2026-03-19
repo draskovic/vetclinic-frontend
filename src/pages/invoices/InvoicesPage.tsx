@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Input,
+  Card,
+  Typography,
+  Popconfirm,
+  message,
+  Tooltip,
+  Select,
+} from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
@@ -35,13 +46,15 @@ export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['invoices', page, debouncedSearch],
-    queryFn: () => invoicesApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
+    queryKey: ['invoices', page, debouncedSearch, statusFilter],
+    queryFn: () =>
+      invoicesApi.getAll(page - 1, 10, debouncedSearch, statusFilter).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -75,7 +88,6 @@ export default function InvoicesPage() {
       title: 'Broj fakture',
       dataIndex: 'invoiceNumber',
       key: 'invoiceNumber',
-      sorter: (a, b) => a.invoiceNumber.localeCompare(b.invoiceNumber),
     },
     {
       title: 'Vlasnik',
@@ -87,8 +99,6 @@ export default function InvoicesPage() {
       dataIndex: 'issuedAt',
       key: 'issuedAt',
       render: (val) => (val ? dayjs(val).format('DD.MM.YYYY') : '-'),
-      sorter: (a, b) => dayjs(a.issuedAt ?? '').unix() - dayjs(b.issuedAt ?? '').unix(),
-      defaultSortOrder: 'descend',
     },
     {
       title: 'Rok plaćanja',
@@ -179,9 +189,27 @@ export default function InvoicesPage() {
           prefix={<SearchOutlined />}
           placeholder='Pretraži po broju fakture ili vlasniku...'
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           style={{ marginBottom: 16, maxWidth: 400 }}
           allowClear
+        />
+
+        <Select
+          placeholder='Filtriraj po statusu'
+          value={statusFilter}
+          onChange={(value) => {
+            setStatusFilter(value);
+            setPage(1);
+          }}
+          allowClear
+          style={{ marginBottom: 16, width: 200, marginLeft: 12 }}
+          options={Object.entries(statusConfig).map(([key, val]) => ({
+            value: key,
+            label: val.label,
+          }))}
         />
 
         <Table

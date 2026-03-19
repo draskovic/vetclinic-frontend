@@ -10,6 +10,7 @@ import {
   DatePicker,
   Row,
   Tabs,
+  Checkbox,
   Col,
 } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -23,6 +24,7 @@ import PaymentItemsTable from './PaymentItemsTable';
 import { treatmentsApi } from '@/api/treatments';
 import { servicesApi } from '@/api/services';
 import { invoiceItemsApi } from '@/api/invoices';
+import { paymentsApi } from '@/api/payments';
 
 interface InvoiceModalProps {
   open: boolean;
@@ -30,16 +32,6 @@ interface InvoiceModalProps {
   onClose: () => void;
   defaultValues?: { ownerId?: string; medicalRecordId?: string };
 }
-
-const statusOptions = [
-  { label: 'Nacrt', value: 'DRAFT' },
-  { label: 'Izdata', value: 'ISSUED' },
-  { label: 'Plaćena', value: 'PAID' },
-  { label: 'Delimično plaćena', value: 'PARTIALLY_PAID' },
-  { label: 'Dospela', value: 'OVERDUE' },
-  { label: 'Stornirana', value: 'CANCELLED' },
-  { label: 'Refundirana', value: 'REFUNDED' },
-];
 
 const currencyOptions = [
   { label: 'RSD', value: 'RSD' },
@@ -51,6 +43,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
+  const [paidImmediately, setPaidImmediately] = useState(false);
   const currentInvoice = invoice ?? createdInvoice;
   const isEditing = !!currentInvoice;
 
@@ -75,6 +68,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
       } else {
         form.resetFields();
         setCreatedInvoice(null);
+        setPaidImmediately(false);
         form.setFieldsValue({
           status: 'DRAFT',
           currency: 'RSD',
@@ -155,7 +149,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
     onError: () => message.error('Greška pri izmeni!'),
   });
 
-  const handleSubmit = (
+  const handleSubmit = async (
     values: CreateInvoiceRequest & { issuedAt?: dayjs.Dayjs; dueDate?: dayjs.Dayjs },
   ) => {
     const { status: formStatus, ...rest } = values as any;
@@ -172,6 +166,26 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
     };
 
     if (isEditing) {
+      if (paidImmediately) {
+        const paymentMethod = form.getFieldValue('paymentMethod') || 'CASH';
+        try {
+          const invoiceRes = await invoicesApi.getById(currentInvoice!.id);
+          const freshInvoice = invoiceRes.data;
+          if (freshInvoice.total > 0) {
+            await paymentsApi.create({
+              invoiceId: freshInvoice.id,
+              amount: freshInvoice.total,
+              method: paymentMethod,
+              paidAt: dayjs().toISOString(),
+              referenceNumber: freshInvoice.invoiceNumber,
+            });
+            message.success('Plaćanje evidentirano!');
+            queryClient.invalidateQueries({ queryKey: ['invoices'] });
+          }
+        } catch (e) {
+          message.warning('Plaćanje nije evidentirano. Dodajte ručno u tab Plaćanja.');
+        }
+      }
       updateMutation.mutate(payload);
     } else {
       createMutation.mutate(payload);
@@ -188,7 +202,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
 
   const locationOptions =
     locationsData?.map((l) => ({
-      label: l.name,
+      label: l.address ? `${l.name} - ${l.address}` : l.name,
       value: l.id,
     })) ?? [];
 
@@ -234,22 +248,44 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
               />
             </Form.Item>
           </Col>
-          <Col span={6}>
-            <Form.Item name='status' label='Status'>
-              <Select options={statusOptions} disabled={isEditing} />
-            </Form.Item>
-          </Col>
-
-          <Col span={6}>
+          <Col span={5}>
             <Form.Item name='issuedAt' label='Datum izdavanja'>
               <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
             </Form.Item>
           </Col>
-          <Col span={6}>
+          <Col span={5}>
             <Form.Item name='dueDate' label='Rok plaćanja'>
               <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
             </Form.Item>
           </Col>
+          {isEditing && (
+            <Col span={4}>
+              <Form.Item label=' '>
+                <Checkbox
+                  checked={paidImmediately}
+                  onChange={(e) => setPaidImmediately(e.target.checked)}
+                  disabled={['PAID', 'CANCELLED', 'REFUNDED'].includes(
+                    currentInvoice?.status ?? '',
+                  )}
+                >
+                  Plaćeno odmah
+                </Checkbox>
+              </Form.Item>
+            </Col>
+          )}
+          {isEditing && paidImmediately && (
+            <Col span={4}>
+              <Form.Item name='paymentMethod' label='Način plaćanja' initialValue='CASH'>
+                <Select
+                  options={[
+                    { label: 'Gotovina', value: 'CASH' },
+                    { label: 'Kartica', value: 'CARD' },
+                    { label: 'Prenos', value: 'BANK_TRANSFER' },
+                  ]}
+                />
+              </Form.Item>
+            </Col>
+          )}
         </Row>
 
         <Row gutter={16}>

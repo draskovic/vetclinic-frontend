@@ -24,6 +24,7 @@ interface PetModalProps {
   open: boolean;
   pet: Pet | null;
   onClose: () => void;
+  defaultValues?: { ownerId?: string };
 }
 
 const genderOptions = [
@@ -32,7 +33,7 @@ const genderOptions = [
   { label: 'Nepoznat', value: 'UNKNOWN' },
 ];
 
-export default function PetModal({ open, pet, onClose }: PetModalProps) {
+export default function PetModal({ open, pet, onClose, defaultValues }: PetModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!pet;
@@ -67,6 +68,9 @@ export default function PetModal({ open, pet, onClose }: PetModalProps) {
       } else {
         form.resetFields();
         setSelectedSpeciesId(null);
+        if (defaultValues?.ownerId) {
+          form.setFieldsValue({ ownerId: defaultValues.ownerId });
+        }
       }
     }
   }, [open, pet, form]);
@@ -167,6 +171,7 @@ export default function PetModal({ open, pet, onClose }: PetModalProps) {
                 placeholder='Izaberite vlasnika...'
                 options={ownerOptions}
                 showSearch
+                disabled={!!defaultValues?.ownerId}
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }

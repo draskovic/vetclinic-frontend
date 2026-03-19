@@ -1,9 +1,9 @@
 import React from 'react';
 import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, Descriptions, Tabs, Table, Tag, Button, Spin, Typography } from 'antd';
-import { ArrowLeftOutlined, PhoneOutlined, MailOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, PhoneOutlined, MailOutlined, PlusOutlined } from '@ant-design/icons';
 import { ownersApi } from '../../api';
 import { petsApi } from '../../api';
 import { appointmentsApi } from '../../api';
@@ -13,6 +13,7 @@ import dayjs from 'dayjs';
 import { medicalRecordsApi } from '../../api';
 import MedicalRecordModal from '../medical-records/MedicalRecordModal';
 import type { MedicalRecord } from '../../types';
+import PetModal from '../pets/PetModal';
 
 const { Title } = Typography;
 
@@ -51,6 +52,8 @@ const OwnerProfilePage: React.FC = () => {
   });
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [petModalOpen, setPetModalOpen] = useState(false);
+  const queryClient = useQueryClient();
 
   if (ownerLoading) return <Spin size='large' style={{ display: 'block', margin: '100px auto' }} />;
   if (!owner) return <div>Vlasnik nije pronađen</div>;
@@ -226,13 +229,23 @@ const OwnerProfilePage: React.FC = () => {
             key: 'pets',
             label: `Ljubimci (${pets.length})`,
             children: (
-              <Table
-                dataSource={pets}
-                columns={petsColumns}
-                rowKey='id'
-                loading={petsLoading}
-                pagination={false}
-              />
+              <>
+                <Button
+                  type='primary'
+                  icon={<PlusOutlined />}
+                  onClick={() => setPetModalOpen(true)}
+                  style={{ marginBottom: 16 }}
+                >
+                  Dodaj ljubimca
+                </Button>
+                <Table
+                  dataSource={pets}
+                  columns={petsColumns}
+                  rowKey='id'
+                  loading={petsLoading}
+                  pagination={false}
+                />
+              </>
             ),
           },
           {
@@ -284,6 +297,15 @@ const OwnerProfilePage: React.FC = () => {
           setModalOpen(false);
           setSelectedRecord(null);
         }}
+      />
+      <PetModal
+        open={petModalOpen}
+        pet={null}
+        onClose={() => {
+          setPetModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['ownerPets', ownerId] });
+        }}
+        defaultValues={{ ownerId: ownerId! }}
       />
     </div>
   );

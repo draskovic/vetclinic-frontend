@@ -1,5 +1,16 @@
 import { useState } from 'react';
-import { Table, Button, Space, Input, Card, Typography, Tooltip, Popconfirm, message } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Input,
+  Card,
+  Typography,
+  Tooltip,
+  Popconfirm,
+  message,
+  Select,
+} from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
@@ -42,6 +53,7 @@ const typeConfig: Record<AppointmentType, string> = {
 export default function AppointmentsPage() {
   const [page, setPage] = useState(1);
   const [search, setSearch] = useState('');
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
 
   const debouncedSearch = useDebouncedValue(search);
 
@@ -55,9 +67,11 @@ export default function AppointmentsPage() {
   // When searching, load all data (size=1000) so client-side filter works across all appointments
   // When not searching, paginate normally (10 per page)
   const { data, isLoading } = useQuery({
-    queryKey: ['appointments', page, debouncedSearch],
+    queryKey: ['appointments', page, debouncedSearch, statusFilter],
     queryFn: () =>
-      appointmentsApi.getAll(page - 1, 10, 'startTime,desc', debouncedSearch).then((r) => r.data),
+      appointmentsApi
+        .getAll(page - 1, 10, 'startTime,desc', debouncedSearch, statusFilter)
+        .then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -77,8 +91,6 @@ export default function AppointmentsPage() {
       dataIndex: 'startTime',
       key: 'startTime',
       render: (val) => dayjs(val).format('DD.MM.YYYY HH:mm'),
-      sorter: (a, b) => dayjs(a.startTime).unix() - dayjs(b.startTime).unix(),
-      defaultSortOrder: 'descend',
     },
     {
       title: 'Ljubimac',
@@ -101,6 +113,13 @@ export default function AppointmentsPage() {
       key: 'type',
       render: (type: AppointmentType) => typeConfig[type] ?? type,
     },
+    {
+      title: 'Razlog',
+      dataIndex: 'reason',
+      key: 'reason',
+      ellipsis: true,
+    },
+
     {
       title: 'Status',
       dataIndex: 'status',
@@ -201,6 +220,21 @@ export default function AppointmentsPage() {
           style={{ marginBottom: 16, maxWidth: 400 }}
           allowClear
         />
+        <Select
+          placeholder='Filtriraj po statusu'
+          value={statusFilter}
+          onChange={(value) => {
+            setStatusFilter(value);
+            setPage(1);
+          }}
+          allowClear
+          style={{ marginBottom: 16, width: 200, marginLeft: 12 }}
+          options={Object.entries(statusConfig).map(([key, val]) => ({
+            value: key,
+            label: val.label,
+          }))}
+        />
+
         <Tooltip title='Kalendarski prikaz'>
           <CalendarOutlined
             style={{ fontSize: '20px', cursor: 'pointer', marginRight: '12px' }}

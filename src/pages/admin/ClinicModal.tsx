@@ -1,8 +1,25 @@
 import { useEffect } from 'react';
-import { Modal, Form, Input, Select, Button, message, Switch, DatePicker, Row, Col } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  Select,
+  Button,
+  message,
+  Switch,
+  DatePicker,
+  Row,
+  Col,
+  Divider,
+} from 'antd';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { clinicsApi } from '@/api/clinics';
-import type { Clinic, CreateClinicRequest, UpdateClinicRequest } from '@/types';
+import type {
+  Clinic,
+  UpdateClinicRequest,
+  ProvisionClinicRequest,
+  ProvisionClinicResponse,
+} from '@/types';
 import dayjs from 'dayjs';
 
 interface ClinicModalProps {
@@ -37,14 +54,32 @@ export default function ClinicModal({ open, clinic, onClose }: ClinicModalProps)
     }
   }, [open, clinic, form]);
 
-  const createMutation = useMutation({
-    mutationFn: (data: CreateClinicRequest) => clinicsApi.create(data),
-    onSuccess: () => {
-      message.success('Klinika je dodata!');
+  const provisionMutation = useMutation({
+    mutationFn: (data: ProvisionClinicRequest) => clinicsApi.provision(data),
+    onSuccess: (response: ProvisionClinicResponse) => {
       queryClient.invalidateQueries({ queryKey: ['clinics'] });
       onClose();
+      Modal.success({
+        title: 'Klinika je kreirana!',
+        content: (
+          <div>
+            <p>
+              <strong>Klinika:</strong> {response.clinicName}
+            </p>
+            <p>
+              <strong>Admin email:</strong> {response.adminEmail}
+            </p>
+            <p>
+              <strong>Admin lozinka:</strong> {response.adminPassword}
+            </p>
+            <p style={{ marginTop: 12, color: '#faad14' }}>
+              Sačuvajte ove podatke — lozinka se neće ponovo prikazati!
+            </p>
+          </div>
+        ),
+      });
     },
-    onError: () => message.error('Greška pri dodavanju!'),
+    onError: () => message.error('Greška pri kreiranju klinike!'),
   });
 
   const updateMutation = useMutation({
@@ -57,7 +92,7 @@ export default function ClinicModal({ open, clinic, onClose }: ClinicModalProps)
     onError: () => message.error('Greška pri izmeni!'),
   });
 
-  const handleSubmit = (values: CreateClinicRequest & { subscriptionExpiresAt?: dayjs.Dayjs }) => {
+  const handleSubmit = (values: any) => {
     const payload = {
       ...values,
       active: values.active ?? true,
@@ -69,11 +104,11 @@ export default function ClinicModal({ open, clinic, onClose }: ClinicModalProps)
     if (isEditing) {
       updateMutation.mutate(payload);
     } else {
-      createMutation.mutate(payload);
+      provisionMutation.mutate(payload);
     }
   };
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoading = provisionMutation.isPending || updateMutation.isPending;
 
   return (
     <Modal
@@ -154,6 +189,52 @@ export default function ClinicModal({ open, clinic, onClose }: ClinicModalProps)
             </Form.Item>
           </Col>
         </Row>
+
+        {!isEditing && (
+          <>
+            <Divider>Prvi administrator</Divider>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name='adminFirstName'
+                  label='Ime'
+                  rules={[{ required: true, message: 'Unesite ime!' }]}
+                >
+                  <Input placeholder='Ime administratora' />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name='adminLastName'
+                  label='Prezime'
+                  rules={[{ required: true, message: 'Unesite prezime!' }]}
+                >
+                  <Input placeholder='Prezime administratora' />
+                </Form.Item>
+              </Col>
+            </Row>
+            <Row gutter={16}>
+              <Col span={12}>
+                <Form.Item
+                  name='adminEmail'
+                  label='Email'
+                  rules={[{ required: true, message: 'Unesite email!' }]}
+                >
+                  <Input placeholder='admin@klinika.com' />
+                </Form.Item>
+              </Col>
+              <Col span={12}>
+                <Form.Item
+                  name='adminPassword'
+                  label='Lozinka'
+                  rules={[{ required: true, message: 'Unesite lozinku!' }]}
+                >
+                  <Input.Password placeholder='Lozinka' />
+                </Form.Item>
+              </Col>
+            </Row>
+          </>
+        )}
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button onClick={onClose} style={{ marginRight: 8 }}>

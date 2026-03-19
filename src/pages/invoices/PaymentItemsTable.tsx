@@ -15,7 +15,7 @@ import {
 } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { payments } from '@/api';
+import { paymentsApi } from '@/api';
 import type { Payment, CreatePaymentRequest, UpdatePaymentRequest, PaymentMethod } from '@/types';
 import dayjs from 'dayjs';
 
@@ -51,11 +51,11 @@ export default function PaymentItemsTable({
 
   const { data: paymentList = [], isLoading } = useQuery({
     queryKey: ['payments', invoiceId],
-    queryFn: () => payments.getByInvoice(invoiceId),
+    queryFn: () => paymentsApi.getByInvoice(invoiceId),
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: CreatePaymentRequest) => payments.create(data),
+    mutationFn: (data: CreatePaymentRequest) => paymentsApi.create(data),
     onSuccess: () => {
       message.success('Plaćanje je zabeleženo!');
       queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] });
@@ -66,7 +66,7 @@ export default function PaymentItemsTable({
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: UpdatePaymentRequest) => payments.update(editingPayment!.id, data),
+    mutationFn: (data: UpdatePaymentRequest) => paymentsApi.update(editingPayment!.id, data),
     onSuccess: () => {
       message.success('Plaćanje je izmenjeno!');
       queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] });
@@ -77,7 +77,7 @@ export default function PaymentItemsTable({
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: string) => payments.remove(id),
+    mutationFn: (id: string) => paymentsApi.remove(id),
     onSuccess: () => {
       message.success('Plaćanje je obrisano!');
       queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] });
