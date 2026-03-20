@@ -119,14 +119,19 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
           </Col>
         </Row>
 
-        {/* Red 3: JMBG, Napomena */}
+        {/* Red 3: JMBG, Broj kartona, Napomena */}
         <Row gutter={12}>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item name='personalId' label='JMBG'>
               <Input placeholder='JMBG' />
             </Form.Item>
           </Col>
-          <Col span={16}>
+          <Col span={6}>
+            <Form.Item name='clientCode' label='Broj kartona'>
+              <Input placeholder={isEditing ? '' : 'Auto (KC-0001)'} />
+            </Form.Item>
+          </Col>
+          <Col span={12}>
             <Form.Item name='note' label='Napomena'>
               <Input.TextArea placeholder='Napomena...' rows={3} />
             </Form.Item>

@@ -7,6 +7,7 @@ import {
   TeamOutlined,
   SafetyOutlined,
   MedicineBoxOutlined,
+  ImportOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
 
@@ -48,6 +49,12 @@ const adminSections = [
     description: 'Cenovnik usluga klinike',
     icon: <MedicineBoxOutlined style={{ fontSize: 32, color: '#eb2f96' }} />,
     path: '/admin/services',
+  },
+  {
+    title: 'Import vlasnika',
+    description: 'Uvoz vlasnika i ljubimaca iz CSV/JSON fajla',
+    icon: <ImportOutlined style={{ fontSize: 32, color: '#2f54eb' }} />,
+    path: '/admin/import-owners',
   },
 ];
 

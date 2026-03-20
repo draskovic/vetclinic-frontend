@@ -34,6 +34,7 @@ import NotFoundPage from './pages/NotFoundPage';
 import OwnerProfilePage from './pages/owners/OwnerProfilePage';
 import ProfilePage from './pages/profile/ProfilePage';
 import ClinicSettingsPage from './pages/admin/ClinicSettingsPage';
+import ImportOwnersPage from './pages/owners/ImportOwnersPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -265,6 +266,15 @@ export default function App() {
                       }
                     />
                   </Route>
+                  <Route
+                    path='admin/import-owners'
+                    element={
+                      <PermissionGuard permission='*'>
+                        <ImportOwnersPage />
+                      </PermissionGuard>
+                    }
+                  />
+
                   <Route path='*' element={<NotFoundPage />} />
                 </Routes>
               </BrowserRouter>

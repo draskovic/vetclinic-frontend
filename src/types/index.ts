@@ -83,6 +83,7 @@ export interface Owner {
   city: string | null;
   personalId: string | null;
   note: string | null;
+  clientCode: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -96,6 +97,7 @@ export interface CreateOwnerRequest {
   city?: string;
   personalId?: string;
   note?: string;
+  clientCode?: string;
 }
 
 export interface UpdateOwnerRequest {
@@ -107,6 +109,7 @@ export interface UpdateOwnerRequest {
   city?: string;
   personalId?: string;
   note?: string;
+  clientCode?: string;
 }
 
 // ==================== PET ====================
@@ -937,4 +940,34 @@ export interface ProvisionClinicResponse {
   clinicName: string;
   adminEmail: string;
   adminPassword: string;
+}
+
+export interface ImportPetData {
+  name: string;
+  species?: string;
+  breed?: string;
+}
+
+//================== IMPORT OWNERS =================
+export interface ImportOwnerRequest {
+  clientCode?: string;
+  firstName: string;
+  lastName: string;
+  phone?: string;
+  address?: string;
+  city?: string;
+  pets?: ImportPetData[];
+}
+
+export interface ImportError {
+  clientCode: string | null;
+  ownerName: string;
+  message: string;
+}
+
+export interface ImportResultResponse {
+  totalProcessed: number;
+  created: number;
+  skipped: number;
+  errors: ImportError[];
 }

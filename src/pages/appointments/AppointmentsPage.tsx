@@ -119,7 +119,6 @@ export default function AppointmentsPage() {
       key: 'reason',
       ellipsis: true,
     },
-
     {
       title: 'Status',
       dataIndex: 'status',

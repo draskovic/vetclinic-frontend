@@ -54,6 +54,14 @@ export default function OwnersPage() {
 
   const columns: ColumnsType<Owner> = [
     {
+      title: 'Br.',
+      dataIndex: 'clientCode',
+      key: 'clientCode',
+      width: 100,
+      render: (code: string | null) => code ?? <span style={{ color: '#8c8c8c' }}>—</span>,
+    },
+
+    {
       title: 'Ime i prezime',
       key: 'name',
       render: (_: any, record: any) => (
@@ -128,7 +136,7 @@ export default function OwnersPage() {
       <Card>
         <Input
           prefix={<SearchOutlined />}
-          placeholder='Pretraži po imenu ili telefonu...'
+          placeholder='Pretraži po imenu, telefonu ili broju kartona...'
           value={search}
           onChange={(e) => setSearch(e.target.value)}
           style={{ marginBottom: 16, maxWidth: 400 }}

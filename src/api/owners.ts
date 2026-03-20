@@ -1,5 +1,12 @@
 import apiClient from './client';
-import type { Owner, CreateOwnerRequest, UpdateOwnerRequest, PageResponse } from '@/types';
+import type {
+  Owner,
+  CreateOwnerRequest,
+  UpdateOwnerRequest,
+  PageResponse,
+  ImportOwnerRequest,
+  ImportResultResponse,
+} from '@/types';
 
 export const ownersApi = {
   getAll: (page = 0, size = 10, search?: string) =>
@@ -18,4 +25,6 @@ export const ownersApi = {
 
   searchByPhone: (phone: string) =>
     apiClient.get<Owner[]>(`/owners/search/by-phone?phone=${phone}`),
+  importOwners: (data: ImportOwnerRequest[]) =>
+    apiClient.post<ImportResultResponse>('/owners/import', data),
 };

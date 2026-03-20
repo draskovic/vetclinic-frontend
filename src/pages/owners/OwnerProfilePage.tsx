@@ -199,6 +199,12 @@ const OwnerProfilePage: React.FC = () => {
         <Title level={3}>
           {owner.firstName} {owner.lastName}
         </Title>
+        {owner.clientCode && (
+          <Tag color='blue' style={{ marginBottom: 12 }}>
+            Br. kartona: {owner.clientCode}
+          </Tag>
+        )}
+
         <Descriptions column={2}>
           <Descriptions.Item
             label={

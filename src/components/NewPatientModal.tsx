@@ -237,6 +237,13 @@ export default function NewPatientModal({ open, onClose }: NewPatientModalProps)
                   </Form.Item>
                 </Col>
               </Row>
+              <Row gutter={12}>
+                <Col span={8}>
+                  <Form.Item name='clientCode' label='Broj kartona'>
+                    <Input placeholder='Auto (KC-0001)' />
+                  </Form.Item>
+                </Col>
+              </Row>
             </>
           ) : (
             <Form.Item
