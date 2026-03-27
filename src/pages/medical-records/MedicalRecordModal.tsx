@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Modal,
   Form,
@@ -53,6 +53,14 @@ export default function MedicalRecordModal({
   const { data: petsData } = useQuery({
     queryKey: ['pets-all'],
     queryFn: () => petsApi.getAll(0, 100).then((r) => r.data),
+  });
+
+  const petIdToFetch = defaultValues?.petId || record?.petId;
+
+  const { data: selectedPet } = useQuery({
+    queryKey: ['pet', petIdToFetch],
+    queryFn: () => petsApi.getById(petIdToFetch!).then((r) => r.data),
+    enabled: !!petIdToFetch,
   });
 
   const { data: usersData } = useQuery({
@@ -128,11 +136,20 @@ export default function MedicalRecordModal({
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const petOptions =
-    petsData?.content.map((p) => ({
-      label: p.name,
-      value: p.id,
-    })) ?? [];
+  const petOptions = useMemo(() => {
+    const options =
+      petsData?.content.map((p) => ({
+        label: p.name,
+        value: p.id,
+      })) ?? [];
+
+    // Dodaj izabranog ljubimca ako nije u listi
+    if (selectedPet && !options.find((o) => o.value === selectedPet.id)) {
+      options.unshift({ label: selectedPet.name, value: selectedPet.id });
+    }
+
+    return options;
+  }, [petsData, selectedPet]);
 
   const vetOptions =
     usersData?.content.map((u) => ({
@@ -191,6 +208,11 @@ export default function MedicalRecordModal({
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </Form.Item>
           </Col>
@@ -207,6 +229,11 @@ export default function MedicalRecordModal({
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </Form.Item>
           </Col>

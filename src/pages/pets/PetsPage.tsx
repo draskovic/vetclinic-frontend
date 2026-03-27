@@ -45,6 +45,14 @@ export default function PetsPage() {
 
   const columns: ColumnsType<Pet> = [
     {
+      title: 'Br.',
+      dataIndex: 'patientCode',
+      key: 'patientCode',
+      width: 120,
+      render: (v: string) => v || '—',
+    },
+
+    {
       title: 'Ime',
       dataIndex: 'name',
       key: 'name',

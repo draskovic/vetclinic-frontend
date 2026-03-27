@@ -245,6 +245,11 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </Form.Item>
           </Col>

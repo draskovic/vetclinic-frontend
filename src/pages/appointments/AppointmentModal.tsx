@@ -183,6 +183,11 @@ export default function AppointmentModal({
                   setSelectedOwnerId(val);
                   form.setFieldValue('petId', undefined);
                 }}
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </Form.Item>
           </Col>
@@ -200,6 +205,11 @@ export default function AppointmentModal({
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </Form.Item>
           </Col>

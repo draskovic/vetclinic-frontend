@@ -3,7 +3,13 @@ import { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Card, Descriptions, Tabs, Table, Tag, Button, Spin, Typography } from 'antd';
-import { ArrowLeftOutlined, PhoneOutlined, MailOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  ArrowLeftOutlined,
+  PhoneOutlined,
+  MailOutlined,
+  PlusOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
 import { ownersApi } from '../../api';
 import { petsApi } from '../../api';
 import { appointmentsApi } from '../../api';
@@ -54,6 +60,7 @@ const OwnerProfilePage: React.FC = () => {
   const [modalOpen, setModalOpen] = useState(false);
   const [petModalOpen, setPetModalOpen] = useState(false);
   const queryClient = useQueryClient();
+  const [selectedPet, setSelectedPet] = useState<Pet | null>(null);
 
   if (ownerLoading) return <Spin size='large' style={{ display: 'block', margin: '100px auto' }} />;
   if (!owner) return <div>Vlasnik nije pronađen</div>;
@@ -120,6 +127,20 @@ const OwnerProfilePage: React.FC = () => {
       dataIndex: 'dateOfBirth',
       key: 'dateOfBirth',
       render: (date: string) => (date ? dayjs(date).format('DD.MM.YYYY.') : '-'),
+    },
+    {
+      title: 'Akcije',
+      key: 'actions',
+      render: (_: any, record: Pet) => (
+        <Button
+          type='link'
+          icon={<EditOutlined />}
+          onClick={() => {
+            setSelectedPet(record);
+            setPetModalOpen(true);
+          }}
+        />
+      ),
     },
   ];
 
@@ -239,7 +260,10 @@ const OwnerProfilePage: React.FC = () => {
                 <Button
                   type='primary'
                   icon={<PlusOutlined />}
-                  onClick={() => setPetModalOpen(true)}
+                  onClick={() => {
+                    setSelectedPet(null);
+                    setPetModalOpen(true);
+                  }}
                   style={{ marginBottom: 16 }}
                 >
                   Dodaj ljubimca
@@ -306,9 +330,10 @@ const OwnerProfilePage: React.FC = () => {
       />
       <PetModal
         open={petModalOpen}
-        pet={null}
+        pet={selectedPet}
         onClose={() => {
           setPetModalOpen(false);
+          setSelectedPet(null);
           queryClient.invalidateQueries({ queryKey: ['ownerPets', ownerId] });
         }}
         defaultValues={{ ownerId: ownerId! }}

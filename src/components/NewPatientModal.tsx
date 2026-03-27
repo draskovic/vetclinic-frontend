@@ -50,7 +50,7 @@ export default function NewPatientModal({ open, onClose }: NewPatientModalProps)
   // Queries
   const { data: ownersData } = useQuery({
     queryKey: ['owners-all'],
-    queryFn: () => ownersApi.getAll(0, 100).then((r) => r.data),
+    queryFn: () => ownersApi.getAll(0, 1000).then((r) => r.data),
     enabled: open,
   });
 
@@ -69,6 +69,9 @@ export default function NewPatientModal({ open, onClose }: NewPatientModalProps)
   // Mutations
   const createOwnerMutation = useMutation({
     mutationFn: (data: CreateOwnerRequest) => ownersApi.create(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['owners-all'] });
+    },
   });
 
   const createPetMutation = useMutation({
@@ -255,7 +258,14 @@ export default function NewPatientModal({ open, onClose }: NewPatientModalProps)
                 placeholder='Pretražite po imenu...'
                 options={ownerOptions}
                 showSearch
-                optionFilterProp='label'
+                filterOption={(input, option) =>
+                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
+                }
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </Form.Item>
           )}

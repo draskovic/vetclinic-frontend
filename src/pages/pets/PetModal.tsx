@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import {
   Modal,
   Form,
@@ -44,6 +44,14 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
     queryFn: () => ownersApi.getAll(0, 100).then((r) => r.data),
   });
 
+  const ownerIdValue = Form.useWatch('ownerId', form);
+
+  const { data: selectedOwner } = useQuery({
+    queryKey: ['owner', ownerIdValue],
+    queryFn: () => ownersApi.getById(ownerIdValue).then((r) => r.data),
+    enabled: !!ownerIdValue,
+  });
+
   const { data: speciesData } = useQuery({
     queryKey: ['species'],
     queryFn: () => speciesApi.getAll(0, 100).then((r) => r.data),
@@ -53,6 +61,14 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
     queryKey: ['breeds-by-species', selectedSpeciesId],
     queryFn: () => breedsApi.getBySpecies(selectedSpeciesId!).then((r) => r.data),
     enabled: !!selectedSpeciesId,
+  });
+
+  const breedIdValue = Form.useWatch('breedId', form);
+
+  const { data: selectedBreed } = useQuery({
+    queryKey: ['breed', breedIdValue],
+    queryFn: () => breedsApi.getById(breedIdValue).then((r) => r.data),
+    enabled: !!breedIdValue,
   });
 
   useEffect(() => {
@@ -123,11 +139,20 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const ownerOptions =
-    ownersData?.content.map((o) => ({
-      label: `${o.firstName} ${o.lastName}`,
-      value: o.id,
-    })) ?? [];
+  const ownerOptions = useMemo(() => {
+    const list =
+      ownersData?.content.map((o) => ({
+        label: `${o.firstName} ${o.lastName}`,
+        value: o.id,
+      })) ?? [];
+    if (selectedOwner && !list.find((o) => o.value === selectedOwner.id)) {
+      list.unshift({
+        value: selectedOwner.id,
+        label: `${selectedOwner.firstName} ${selectedOwner.lastName}`,
+      });
+    }
+    return list;
+  }, [ownersData, selectedOwner]);
 
   const speciesOptions =
     speciesData?.content.map((s) => ({
@@ -135,11 +160,13 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
       value: s.id,
     })) ?? [];
 
-  const breedOptions =
-    breedsData?.map((b) => ({
-      label: b.name,
-      value: b.id,
-    })) ?? [];
+  const breedOptions = useMemo(() => {
+    const list = (breedsData || []).map((b) => ({ value: b.id, label: b.name }));
+    if (selectedBreed && !list.find((b) => b.value === selectedBreed.id)) {
+      list.unshift({ value: selectedBreed.id, label: selectedBreed.name });
+    }
+    return list;
+  }, [breedsData, selectedBreed]);
 
   return (
     <Modal
@@ -162,6 +189,12 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
             </Form.Item>
           </Col>
           <Col span={8}>
+            <Form.Item name='patientCode' label='Br. kartona'>
+              <Input placeholder='Auto-dodela' disabled={!isEditing} />
+            </Form.Item>
+          </Col>
+
+          <Col span={8}>
             <Form.Item
               name='ownerId'
               label='Vlasnik'
@@ -175,6 +208,11 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') {
+                    e.stopPropagation();
+                  }
+                }}
               />
             </Form.Item>
           </Col>

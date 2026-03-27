@@ -119,6 +119,7 @@ export interface Pet {
   id: string;
   ownerId: string;
   ownerName: string;
+  patientCode: string | null;
   speciesId: string | null;
   speciesName: string | null;
   breedId: string | null;
@@ -155,6 +156,7 @@ export interface CreatePetRequest {
   allergies?: string;
   note?: string;
   photoUrl?: string;
+  patientCode?: string;
 }
 
 export interface UpdatePetRequest {
@@ -173,6 +175,7 @@ export interface UpdatePetRequest {
   allergies?: string;
   note?: string;
   photoUrl?: string;
+  patientCode?: string;
 }
 
 export interface Species {
