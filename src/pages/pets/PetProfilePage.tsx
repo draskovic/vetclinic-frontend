@@ -464,6 +464,7 @@ export default function PetProfilePage() {
               </Title>
               {pet.isDeceased && <Tag color='red'>Preminuo/la</Tag>}
               {pet.patientCode && <Tag color='blue'>Br. kartona: {pet.patientCode}</Tag>}
+              {pet.legacyCode && <Tag color='default'>Stari br.: {pet.legacyCode}</Tag>}
             </Space>
           }
           bordered

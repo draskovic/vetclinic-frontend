@@ -45,11 +45,19 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
   const [paidImmediately, setPaidImmediately] = useState(false);
   const currentInvoice = invoice ?? createdInvoice;
+  const selectedOwnerId = Form.useWatch('ownerId', form);
+
   const isEditing = !!currentInvoice;
 
   const { data: ownersData } = useQuery({
     queryKey: ['owners-all'],
     queryFn: () => ownersApi.getAll(0, 100).then((r) => r.data),
+  });
+
+  const { data: selectedOwner } = useQuery({
+    queryKey: ['owner', selectedOwnerId],
+    queryFn: () => ownersApi.getById(selectedOwnerId!).then((r) => r.data),
+    enabled: !!selectedOwnerId,
   });
 
   const { data: locationsData } = useQuery({
@@ -194,11 +202,20 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const ownerOptions =
-    ownersData?.content.map((o) => ({
-      label: `${o.firstName} ${o.lastName}`,
-      value: o.id,
-    })) ?? [];
+  const ownerOptions = (() => {
+    const list =
+      ownersData?.content.map((o) => ({
+        label: `${o.firstName} ${o.lastName}`,
+        value: o.id,
+      })) ?? [];
+    if (selectedOwner && !list.find((o) => o.value === selectedOwner.id)) {
+      list.unshift({
+        label: `${selectedOwner.firstName} ${selectedOwner.lastName}`,
+        value: selectedOwner.id,
+      });
+    }
+    return list;
+  })();
 
   const locationOptions =
     locationsData?.map((l) => ({

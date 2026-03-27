@@ -120,6 +120,7 @@ export interface Pet {
   ownerId: string;
   ownerName: string;
   patientCode: string | null;
+  legacyCode: string | null;
   speciesId: string | null;
   speciesName: string | null;
   breedId: string | null;
@@ -157,6 +158,7 @@ export interface CreatePetRequest {
   note?: string;
   photoUrl?: string;
   patientCode?: string;
+  legacyCode?: string;
 }
 
 export interface UpdatePetRequest {
@@ -176,6 +178,7 @@ export interface UpdatePetRequest {
   note?: string;
   photoUrl?: string;
   patientCode?: string;
+  legacyCode?: string;
 }
 
 export interface Species {
@@ -949,6 +952,7 @@ export interface ImportPetData {
   name: string;
   species?: string;
   breed?: string;
+  legacyCode?: string;
 }
 
 //================== IMPORT OWNERS =================

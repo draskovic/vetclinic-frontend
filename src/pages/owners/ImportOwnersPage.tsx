@@ -69,6 +69,7 @@ const ImportOwnersPage: React.FC = () => {
                         name: row.petName || row.imeLjubimca || '',
                         species: row.species || row.vrsta || undefined,
                         breed: row.breed || row.rasa || undefined,
+                        legacyCode: row.clientCode || row.broj || undefined,
                       },
                     ]
                   : [],

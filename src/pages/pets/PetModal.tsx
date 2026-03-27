@@ -261,6 +261,14 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
             </Form.Item>
           </Col>
         </Row>
+        <Row gutter={16}>
+          {' '}
+          <Col span={8}>
+            <Form.Item name='legacyCode' label='Stari br. kartona'>
+              <Input placeholder='Iz stare kartoteke' />
+            </Form.Item>
+          </Col>{' '}
+        </Row>
 
         <Row gutter={16}>
           <Col span={8}>

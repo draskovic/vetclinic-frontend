@@ -49,7 +49,7 @@ export default function PetsPage() {
       dataIndex: 'patientCode',
       key: 'patientCode',
       width: 120,
-      render: (v: string) => v || '—',
+      render: (_: string, record: Pet) => record.patientCode || record.legacyCode || '—',
     },
 
     {
