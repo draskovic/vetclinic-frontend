@@ -41,14 +41,16 @@ const ENTITY_TYPE_LABELS: Record<string, string> = {
 
 export default function AuditLogsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(15);
+
   const [actionFilter, setActionFilter] = useState<AuditAction | undefined>(undefined);
   const [dateRange, setDateRange] = useState<[dayjs.Dayjs, dayjs.Dayjs] | null>(null);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['audit-logs', page, actionFilter, dateRange?.map((d) => d.toISOString())],
+    queryKey: ['audit-logs', page, pageSize, actionFilter, dateRange?.map((d) => d.toISOString())],
     queryFn: () => {
       if (actionFilter) {
-        return auditLogsApi.getByAction(actionFilter, page - 1, 15).then((r) => r.data);
+        return auditLogsApi.getByAction(actionFilter, page - 1, pageSize).then((r) => r.data);
       }
       if (dateRange) {
         return auditLogsApi
@@ -56,11 +58,11 @@ export default function AuditLogsPage() {
             dateRange[0].startOf('day').toISOString(),
             dateRange[1].endOf('day').toISOString(),
             page - 1,
-            15,
+            pageSize,
           )
           .then((r) => r.data);
       }
-      return auditLogsApi.getAll(page - 1, 15).then((r) => r.data);
+      return auditLogsApi.getAll(page - 1, pageSize).then((r) => r.data);
     },
   });
 
@@ -224,8 +226,17 @@ export default function AuditLogsPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 15,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '15', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} zapisa`,
           }}
         />

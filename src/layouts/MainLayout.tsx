@@ -36,66 +36,86 @@ const allMenuItems = [
     permission: null,
   },
   {
-    key: '/owners',
+    key: 'patients',
     icon: <TeamOutlined style={{ color: '#722ed1' }} />,
-    label: 'Vlasnici',
+    label: 'Pacijenti',
     permission: 'manage_owners',
+    children: [
+      {
+        key: '/owners',
+        icon: <TeamOutlined style={{ color: '#722ed1' }} />,
+        label: 'Vlasnici',
+      },
+      {
+        key: '/pets',
+        icon: <HeartOutlined style={{ color: '#eb2f96' }} />,
+        label: 'Ljubimci',
+      },
+    ],
   },
   {
-    key: '/pets',
-    icon: <HeartOutlined style={{ color: '#eb2f96' }} />,
-    label: 'Ljubimci',
-    permission: 'manage_pets',
-  },
-  {
-    key: '/appointments',
+    key: 'scheduling',
     icon: <CalendarOutlined style={{ color: '#fa8c16' }} />,
-    label: 'Termini',
+    label: 'Zakazivanje',
     permission: 'manage_appointments',
+    children: [
+      {
+        key: '/appointments',
+        icon: <CalendarOutlined style={{ color: '#fa8c16' }} />,
+        label: 'Termini',
+      },
+      {
+        key: '/calendar',
+        icon: <CalendarOutlined style={{ color: '#13c2c2' }} />,
+        label: 'Kalendar',
+      },
+    ],
   },
   {
-    key: '/calendar',
-    icon: <CalendarOutlined style={{ color: '#13c2c2' }} />,
-    label: 'Kalendar',
-    permission: 'manage_appointments',
-  },
-
-  {
-    key: '/medical-records',
+    key: 'medical',
     icon: <FileTextOutlined style={{ color: '#13c2c2' }} />,
-    label: 'Intervencije',
+    label: 'Med. kartoni',
     permission: 'manage_medical_records',
+    children: [
+      {
+        key: '/medical-records',
+        icon: <FileTextOutlined style={{ color: '#13c2c2' }} />,
+        label: 'Intervencije',
+      },
+      {
+        key: '/vaccinations',
+        icon: <MedicineBoxOutlined style={{ color: '#52c41a' }} />,
+        label: 'Vakcinacije',
+      },
+      {
+        key: '/lab-reports',
+        icon: <ExperimentOutlined style={{ color: '#13c2c2' }} />,
+        label: 'Lab izveštaji',
+      },
+      {
+        key: '/documents',
+        icon: <FolderOutlined style={{ color: '#597ef7' }} />,
+        label: 'Dokumenti',
+      },
+    ],
   },
   {
-    key: '/vaccinations',
-    icon: <MedicineBoxOutlined style={{ color: '#52c41a' }} />,
-    label: 'Vakcinacije',
-    permission: 'manage_vaccinations',
-  },
-  {
-    key: '/lab-reports',
-    icon: <ExperimentOutlined style={{ color: '#13c2c2' }} />,
-    label: 'Lab izveštaji',
-    permission: 'manage_medical_records',
-  },
-  {
-    key: '/documents',
-    icon: <FolderOutlined style={{ color: '#597ef7' }} />,
-    label: 'Dokumenti',
-    permission: 'manage_medical_records',
-  },
-
-  {
-    key: '/invoices',
+    key: 'finance',
     icon: <DollarOutlined style={{ color: '#faad14' }} />,
-    label: 'Fakture',
+    label: 'Finansije',
     permission: 'manage_invoices',
-  },
-  {
-    key: '/inventory',
-    icon: <InboxOutlined style={{ color: '#2f54eb' }} />,
-    label: 'Inventar',
-    permission: 'manage_inventory',
+    children: [
+      {
+        key: '/invoices',
+        icon: <DollarOutlined style={{ color: '#faad14' }} />,
+        label: 'Fakture',
+      },
+      {
+        key: '/inventory',
+        icon: <InboxOutlined style={{ color: '#2f54eb' }} />,
+        label: 'Inventar',
+      },
+    ],
   },
   {
     key: '/admin',
@@ -184,13 +204,19 @@ export default function MainLayout() {
           {collapsed ? '🐾' : <strong>🐾 VetClinic</strong>}
         </div>
 
-        <Menu
-          mode='inline'
-          selectedKeys={[location.pathname]}
-          items={menuItems}
-          onClick={({ key }) => navigate(key)}
-          style={{ borderRight: 0, marginTop: 8, fontSize: 16 }}
-        />
+        <div
+          className='sidebar-menu-scroll'
+          style={{ overflow: 'auto', height: 'calc(100vh - 64px)' }}
+        >
+          <Menu
+            mode='inline'
+            selectedKeys={[location.pathname]}
+            defaultOpenKeys={['patients', 'scheduling', 'medical', 'finance', '/admin']}
+            items={menuItems}
+            onClick={({ key }) => navigate(key)}
+            style={{ borderRight: 0, marginTop: 8, fontSize: 16 }}
+          />
+        </div>
       </Sider>
 
       <Layout>

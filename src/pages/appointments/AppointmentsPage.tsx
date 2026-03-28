@@ -52,6 +52,7 @@ const typeConfig: Record<AppointmentType, string> = {
 
 export default function AppointmentsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
 
@@ -67,10 +68,10 @@ export default function AppointmentsPage() {
   // When searching, load all data (size=1000) so client-side filter works across all appointments
   // When not searching, paginate normally (10 per page)
   const { data, isLoading } = useQuery({
-    queryKey: ['appointments', page, debouncedSearch, statusFilter],
+    queryKey: ['appointments', page, pageSize, debouncedSearch, statusFilter],
     queryFn: () =>
       appointmentsApi
-        .getAll(page - 1, 10, 'startTime,desc', debouncedSearch, statusFilter)
+        .getAll(page - 1, pageSize, 'startTime,desc', debouncedSearch, statusFilter)
         .then((r) => r.data),
   });
 
@@ -250,8 +251,17 @@ export default function AppointmentsPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 10,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} termina`,
           }}
         />

@@ -20,7 +20,9 @@ const typeConfig: Record<InventoryTransactionType, { color: string; label: strin
 export default function InventoryTransactionsPage() {
   const navigate = useNavigate();
 
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
   const [search, setSearch] = useState('');
   const [filterItem, setFilterItem] = useState<string | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
@@ -29,8 +31,8 @@ export default function InventoryTransactionsPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['inventory-transactions', page],
-    queryFn: () => inventoryTransactionsApi.getAll(page, 20).then((r) => r.data),
+    queryKey: ['inventory-transactions', page, pageSize],
+    queryFn: () => inventoryTransactionsApi.getAll(page - 1, pageSize).then((r) => r.data),
   });
 
   const { data: items } = useQuery({
@@ -170,10 +172,19 @@ export default function InventoryTransactionsPage() {
         dataSource={filtered}
         loading={isLoading}
         pagination={{
-          current: page + 1,
-          pageSize: 20,
+          current: page,
+          pageSize: pageSize,
           total: data?.totalElements,
-          onChange: (p) => setPage(p - 1),
+          onChange: (p, ps) => {
+            if (ps !== pageSize) {
+              setPage(1);
+              setPageSize(ps);
+            } else {
+              setPage(p);
+            }
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showTotal: (total) => `Ukupno: ${total}`,
         }}
       />

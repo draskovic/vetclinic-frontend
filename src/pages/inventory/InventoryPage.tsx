@@ -21,7 +21,9 @@ const categoryConfig: Record<InventoryCategory, { color: string; label: string }
 export default function InventoryPage() {
   const navigate = useNavigate();
 
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<string | undefined>(undefined);
   const debouncedSearch = useDebouncedValue(search);
@@ -32,9 +34,11 @@ export default function InventoryPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['inventory-items', page, debouncedSearch, categoryFilter],
+    queryKey: ['inventory-items', page, pageSize, debouncedSearch, categoryFilter],
     queryFn: () =>
-      inventoryItemsApi.getAll(page, 20, debouncedSearch, categoryFilter).then((r) => r.data),
+      inventoryItemsApi
+        .getAll(page - 1, pageSize, debouncedSearch, categoryFilter)
+        .then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -175,7 +179,7 @@ export default function InventoryPage() {
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
-            setPage(0);
+            setPage(1);
           }}
           style={{ marginBottom: 16, maxWidth: 400 }}
           allowClear
@@ -185,7 +189,7 @@ export default function InventoryPage() {
           value={categoryFilter}
           onChange={(value) => {
             setCategoryFilter(value);
-            setPage(0);
+            setPage(1);
           }}
           allowClear
           style={{ marginBottom: 16, width: 200, marginLeft: 12 }}
@@ -202,10 +206,19 @@ export default function InventoryPage() {
           dataSource={filteredData}
           loading={isLoading}
           pagination={{
-            current: page + 1,
-            pageSize: 20,
+            current: page,
+            pageSize: pageSize,
             total: data?.totalElements,
-            onChange: (p) => setPage(p - 1),
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total}`,
           }}
         />

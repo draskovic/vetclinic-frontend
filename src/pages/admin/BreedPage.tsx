@@ -11,13 +11,15 @@ const { Title } = Typography;
 
 export default function BreedPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingBreed, setEditingBreed] = useState<Breed | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['breeds', page],
-    queryFn: () => breedsApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['breeds', page, pageSize],
+    queryFn: () => breedsApi.getAll(page - 1, pageSize).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -105,8 +107,17 @@ export default function BreedPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 10,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} rasa`,
           }}
         />

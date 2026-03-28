@@ -11,14 +11,16 @@ const categoryConfig: Record<ServiceCategory, { color: string; label: string }> 
   EXAMINATION: { color: '#1890ff', label: 'Pregled' },
   SURGERY: { color: '#ff4d4f', label: 'Hirurgija' },
   VACCINATION: { color: '#52c41a', label: 'Vakcinacija' },
-  LAB: { color: '#800080', label: 'Laboratorija' },
-  DENTAL: { color: '#00FFFF', label: 'Stomatologija' },
+  LAB: { color: '#b37feb', label: 'Laboratorija' },
+  DENTAL: { color: '#13c2c2', label: 'Stomatologija' },
   GROOMING: { color: '#fa8c16', label: 'Grooming' },
   OTHER: { color: 'default', label: 'Ostalo' },
 };
 
 export default function ServicesPage() {
-  const [page, setPage] = useState(0);
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+
   const [search, setSearch] = useState('');
   const [categoryFilter, setCategoryFilter] = useState<ServiceCategory | ''>('');
   const [modalOpen, setModalOpen] = useState(false);
@@ -27,8 +29,8 @@ export default function ServicesPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['services', page],
-    queryFn: () => servicesApi.getAll(page, 20),
+    queryKey: ['services', page, pageSize],
+    queryFn: () => servicesApi.getAll(page - 1, pageSize),
   });
 
   const deleteMutation = useMutation({
@@ -84,16 +86,7 @@ export default function ServicesPage() {
       align: 'right',
       render: (val: number | null) => (val ? `${val} min` : '-'),
     },
-    {
-      title: 'Kategorija',
-      dataIndex: 'category',
-      width: 140,
-      render: (cat: ServiceCategory) => (
-        <span style={{ color: categoryConfig[cat]?.color, fontWeight: 600 }}>
-          {categoryConfig[cat]?.label ?? cat}
-        </span>
-      ),
-    },
+
     {
       title: 'Akcije',
       width: 100,
@@ -167,10 +160,19 @@ export default function ServicesPage() {
         dataSource={filtered}
         loading={isLoading}
         pagination={{
-          current: page + 1,
-          pageSize: 20,
+          current: page,
+          pageSize: pageSize,
           total: data?.totalElements,
-          onChange: (p) => setPage(p - 1),
+          onChange: (p, ps) => {
+            if (ps !== pageSize) {
+              setPage(1);
+              setPageSize(ps);
+            } else {
+              setPage(p);
+            }
+          },
+          showSizeChanger: true,
+          pageSizeOptions: ['10', '20', '50', '100'],
           showTotal: (total) => `Ukupno: ${total}`,
         }}
       />

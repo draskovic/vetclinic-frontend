@@ -60,6 +60,7 @@ function getFileIcon(fileType: FileType) {
 
 export default function DocumentsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);
@@ -68,8 +69,8 @@ export default function DocumentsPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['documents', page, debouncedSearch],
-    queryFn: () => documentsApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
+    queryKey: ['documents', page, pageSize, debouncedSearch],
+    queryFn: () => documentsApi.getAll(page - 1, pageSize, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -233,7 +234,10 @@ export default function DocumentsPage() {
           prefix={<SearchOutlined />}
           placeholder='Pretraži po nazivu fajla, ljubimcu, opisu...'
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           style={{ marginBottom: 16, maxWidth: 500 }}
           allowClear
         />
@@ -246,8 +250,17 @@ export default function DocumentsPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 10,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} dokumenata`,
           }}
         />

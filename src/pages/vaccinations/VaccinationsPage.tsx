@@ -12,14 +12,15 @@ const { Title } = Typography;
 
 export default function VaccinationsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingVaccination, setEditingVaccination] = useState<Vaccination | null>(null);
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['vaccinations', page],
-    queryFn: () => vaccinationsApi.getAll(page - 1, 10).then((r) => r.data),
+    queryKey: ['vaccinations', page, pageSize],
+    queryFn: () => vaccinationsApi.getAll(page - 1, pageSize).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -153,7 +154,10 @@ export default function VaccinationsPage() {
           prefix={<SearchOutlined />}
           placeholder='Pretraži po ljubimcu, vakcini, proizvođaču ili veterinaru...'
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           style={{ marginBottom: 16, maxWidth: 400 }}
           allowClear
         />
@@ -167,8 +171,17 @@ export default function VaccinationsPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 10,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} vakcinacija`,
           }}
         />

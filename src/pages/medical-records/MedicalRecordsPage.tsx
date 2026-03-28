@@ -22,6 +22,8 @@ const { Title } = Typography;
 
 export default function MedicalRecordsPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+
   const [search, setSearch] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
@@ -38,8 +40,9 @@ export default function MedicalRecordsPage() {
   }, [debouncedSearch]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['medical-records', page, debouncedSearch],
-    queryFn: () => medicalRecordsApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
+    queryKey: ['medical-records', page, pageSize, debouncedSearch],
+    queryFn: () =>
+      medicalRecordsApi.getAll(page - 1, pageSize, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -191,7 +194,10 @@ export default function MedicalRecordsPage() {
           prefix={<SearchOutlined />}
           placeholder='Pretraži po ljubimcu, veterinaru, dijagnozi, simptomu...'
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           style={{ marginBottom: 16, maxWidth: 400 }}
           allowClear
         />
@@ -205,8 +211,17 @@ export default function MedicalRecordsPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 10,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} intervencija`,
           }}
         />

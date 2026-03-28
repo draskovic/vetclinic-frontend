@@ -13,6 +13,7 @@ const { Title } = Typography;
 
 export default function OwnersPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);
@@ -22,8 +23,8 @@ export default function OwnersPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['owners', page, debouncedSearch],
-    queryFn: () => ownersApi.getAll(page - 1, 10, debouncedSearch).then((r) => r.data),
+    queryKey: ['owners', page, pageSize, debouncedSearch],
+    queryFn: () => ownersApi.getAll(page - 1, pageSize, debouncedSearch).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -138,7 +139,10 @@ export default function OwnersPage() {
           prefix={<SearchOutlined />}
           placeholder='Pretraži po imenu, telefonu ili broju kartona...'
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            setPage(1);
+          }}
           style={{ marginBottom: 16, maxWidth: 400 }}
           allowClear
         />
@@ -152,8 +156,18 @@ export default function OwnersPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 10,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} vlasnika`,
           }}
         />

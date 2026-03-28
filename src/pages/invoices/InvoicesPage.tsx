@@ -44,6 +44,7 @@ const formatCurrency = (amount: number, currency: string) => {
 
 export default function InvoicesPage() {
   const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
   const debouncedSearch = useDebouncedValue(search);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
@@ -52,9 +53,9 @@ export default function InvoicesPage() {
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['invoices', page, debouncedSearch, statusFilter],
+    queryKey: ['invoices', page, pageSize, debouncedSearch, statusFilter],
     queryFn: () =>
-      invoicesApi.getAll(page - 1, 10, debouncedSearch, statusFilter).then((r) => r.data),
+      invoicesApi.getAll(page - 1, pageSize, debouncedSearch, statusFilter).then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -221,8 +222,17 @@ export default function InvoicesPage() {
           pagination={{
             current: page,
             total: data?.totalElements,
-            pageSize: 10,
-            onChange: setPage,
+            pageSize: pageSize,
+            onChange: (p, ps) => {
+              if (ps !== pageSize) {
+                setPage(1);
+                setPageSize(ps);
+              } else {
+                setPage(p);
+              }
+            },
+            showSizeChanger: true,
+            pageSizeOptions: ['10', '20', '50', '100'],
             showTotal: (total) => `Ukupno: ${total} faktura`,
           }}
         />
