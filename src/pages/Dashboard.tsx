@@ -20,6 +20,7 @@ import dayjs from 'dayjs';
 import { useThemeStore } from '@/store/themeStore';
 import { useNavigate, Link } from 'react-router-dom';
 import NewPatientModal from '@/components/NewPatientModal';
+import MedicalRecordModal from './medical-records/MedicalRecordModal';
 
 import type {
   Appointment,
@@ -100,6 +101,7 @@ export default function Dashboard() {
   const statCards = getStatCards(darkMode);
   const navigate = useNavigate();
   const [newPatientModalOpen, setNewPatientModalOpen] = useState(false);
+  const [medicalRecordModalOpen, setMedicalRecordModalOpen] = useState(false);
 
   const todayFrom = dayjs().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
   const todayTo = dayjs().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
@@ -345,7 +347,7 @@ export default function Dashboard() {
           <Button icon={<UserAddOutlined />} onClick={() => navigate('/owners')}>
             Nov vlasnik
           </Button>
-          <Button icon={<FileAddOutlined />} onClick={() => navigate('/medical-records')}>
+          <Button icon={<FileAddOutlined />} onClick={() => setMedicalRecordModalOpen(true)}>
             Nova intervencija
           </Button>
           <Button icon={<MedicineBoxOutlined />} onClick={() => setNewPatientModalOpen(true)}>
@@ -610,6 +612,12 @@ export default function Dashboard() {
           </Card>
         </Col>
       </Row>
+      <MedicalRecordModal
+        open={medicalRecordModalOpen}
+        record={null}
+        onClose={() => setMedicalRecordModalOpen(false)}
+      />
+
       <NewPatientModal open={newPatientModalOpen} onClose={() => setNewPatientModalOpen(false)} />
     </div>
   );

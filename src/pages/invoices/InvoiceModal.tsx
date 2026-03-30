@@ -25,6 +25,7 @@ import { treatmentsApi } from '@/api/treatments';
 import { servicesApi } from '@/api/services';
 import { invoiceItemsApi } from '@/api/invoices';
 import { paymentsApi } from '@/api/payments';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 interface InvoiceModalProps {
   open: boolean;
@@ -44,14 +45,16 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const queryClient = useQueryClient();
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
   const [paidImmediately, setPaidImmediately] = useState(false);
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const debouncedOwnerSearch = useDebouncedValue(ownerSearch, 300);
   const currentInvoice = invoice ?? createdInvoice;
   const selectedOwnerId = Form.useWatch('ownerId', form);
 
   const isEditing = !!currentInvoice;
 
   const { data: ownersData } = useQuery({
-    queryKey: ['owners-all'],
-    queryFn: () => ownersApi.getAll(0, 100).then((r) => r.data),
+    queryKey: ['owners-search', debouncedOwnerSearch],
+    queryFn: () => ownersApi.getAll(0, 20, debouncedOwnerSearch || undefined).then((r) => r.data),
   });
 
   const { data: selectedOwner } = useQuery({
@@ -179,16 +182,27 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
         try {
           const invoiceRes = await invoicesApi.getById(currentInvoice!.id);
           const freshInvoice = invoiceRes.data;
-          if (freshInvoice.total > 0) {
+          const existingPayments = await paymentsApi.getByInvoice(freshInvoice.id);
+          const totalPaid = existingPayments.reduce(
+            (sum: number, p: any) => sum + (p.amount ?? 0),
+            0,
+          );
+          const remaining = freshInvoice.total - totalPaid;
+          if (remaining > 0) {
             await paymentsApi.create({
               invoiceId: freshInvoice.id,
-              amount: freshInvoice.total,
+              amount: remaining,
+
               method: paymentMethod,
               paidAt: dayjs().toISOString(),
               referenceNumber: freshInvoice.invoiceNumber,
             });
             message.success('Plaćanje evidentirano!');
+            // Da se ne bi ponovilo plaćanje kod sledećeg otvaranja fakture.
+            setPaidImmediately(false);
+            queryClient.invalidateQueries({ queryKey: ['payments', currentInvoice!.id] });
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
+            queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] });
           }
         } catch (e) {
           message.warning('Plaćanje nije evidentirano. Dodajte ručno u tab Plaćanja.');
@@ -205,12 +219,12 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const ownerOptions = (() => {
     const list =
       ownersData?.content.map((o) => ({
-        label: `${o.firstName} ${o.lastName}`,
+        label: `${o.clientCode ? o.clientCode + ' — ' : ''}${o.firstName} ${o.lastName}`,
         value: o.id,
       })) ?? [];
     if (selectedOwner && !list.find((o) => o.value === selectedOwner.id)) {
       list.unshift({
-        label: `${selectedOwner.firstName} ${selectedOwner.lastName}`,
+        label: `${selectedOwner.clientCode ? selectedOwner.clientCode + ' — ' : ''}${selectedOwner.firstName} ${selectedOwner.lastName}`,
         value: selectedOwner.id,
       });
     }
@@ -259,9 +273,8 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                 placeholder='Izaberite vlasnika...'
                 options={ownerOptions}
                 showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={false}
+                onSearch={(value) => setOwnerSearch(value)}
                 onInputKeyDown={(e) => {
                   if (e.key === ' ') {
                     e.stopPropagation();
@@ -286,9 +299,9 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                 <Checkbox
                   checked={paidImmediately}
                   onChange={(e) => setPaidImmediately(e.target.checked)}
-                  disabled={['PAID', 'CANCELLED', 'REFUNDED'].includes(
-                    currentInvoice?.status ?? '',
-                  )}
+                  disabled={
+                    !['ISSUED', 'PARTIALLY_PAID', 'OVERDUE'].includes(currentInvoice?.status ?? '')
+                  }
                 >
                   Plaćeno odmah
                 </Checkbox>
@@ -396,6 +409,21 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                     invoiceId={currentInvoice!.id}
                     invoiceTotal={currentInvoice!.total ?? 0}
                     invoiceNumber={currentInvoice!.invoiceNumber}
+                    onItemsChanged={async () => {
+                      try {
+                        const res = await invoicesApi.getById(currentInvoice!.id);
+                        const inv = res.data;
+                        form.setFieldsValue({
+                          status: inv.status,
+                          subtotal: inv.subtotal,
+                          taxAmount: inv.taxAmount,
+                          discountAmount: inv.discountAmount,
+                          total: inv.total,
+                        });
+                      } catch (e) {
+                        // ignore
+                      }
+                    }}
                   />
                 ),
               },

@@ -37,12 +37,14 @@ interface PaymentItemsTableProps {
   invoiceId: string;
   invoiceTotal: number;
   invoiceNumber?: string;
+  onItemsChanged?: () => Promise<void>;
 }
 
 export default function PaymentItemsTable({
   invoiceId,
   invoiceTotal,
   invoiceNumber,
+  onItemsChanged,
 }: PaymentItemsTableProps) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editingPayment, setEditingPayment] = useState<Payment | null>(null);
@@ -56,33 +58,48 @@ export default function PaymentItemsTable({
 
   const createMutation = useMutation({
     mutationFn: (data: CreatePaymentRequest) => paymentsApi.create(data),
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Plaćanje je zabeleženo!');
-      queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] }),
+        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] }),
+      ]);
+      if (onItemsChanged) await onItemsChanged();
       closeModal();
     },
+
     onError: () => message.error('Greška pri kreiranju plaćanja!'),
   });
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdatePaymentRequest) => paymentsApi.update(editingPayment!.id, data),
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Plaćanje je izmenjeno!');
-      queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] }),
+        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] }),
+      ]);
+      if (onItemsChanged) await onItemsChanged();
       closeModal();
     },
+
     onError: () => message.error('Greška pri izmeni plaćanja!'),
   });
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => paymentsApi.remove(id),
-    onSuccess: () => {
+    onSuccess: async () => {
       message.success('Plaćanje je obrisano!');
-      queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['payments', invoiceId] }),
+        queryClient.invalidateQueries({ queryKey: ['invoices'] }),
+        queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] }),
+      ]);
+      if (onItemsChanged) await onItemsChanged();
     },
+
     onError: () => message.error('Greška pri brisanju!'),
   });
 

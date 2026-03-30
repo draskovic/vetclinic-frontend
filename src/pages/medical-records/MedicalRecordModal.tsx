@@ -12,7 +12,9 @@ import {
   Row,
   Tabs,
   Col,
+  Space,
 } from 'antd';
+import { DollarOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { medicalRecordsApi } from '@/api/medical-records';
 import { petsApi } from '@/api/pets';
@@ -28,6 +30,9 @@ import TreatmentItemsTable from './TreatmentItemsTable';
 import LabReportItemsTable from './LabReportItemsTable';
 import VaccinationItemsTable from './VaccinationItemsTable';
 import PrescriptionItemsTable from './PrescriptionItemsTable';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { invoicesApi } from '@/api/invoices';
+import InvoiceModal from '@/pages/invoices/InvoiceModal';
 
 interface MedicalRecordModalProps {
   open: boolean;
@@ -47,12 +52,17 @@ export default function MedicalRecordModal({
 
   const [createdRecord, setCreatedRecord] = useState<MedicalRecord | null>(null);
   const currentRecord = record ?? createdRecord;
+  const [petSearch, setPetSearch] = useState('');
+  const debouncedPetSearch = useDebouncedValue(petSearch, 300);
+  const [appointmentSearch, setAppointmentSearch] = useState('');
+  const debouncedAppointmentSearch = useDebouncedValue(appointmentSearch, 300);
+  const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
   const isEditMode = !!currentRecord;
 
   const { data: petsData } = useQuery({
-    queryKey: ['pets-all'],
-    queryFn: () => petsApi.getAll(0, 100).then((r) => r.data),
+    queryKey: ['pets-search', debouncedPetSearch],
+    queryFn: () => petsApi.getAll(0, 20, debouncedPetSearch || undefined).then((r) => r.data),
   });
 
   const petIdToFetch = defaultValues?.petId || record?.petId;
@@ -69,9 +79,31 @@ export default function MedicalRecordModal({
   });
 
   const { data: appointmentsData } = useQuery({
-    queryKey: ['appointments-all'],
-    queryFn: () => appointmentsApi.getAll(0, 100).then((r) => r.data),
+    queryKey: ['appointments-search', debouncedAppointmentSearch],
+    queryFn: () =>
+      appointmentsApi
+        .getAll(0, 20, 'startTime,desc', debouncedAppointmentSearch || undefined)
+        .then((r) => r.data),
   });
+
+  const { data: linkedInvoice } = useQuery({
+    queryKey: ['invoice-by-record', currentRecord?.id],
+    queryFn: () => invoicesApi.getByMedicalRecord(currentRecord!.id).then((r) => r.data),
+    enabled: !!currentRecord?.id,
+    retry: false,
+  });
+
+  const handlePrintInvoice = async () => {
+    if (!linkedInvoice) return;
+    try {
+      const response = await invoicesApi.downloadPdf(linkedInvoice.id);
+      const blob = new Blob([response.data], { type: 'application/pdf' });
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank');
+    } catch {
+      message.error('Greška pri generisanju PDF-a!');
+    }
+  };
 
   useEffect(() => {
     if (open) {
@@ -139,13 +171,15 @@ export default function MedicalRecordModal({
   const petOptions = useMemo(() => {
     const options =
       petsData?.content.map((p) => ({
-        label: p.name,
+        label: `${p.name}${p.speciesName ? ' (' + p.speciesName + ')' : ''} — ${p.ownerName || 'Bez vlasnika'}`,
         value: p.id,
       })) ?? [];
 
-    // Dodaj izabranog ljubimca ako nije u listi
     if (selectedPet && !options.find((o) => o.value === selectedPet.id)) {
-      options.unshift({ label: selectedPet.name, value: selectedPet.id });
+      options.unshift({
+        label: `${selectedPet.name}${selectedPet.speciesName ? ' (' + selectedPet.speciesName + ')' : ''} — ${selectedPet.ownerName || 'Bez vlasnika'}`,
+        value: selectedPet.id,
+      });
     }
 
     return options;
@@ -189,9 +223,8 @@ export default function MedicalRecordModal({
                 options={appointmentOptions}
                 showSearch
                 allowClear
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={false}
+                onSearch={(value) => setAppointmentSearch(value)}
               />
             </Form.Item>
           </Col>
@@ -226,9 +259,8 @@ export default function MedicalRecordModal({
                 placeholder='Izaberite ljubimca...'
                 options={petOptions}
                 showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={false}
+                onSearch={(value) => setPetSearch(value)}
                 onInputKeyDown={(e) => {
                   if (e.key === ' ') {
                     e.stopPropagation();
@@ -298,53 +330,91 @@ export default function MedicalRecordModal({
         </Row>
 
         {isEditMode && (
-          <Tabs
-            style={{ marginTop: 8 }}
-            items={[
-              {
-                key: 'treatments',
-                label: 'Usluge',
-                children: (
-                  <TreatmentItemsTable
-                    medicalRecordId={currentRecord?.id ?? null}
-                    vetId={currentRecord?.vetId ?? ''}
-                  />
-                ),
-              },
-              {
-                key: 'vaccinations',
-                label: 'Vakcinacije',
-                children: (
-                  <VaccinationItemsTable
-                    medicalRecordId={currentRecord?.id ?? null}
-                    petId={currentRecord?.petId ?? ''}
-                    vetId={currentRecord?.vetId ?? ''}
-                  />
-                ),
-              },
-              {
-                key: 'lab-reports',
-                label: 'Lab izveštaji',
-                children: (
-                  <LabReportItemsTable
-                    medicalRecordId={currentRecord?.id ?? null}
-                    petId={currentRecord?.petId ?? ''}
-                  />
-                ),
-              },
-              {
-                key: 'prescriptions',
-                label: 'Recepti',
-                children: (
-                  <PrescriptionItemsTable
-                    medicalRecordId={currentRecord?.id ?? null}
-                    petId={currentRecord?.petId ?? ''}
-                    vetId={currentRecord?.vetId ?? ''}
-                  />
-                ),
-              },
-            ]}
-          />
+          <>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginTop: 8,
+                marginBottom: 8,
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>Faktura:</span>
+              <Space>
+                {linkedInvoice ? (
+                  <>
+                    <Button
+                      icon={<DollarOutlined />}
+                      size='small'
+                      onClick={() => setInvoiceModalOpen(true)}
+                    >
+                      {linkedInvoice.invoiceNumber} — {linkedInvoice.status}
+                    </Button>
+                    <Button icon={<FilePdfOutlined />} size='small' onClick={handlePrintInvoice}>
+                      Štampaj fakturu
+                    </Button>
+                  </>
+                ) : (
+                  <Button
+                    icon={<DollarOutlined />}
+                    size='small'
+                    type='dashed'
+                    onClick={() => setInvoiceModalOpen(true)}
+                  >
+                    Kreiraj fakturu
+                  </Button>
+                )}
+              </Space>
+            </div>
+            <Tabs
+              style={{ marginTop: 8 }}
+              items={[
+                {
+                  key: 'treatments',
+                  label: 'Usluge',
+                  children: (
+                    <TreatmentItemsTable
+                      medicalRecordId={currentRecord?.id ?? null}
+                      vetId={currentRecord?.vetId ?? ''}
+                    />
+                  ),
+                },
+                {
+                  key: 'vaccinations',
+                  label: 'Vakcinacije',
+                  children: (
+                    <VaccinationItemsTable
+                      medicalRecordId={currentRecord?.id ?? null}
+                      petId={currentRecord?.petId ?? ''}
+                      vetId={currentRecord?.vetId ?? ''}
+                    />
+                  ),
+                },
+                {
+                  key: 'lab-reports',
+                  label: 'Lab izveštaji',
+                  children: (
+                    <LabReportItemsTable
+                      medicalRecordId={currentRecord?.id ?? null}
+                      petId={currentRecord?.petId ?? ''}
+                    />
+                  ),
+                },
+                {
+                  key: 'prescriptions',
+                  label: 'Recepti',
+                  children: (
+                    <PrescriptionItemsTable
+                      medicalRecordId={currentRecord?.id ?? null}
+                      petId={currentRecord?.petId ?? ''}
+                      vetId={currentRecord?.vetId ?? ''}
+                    />
+                  ),
+                },
+              ]}
+            />
+          </>
         )}
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
@@ -356,6 +426,18 @@ export default function MedicalRecordModal({
           </Button>
         </Form.Item>
       </Form>
+      <InvoiceModal
+        open={invoiceModalOpen}
+        invoice={linkedInvoice ?? null}
+        onClose={() => {
+          setInvoiceModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['invoice-by-record', currentRecord?.id] });
+        }}
+        defaultValues={{
+          ownerId: currentRecord?.ownerId,
+          medicalRecordId: currentRecord?.id,
+        }}
+      />
     </Modal>
   );
 }
