@@ -35,6 +35,7 @@ import OwnerProfilePage from './pages/owners/OwnerProfilePage';
 import ProfilePage from './pages/profile/ProfilePage';
 import ClinicSettingsPage from './pages/admin/ClinicSettingsPage';
 import ImportOwnersPage from './pages/owners/ImportOwnersPage';
+import ImportServicesPage from './pages/admin/ImportServicesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -271,6 +272,14 @@ export default function App() {
                     element={
                       <PermissionGuard permission='*'>
                         <ImportOwnersPage />
+                      </PermissionGuard>
+                    }
+                  />
+                  <Route
+                    path='admin/import-services'
+                    element={
+                      <PermissionGuard permission='*'>
+                        <ImportServicesPage />
                       </PermissionGuard>
                     }
                   />

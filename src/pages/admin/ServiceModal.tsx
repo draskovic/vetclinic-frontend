@@ -77,7 +77,12 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
     >
       <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
         <Row gutter={16}>
-          <Col span={16}>
+          <Col span={3}>
+            <Form.Item name='sku' label='Šifra'>
+              <Input placeholder='npr. 1001' />
+            </Form.Item>
+          </Col>
+          <Col span={11}>
             <Form.Item
               name='name'
               label='Naziv usluge'
@@ -86,7 +91,12 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
               <Input placeholder='npr. Opšti pregled, Vakcinacija, Kastracija...' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={5}>
+            <Form.Item name='unit' label='Jed. mere'>
+              <Input placeholder='npr. tab, kut' />
+            </Form.Item>
+          </Col>
+          <Col span={5}>
             <Form.Item
               name='category'
               label='Kategorija'

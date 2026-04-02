@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Col, Row, Typography, Table, Tag, Empty, Button, Space } from 'antd';
+import { Card, Col, Row, Typography, Table, Tag, Empty, Button, Space, Tooltip } from 'antd';
 import {
   WarningOutlined,
   CalendarOutlined,
@@ -102,6 +102,7 @@ export default function Dashboard() {
   const navigate = useNavigate();
   const [newPatientModalOpen, setNewPatientModalOpen] = useState(false);
   const [medicalRecordModalOpen, setMedicalRecordModalOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
 
   const todayFrom = dayjs().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
   const todayTo = dayjs().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
@@ -188,13 +189,42 @@ export default function Dashboard() {
       title: 'Tip',
       dataIndex: 'type',
       width: 120,
+      render: (type: string) => {
+        const labels: Record<string, string> = {
+          CHECKUP: 'Pregled',
+          VACCINATION: 'Vakcinacija',
+          SURGERY: 'Operacija',
+          EMERGENCY: 'Hitno',
+          FOLLOW_UP: 'Kontrola',
+          GROOMING: 'Šišanje',
+        };
+        return labels[type] ?? type;
+      },
     },
+
     {
       title: 'Status',
       dataIndex: 'status',
       width: 110,
       render: (status: AppointmentStatus) => (
         <Tag color={statusConfig[status]?.color}>{statusConfig[status]?.label ?? status}</Tag>
+      ),
+    },
+    {
+      title: '',
+      width: 50,
+      render: (_: unknown, record: Appointment) => (
+        <Tooltip title='Kreiraj intervenciju'>
+          <Button
+            type='text'
+            size='small'
+            icon={<MedicineBoxOutlined />}
+            onClick={() => {
+              setSelectedAppointment(record);
+              setMedicalRecordModalOpen(true);
+            }}
+          />
+        </Tooltip>
       ),
     },
   ];
@@ -615,7 +645,20 @@ export default function Dashboard() {
       <MedicalRecordModal
         open={medicalRecordModalOpen}
         record={null}
-        onClose={() => setMedicalRecordModalOpen(false)}
+        onClose={() => {
+          setMedicalRecordModalOpen(false);
+          setSelectedAppointment(null);
+        }}
+        defaultValues={
+          selectedAppointment
+            ? {
+                petId: selectedAppointment.petId,
+                vetId: selectedAppointment.vetId,
+                appointmentId: selectedAppointment.id,
+                symptoms: selectedAppointment.reason || '',
+              }
+            : undefined
+        }
       />
 
       <NewPatientModal open={newPatientModalOpen} onClose={() => setNewPatientModalOpen(false)} />

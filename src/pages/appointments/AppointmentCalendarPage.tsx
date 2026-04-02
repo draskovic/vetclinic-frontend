@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, Select, Tag, Tooltip, Modal } from 'antd';
 import { UnorderedListOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -46,6 +46,15 @@ const AppointmentCalendarPage = () => {
   const navigate = useNavigate();
 
   const calendarRef = useRef<FullCalendar>(null);
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      const todayCell = document.querySelector('.fc-day-today');
+      if (todayCell) {
+        todayCell.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 300);
+    return () => clearTimeout(timer);
+  }, []);
 
   // State za datum opseg koji kalendar prikazuje
   const [dateRange, setDateRange] = useState({
@@ -111,13 +120,19 @@ const AppointmentCalendarPage = () => {
 
   // Klik na prazan slot → otvori modal za novi termin
   const handleDateSelect = (arg: DateSelectArg) => {
-    const isPast = dayjs(arg.start).isBefore(dayjs());
+    let start = dayjs(arg.start);
+    // U mesečnom prikazu FullCalendar šalje 00:00 — zameni sa trenutnim vremenom ako je danas
+    if (start.isSame(dayjs(), 'day') && start.hour() === 0 && start.minute() === 0) {
+      start = dayjs();
+    }
+
+    const isPast = start.isBefore(dayjs());
 
     const openModal = () => {
       setEditingAppointment(null);
       setSelectedDates({
-        start: arg.start.toISOString(),
-        end: arg.end.toISOString(),
+        start: start.toISOString(),
+        end: start.add(30, 'minute').toISOString(),
       });
       setModalOpen(true);
     };
@@ -223,7 +238,7 @@ const AppointmentCalendarPage = () => {
         <FullCalendar
           ref={calendarRef}
           plugins={[dayGridPlugin, timeGridPlugin, interactionPlugin]}
-          initialView='dayGridMonth'
+          initialView='timeGridWeek'
           headerToolbar={{
             left: 'prev,today,next',
             center: 'title',

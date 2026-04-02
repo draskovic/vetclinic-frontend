@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Table, Button, Space, Input, Popconfirm, message, Select, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -6,6 +6,7 @@ import { servicesApi } from '@/api';
 import type { Service, ServiceCategory } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
 import ServiceModal from './ServiceModal';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const categoryConfig: Record<ServiceCategory, { color: string; label: string }> = {
   EXAMINATION: { color: '#1890ff', label: 'Pregled' },
@@ -22,15 +23,26 @@ export default function ServicesPage() {
   const [pageSize, setPageSize] = useState(20);
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
+
   const [categoryFilter, setCategoryFilter] = useState<ServiceCategory | ''>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
+  useEffect(() => {
+    setPage(1);
+  }, [debouncedSearch, categoryFilter]);
 
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['services', page, pageSize],
-    queryFn: () => servicesApi.getAll(page - 1, pageSize),
+    queryKey: ['services', page, pageSize, debouncedSearch, categoryFilter],
+    queryFn: () =>
+      servicesApi.getAll(
+        page - 1,
+        pageSize,
+        debouncedSearch || undefined,
+        categoryFilter || undefined,
+      ),
   });
 
   const deleteMutation = useMutation({
@@ -42,17 +54,23 @@ export default function ServicesPage() {
     onError: () => message.error('Greška pri brisanju'),
   });
 
-  const filtered = data?.content?.filter((item) => {
-    const matchesSearch = item.name.toLowerCase().includes(search.toLowerCase());
-    const matchesCategory = !categoryFilter || item.category === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
-
   const columns: ColumnsType<Service> = [
+    {
+      title: 'Šifra',
+      dataIndex: 'sku',
+      width: 80,
+      render: (val: string | null) => val || '—',
+    },
+    {
+      title: 'Jed.',
+      dataIndex: 'unit',
+      width: 70,
+      render: (val: string | null) => val || '—',
+    },
+
     {
       title: 'Naziv',
       dataIndex: 'name',
-      sorter: (a, b) => a.name.localeCompare(b.name),
     },
     {
       title: 'Kategorija',
@@ -157,7 +175,7 @@ export default function ServicesPage() {
         rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
         rowKey='id'
         columns={columns}
-        dataSource={filtered}
+        dataSource={data?.content}
         loading={isLoading}
         pagination={{
           current: page,

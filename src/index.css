@@ -165,6 +165,9 @@ body {
 .dark-theme .fc .fc-toolbar-title {
   color: #e0e0e0;
 }
+.fc .fc-day-today {
+  background-color: rgba(24, 144, 255, 0.12) !important;
+}
 
 .dark-theme .fc .fc-day-today {
   background-color: rgba(24, 144, 255, 0.15) !important;

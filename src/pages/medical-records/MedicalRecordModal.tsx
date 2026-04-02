@@ -129,6 +129,9 @@ export default function MedicalRecordModal({
         'Intervencija je kreirana! Sada možete dodati usluge, vakcinacije i lab izveštaje.',
       );
       queryClient.invalidateQueries({ queryKey: ['medical-records'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+
       setCreatedRecord(response.data);
     },
     onError: (error: any) => {
@@ -199,7 +202,11 @@ export default function MedicalRecordModal({
 
   return (
     <Modal
-      title={isEditMode ? 'Izmeni intervenciju' : 'Nova intervencija'}
+      title={
+        isEditMode
+          ? `Izmeni intervenciju${currentRecord?.recordCode ? ' — ' + currentRecord.recordCode : ''}`
+          : 'Nova intervencija'
+      }
       open={open}
       onCancel={onClose}
       footer={null}

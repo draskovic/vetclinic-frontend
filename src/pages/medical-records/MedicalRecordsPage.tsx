@@ -67,6 +67,13 @@ export default function MedicalRecordsPage() {
 
   const columns: ColumnsType<MedicalRecord> = [
     {
+      title: 'Šifra',
+      dataIndex: 'recordCode',
+      key: 'recordCode',
+      render: (val: string | null) => val || '—',
+    },
+
+    {
       title: 'Datum',
       dataIndex: 'createdAt',
       key: 'createdAt',

@@ -1,9 +1,10 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Table, Button, Popconfirm, message, Select, Typography } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { servicesApi, treatmentsApi } from '@/api';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Treatment } from '@/types';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 interface TreatmentItemsTableProps {
   medicalRecordId: string | null; // null = nova intervencija, još nije kreirana
@@ -12,10 +13,13 @@ interface TreatmentItemsTableProps {
 
 export default function TreatmentItemsTable({ medicalRecordId, vetId }: TreatmentItemsTableProps) {
   const [treatments, setTreatments] = useState<Treatment[]>([]);
+  const queryClient = useQueryClient();
+  const [serviceSearch, setServiceSearch] = useState('');
+  const debouncedServiceSearch = useDebouncedValue(serviceSearch, 300);
 
   const { data: servicesData } = useQuery({
-    queryKey: ['services-all'],
-    queryFn: () => servicesApi.getAll(0, 100),
+    queryKey: ['services-search', debouncedServiceSearch],
+    queryFn: () => servicesApi.getAll(0, 20, debouncedServiceSearch || undefined),
   });
 
   const { data: treatmentsData, refetch } = useQuery({
@@ -30,11 +34,14 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     }
   }, [treatmentsData]);
 
-  const serviceOptions =
-    servicesData?.content.map((s) => ({
-      label: s.name,
-      value: s.id,
-    })) ?? [];
+  const serviceOptions = useMemo(
+    () =>
+      servicesData?.content.map((s) => ({
+        label: `${s.sku ? s.sku + ' — ' : ''}${s.name}`,
+        value: s.id,
+      })) ?? [],
+    [servicesData],
+  );
 
   const createMutation = useMutation({
     mutationFn: (serviceId: string) =>
@@ -47,6 +54,9 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     onSuccess: () => {
       message.success('Usluga dodata!');
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-items'] });
     },
     onError: () => message.error('Greška pri dodavanju usluge!'),
   });
@@ -56,7 +66,11 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     onSuccess: () => {
       message.success('Usluga uklonjena!');
       refetch();
+      queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-items'] });
     },
+
     onError: () => message.error('Greška pri brisanju!'),
   });
 
@@ -105,11 +119,14 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
             onChange={(serviceId) => {
               if (serviceId) {
                 createMutation.mutate(serviceId);
+                setServiceSearch('');
               }
             }}
-            filterOption={(input, option) =>
-              (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-            }
+            filterOption={false}
+            onSearch={(value) => setServiceSearch(value)}
+            onInputKeyDown={(e) => {
+              if (e.key === ' ') e.stopPropagation();
+            }}
             loading={createMutation.isPending}
           />
         )}

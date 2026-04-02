@@ -302,6 +302,7 @@ export interface ClinicLocation {
 export interface MedicalRecord {
   id: string;
   appointmentId: string | null;
+  recordCode: string | null;
   petId: string;
   petName: string;
   ownerId: string;
@@ -659,6 +660,8 @@ export interface Service {
   id: string;
   category: ServiceCategory;
   name: string;
+  sku?: string;
+  unit?: string;
   description?: string;
   price: number;
   taxRate: number;
@@ -671,6 +674,8 @@ export interface Service {
 export interface CreateServiceRequest {
   category: ServiceCategory;
   name: string;
+  sku?: string;
+  unit?: string;
   description?: string;
   price: number;
   taxRate?: number;
@@ -681,6 +686,8 @@ export interface CreateServiceRequest {
 export interface UpdateServiceRequest {
   category?: ServiceCategory;
   name?: string;
+  sku?: string;
+  unit?: string;
   description?: string;
   price?: number;
   taxRate?: number;

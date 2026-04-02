@@ -8,6 +8,7 @@ import { usersApi } from '@/api/users';
 import { clinicLocationsApi } from '@/api/clinic-locations';
 import type { Appointment, CreateAppointmentRequest, UpdateAppointmentRequest } from '@/types';
 import dayjs from 'dayjs';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 interface AppointmentModalProps {
   open: boolean;
@@ -44,10 +45,12 @@ export default function AppointmentModal({
   const queryClient = useQueryClient();
   const isEditing = !!appointment;
   const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const debouncedOwnerSearch = useDebouncedValue(ownerSearch, 300);
 
   const { data: ownersData } = useQuery({
-    queryKey: ['owners-all'],
-    queryFn: () => ownersApi.getAll(0, 100).then((r) => r.data),
+    queryKey: ['owners-search', debouncedOwnerSearch],
+    queryFn: () => ownersApi.getAll(0, 20, debouncedOwnerSearch || undefined).then((r) => r.data),
   });
 
   const { data: petsData } = useQuery({
@@ -176,9 +179,8 @@ export default function AppointmentModal({
                 placeholder='Izaberite vlasnika...'
                 options={ownerOptions}
                 showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={false}
+                onSearch={(value) => setOwnerSearch(value)}
                 onChange={(val) => {
                   setSelectedOwnerId(val);
                   form.setFieldValue('petId', undefined);
@@ -272,6 +274,11 @@ export default function AppointmentModal({
                 showTime={{ format: 'HH:mm' }}
                 format='DD.MM.YYYY HH:mm'
                 style={{ width: '100%' }}
+                onChange={(value) => {
+                  if (value) {
+                    form.setFieldsValue({ endTime: value.add(30, 'minute') });
+                  }
+                }}
               />
             </Form.Item>
           </Col>
