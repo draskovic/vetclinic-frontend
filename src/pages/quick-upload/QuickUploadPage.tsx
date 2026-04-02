@@ -175,8 +175,7 @@ const QuickUploadPage: React.FC = () => {
         <input
           ref={fileInputRef}
           type='file'
-          accept='image/*'
-          capture='environment'
+          accept='image/*,.pdf'
           onChange={handleFileChange}
           style={{ display: 'none' }}
         />
