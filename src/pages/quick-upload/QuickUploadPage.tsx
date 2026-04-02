@@ -148,7 +148,7 @@ const QuickUploadPage: React.FC = () => {
             Pacijent: <strong>{petName}</strong>
           </p>
           {uploadCount > 0 && (
-            <p style={{ margin: '4px 0 0', fontSize: 14, color: '#52c41a' }}>
+            <p style={{ margin: '4px 0 0', fontSize: 16, color: '#1677ff' }}>
               Uploadovano dokumenata: {uploadCount}
             </p>
           )}
@@ -162,8 +162,9 @@ const QuickUploadPage: React.FC = () => {
               borderRadius: 8,
               marginBottom: 16,
               background: lastMessage.startsWith('✓') ? '#f6ffed' : '#fff2f0',
-              color: lastMessage.startsWith('✓') ? '#52c41a' : '#ff4d4f',
-              fontWeight: 500,
+              color: lastMessage.startsWith('✓') ? '#1677ff' : '#ff4d4f',
+              fontWeight: 600,
+              fontSize: 16,
               textAlign: 'center',
             }}
           >
@@ -184,7 +185,7 @@ const QuickUploadPage: React.FC = () => {
           onClick={() => fileInputRef.current?.click()}
           disabled={uploading}
         >
-          📸 Fotografiši dokument
+          📸 Izaberi dokument
         </button>
 
         {/* Preview */}
