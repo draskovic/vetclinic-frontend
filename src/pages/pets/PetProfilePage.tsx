@@ -1,7 +1,9 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import QrUploadModal from '@/components/QrUploadModal';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import ImgCrop from 'antd-img-crop';
+
 import {
   Card,
   Tabs,
@@ -13,12 +15,17 @@ import {
   Space,
   Typography,
   message,
+  Avatar,
+  Upload,
+  Tooltip,
 } from 'antd';
 import {
   ArrowLeftOutlined,
   QrcodeOutlined,
   FilePdfOutlined,
   PlusOutlined,
+  CameraOutlined,
+  PictureOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -97,6 +104,39 @@ export default function PetProfilePage() {
   });
 
   const user = useAuthStore((s) => s.user);
+
+  const queryClient = useQueryClient();
+  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!pet?.photoUrl) {
+      setAvatarSrc(null);
+      return;
+    }
+    const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+    const accessToken = localStorage.getItem('accessToken');
+    const clinicId = localStorage.getItem('clinicId');
+    fetch(`${baseUrl}/documents/${pet.photoUrl}/download`, {
+      headers: { Authorization: `Bearer ${accessToken}`, 'X-Clinic-Id': clinicId || '' },
+    })
+      .then((res) => res.blob())
+      .then((blob) => setAvatarSrc(URL.createObjectURL(blob)))
+      .catch(() => setAvatarSrc(null));
+  }, [pet?.photoUrl]);
+
+  const handleAvatarUpload = async (file: File) => {
+    try {
+      const res = await documentsApi.uploadWithFile(petId!, file, 'Profilna fotografija');
+      const documentId = res.data.id;
+      await petsApi.setProfilePhoto(petId!, documentId);
+      queryClient.invalidateQueries({ queryKey: ['pet', petId] });
+      queryClient.invalidateQueries({ queryKey: ['documents', 'by-pet', petId] });
+      message.success('Profilna slika postavljena');
+    } catch {
+      message.error('Greška pri postavljanju slike');
+    }
+    return false;
+  };
 
   const { data: appointments = [], isLoading: apptLoading } = useQuery({
     queryKey: ['appointments', 'by-pet', petId],
@@ -311,32 +351,50 @@ export default function PetProfilePage() {
       title: 'Akcije',
       key: 'actions',
       render: (_: unknown, record: DocumentRecord) => (
-        <Button
-          type='link'
-          size='small'
-          onClick={() => {
-            const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
-            const token = localStorage.getItem('accessToken');
-            const clinicId = localStorage.getItem('clinicId');
-            const url = `${baseUrl}/documents/${record.id}/download`;
-
-            // Otvori u novom tabu sa auth headerima kroz fetch
-            fetch(url, {
-              headers: {
-                Authorization: `Bearer ${token}`,
-                'X-Clinic-Id': clinicId || '',
-              },
-            })
-              .then((res) => res.blob())
-              .then((blob) => {
-                const objectUrl = window.URL.createObjectURL(blob);
-                window.open(objectUrl, '_blank');
+        <Space>
+          <Button
+            type='link'
+            size='small'
+            onClick={() => {
+              const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
+              const token = localStorage.getItem('accessToken');
+              const clinicId = localStorage.getItem('clinicId');
+              const url = `${baseUrl}/documents/${record.id}/download`;
+              fetch(url, {
+                headers: {
+                  Authorization: `Bearer ${token}`,
+                  'X-Clinic-Id': clinicId || '',
+                },
               })
-              .catch(() => message.error('Greška pri otvaranju fajla'));
-          }}
-        >
-          Otvori
-        </Button>
+                .then((res) => res.blob())
+                .then((blob) => {
+                  const objectUrl = window.URL.createObjectURL(blob);
+                  window.open(objectUrl, '_blank');
+                })
+                .catch(() => message.error('Greška pri otvaranju fajla'));
+            }}
+          >
+            Otvori
+          </Button>
+          {record.fileType === 'IMAGE' && (
+            <Tooltip title='Postavi kao profilnu sliku'>
+              <Button
+                type='link'
+                size='small'
+                icon={<PictureOutlined />}
+                onClick={async () => {
+                  try {
+                    await petsApi.setProfilePhoto(petId!, record.id);
+                    queryClient.invalidateQueries({ queryKey: ['pet', petId] });
+                    message.success('Profilna slika postavljena');
+                  } catch {
+                    message.error('Greška pri postavljanju slike');
+                  }
+                }}
+              />
+            </Tooltip>
+          )}
+        </Space>
       ),
     },
   ];
@@ -456,48 +514,80 @@ export default function PetProfilePage() {
       </Space>
 
       <Card style={{ marginBottom: 16 }}>
-        <Descriptions
-          title={
-            <Space>
-              <Title level={4} style={{ margin: 0 }}>
-                {pet.name}
-              </Title>
-              {pet.isDeceased && <Tag color='red'>Preminuo/la</Tag>}
-              {pet.patientCode && <Tag color='blue'>Br. kartona: {pet.patientCode}</Tag>}
-              {pet.legacyCode && <Tag color='default'>Stari br.: {pet.legacyCode}</Tag>}
-            </Space>
-          }
-          bordered
-          column={3}
-        >
-          <Descriptions.Item label='Vlasnik'>{pet.ownerName}</Descriptions.Item>
-          <Descriptions.Item label='Vrsta'>{pet.speciesName ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label='Rasa'>{pet.breedName ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label='Pol'>
-            {pet.gender ? genderLabel[pet.gender] : '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label='Datum rođenja'>
-            {pet.dateOfBirth ? dayjs(pet.dateOfBirth).format('DD.MM.YYYY') : '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label='Težina'>
-            {pet.weightKg ? `${pet.weightKg} kg` : '-'}
-          </Descriptions.Item>
-          <Descriptions.Item label='Boja'>{pet.color ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label='Mikročip'>{pet.microchipNumber ?? '-'}</Descriptions.Item>
-          <Descriptions.Item label='Kastriran/a'>
-            {pet.isNeutered === null ? '-' : pet.isNeutered ? 'Da' : 'Ne'}
-          </Descriptions.Item>
-          {pet.allergies && (
-            <Descriptions.Item label='Alergije' span={3}>
-              {pet.allergies}
-            </Descriptions.Item>
-          )}
-          {pet.note && (
-            <Descriptions.Item label='Napomena' span={3}>
-              {pet.note}
-            </Descriptions.Item>
-          )}
-        </Descriptions>
+        <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
+          <ImgCrop rotationSlider quality={0.8} modalTitle='Izaberi isečak'>
+            <Upload showUploadList={false} accept='image/*' beforeUpload={handleAvatarUpload}>
+              <Tooltip title='Promeni fotografiju'>
+                <div style={{ position: 'relative', cursor: 'pointer' }}>
+                  <Avatar src={avatarSrc} size={96} style={{ border: '2px solid #f0f0f0' }}>
+                    {pet.name.charAt(0).toUpperCase()}
+                  </Avatar>
+                  <div
+                    style={{
+                      position: 'absolute',
+                      bottom: 0,
+                      right: 0,
+                      background: '#1677ff',
+                      borderRadius: '50%',
+                      width: 28,
+                      height: 28,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      border: '2px solid #fff',
+                    }}
+                  >
+                    <CameraOutlined style={{ color: '#fff', fontSize: 14 }} />
+                  </div>
+                </div>
+              </Tooltip>
+            </Upload>
+          </ImgCrop>
+          <div style={{ flex: 1 }}>
+            <Descriptions
+              title={
+                <Space>
+                  <Title level={4} style={{ margin: 0 }}>
+                    {pet.name}
+                  </Title>
+                  {pet.isDeceased && <Tag color='red'>Preminuo/la</Tag>}
+                  {pet.patientCode && <Tag color='blue'>Br. kartona: {pet.patientCode}</Tag>}
+                  {pet.legacyCode && <Tag color='default'>Stari br.: {pet.legacyCode}</Tag>}
+                </Space>
+              }
+              bordered
+              column={3}
+            >
+              <Descriptions.Item label='Vlasnik'>{pet.ownerName}</Descriptions.Item>
+              <Descriptions.Item label='Vrsta'>{pet.speciesName ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label='Rasa'>{pet.breedName ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label='Pol'>
+                {pet.gender ? genderLabel[pet.gender] : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label='Datum rođenja'>
+                {pet.dateOfBirth ? dayjs(pet.dateOfBirth).format('DD.MM.YYYY') : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label='Težina'>
+                {pet.weightKg ? `${pet.weightKg} kg` : '-'}
+              </Descriptions.Item>
+              <Descriptions.Item label='Boja'>{pet.color ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label='Mikročip'>{pet.microchipNumber ?? '-'}</Descriptions.Item>
+              <Descriptions.Item label='Kastriran/a'>
+                {pet.isNeutered === null ? '-' : pet.isNeutered ? 'Da' : 'Ne'}
+              </Descriptions.Item>
+              {pet.allergies && (
+                <Descriptions.Item label='Alergije' span={3}>
+                  {pet.allergies}
+                </Descriptions.Item>
+              )}
+              {pet.note && (
+                <Descriptions.Item label='Napomena' span={3}>
+                  {pet.note}
+                </Descriptions.Item>
+              )}
+            </Descriptions>
+          </div>
+        </div>
       </Card>
 
       <Card>

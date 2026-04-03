@@ -14,4 +14,7 @@ export const petsApi = {
   update: (id: string, data: UpdatePetRequest) => apiClient.put<Pet>(`/pets/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/pets/${id}`),
+
+  setProfilePhoto: (petId: string, documentId: string) =>
+    apiClient.put<Pet>(`/pets/${petId}/profile-photo`, { documentId }),
 };

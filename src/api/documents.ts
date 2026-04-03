@@ -44,6 +44,16 @@ export const documentsApi = {
     }),
 
   deleteFile: (id: string) => apiClient.delete<DocumentRecord>(`/documents/${id}/file`),
+
+  uploadWithFile: (petId: string, file: File, description?: string) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('petId', petId);
+    if (description) formData.append('description', description);
+    return apiClient.post<DocumentRecord>('/documents/upload-with-file', formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
 };
 
 // Public API - BEZ autentifikacije, koristi token iz URL-a
