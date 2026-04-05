@@ -24,4 +24,16 @@ export const clinicsApi = {
 
   provision: (data: ProvisionClinicRequest) =>
     apiClient.post<ProvisionClinicResponse>('/clinics/provision', data).then((res) => res.data),
+
+  uploadLogo: (id: string, file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    return apiClient.post<Clinic>(`/clinics/${id}/logo`, formData, {
+      headers: { 'Content-Type': 'multipart/form-data' },
+    });
+  },
+
+  deleteLogo: (id: string) => apiClient.delete<Clinic>(`/clinics/${id}/logo`),
+
+  getLogoUrl: (id: string) => `/clinics/${id}/logo`,
 };

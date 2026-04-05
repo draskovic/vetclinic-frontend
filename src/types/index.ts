@@ -606,6 +606,11 @@ export interface Clinic {
   address: string | null;
   city: string | null;
   country: string | null;
+  registrationNumber: string | null;
+  activityCode: string | null;
+  bankAccount: string | null;
+  vatPayer: boolean;
+  veterinaryLicenseNumber: string | null;
   logoUrl: string | null;
   subscriptionPlan: SubscriptionPlan;
   subscriptionExpiresAt: string | null;
@@ -623,6 +628,11 @@ export interface CreateClinicRequest {
   address?: string;
   city?: string;
   country?: string;
+  registrationNumber?: string;
+  activityCode?: string;
+  bankAccount?: string;
+  vatPayer?: boolean;
+  veterinaryLicenseNumber?: string;
   logoUrl?: string;
   subscriptionPlan?: SubscriptionPlan;
   subscriptionExpiresAt?: string;
@@ -638,6 +648,11 @@ export interface UpdateClinicRequest {
   address?: string;
   city?: string;
   country?: string;
+  registrationNumber?: string;
+  activityCode?: string;
+  bankAccount?: string;
+  vatPayer?: boolean;
+  veterinaryLicenseNumber?: string;
   logoUrl?: string;
   subscriptionPlan?: SubscriptionPlan;
   subscriptionExpiresAt?: string;
