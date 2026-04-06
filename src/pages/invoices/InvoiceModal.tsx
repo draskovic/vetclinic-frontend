@@ -26,6 +26,7 @@ import { servicesApi } from '@/api/services';
 import { invoiceItemsApi } from '@/api/invoices';
 import { paymentsApi } from '@/api/payments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { FilePdfOutlined } from '@ant-design/icons';
 
 interface InvoiceModalProps {
   open: boolean;
@@ -435,6 +436,24 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
           <Button onClick={onClose} style={{ marginRight: 8 }}>
             Otkaži
           </Button>
+          {isEditing && (
+            <Button
+              icon={<FilePdfOutlined />}
+              style={{ marginRight: 8 }}
+              onClick={async () => {
+                try {
+                  const response = await invoicesApi.downloadPdf(currentInvoice!.id);
+                  const blob = new Blob([response.data], { type: 'application/pdf' });
+                  const url = URL.createObjectURL(blob);
+                  window.open(url, '_blank');
+                } catch {
+                  message.error('Greška pri generisanju PDF-a!');
+                }
+              }}
+            >
+              Štampaj
+            </Button>
+          )}
           <Button type='primary' htmlType='submit' loading={isLoading}>
             {isEditing ? 'Sačuvaj izmene' : 'Kreiraj fakturu'}
           </Button>

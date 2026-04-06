@@ -367,11 +367,7 @@ export default function Dashboard() {
       </div>
       <Row style={{ marginBottom: 16 }}>
         <Space>
-          <Button
-            type='primary'
-            icon={<CalendarOutlined />}
-            onClick={() => navigate('/appointments')}
-          >
+          <Button type='primary' icon={<CalendarOutlined />} onClick={() => navigate('/calendar')}>
             Novi termin
           </Button>
           <Button icon={<UserAddOutlined />} onClick={() => navigate('/owners')}>

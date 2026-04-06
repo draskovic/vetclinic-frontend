@@ -60,6 +60,8 @@ export default function MedicalRecordModal({
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
   const isEditMode = !!currentRecord;
+  const followUpRecommended = Form.useWatch('followUpRecommended', form);
+
   const currentUser = useAuthStore((s) => s.user);
 
   const { data: petsData } = useQuery({
@@ -339,7 +341,11 @@ export default function MedicalRecordModal({
           </Col>
           <Col span={6}>
             <Form.Item name='followUpDate' label='Datum kontrole'>
-              <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
+              <DatePicker
+                style={{ width: '100%' }}
+                format='DD.MM.YYYY'
+                disabled={!followUpRecommended}
+              />
             </Form.Item>
           </Col>
         </Row>

@@ -9,6 +9,7 @@ import { clinicLocationsApi } from '@/api/clinic-locations';
 import type { Appointment, CreateAppointmentRequest, UpdateAppointmentRequest } from '@/types';
 import dayjs from 'dayjs';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useAuthStore } from '@/store/authStore';
 
 interface AppointmentModalProps {
   open: boolean;
@@ -69,6 +70,8 @@ export default function AppointmentModal({
     queryFn: () => clinicLocationsApi.getActive().then((r) => r.data),
   });
 
+  const currentUser = useAuthStore((s) => s.user);
+
   useEffect(() => {
     if (open) {
       if (appointment) {
@@ -87,9 +90,18 @@ export default function AppointmentModal({
             endTime: dayjs(initialDates.end),
           });
         }
+        // Ako klinika ima samo jednu lokaciju, postavi je kao podrazumevanu
+        if (locationsData?.length === 1) {
+          form.setFieldsValue({ locationId: locationsData[0].id });
+        }
+
+        // Podrazumevani veterinar = ulogovani korisnik (osim SUPER_ADMIN)
+        if (currentUser?.id && currentUser.roleName !== 'SUPER_ADMIN') {
+          form.setFieldsValue({ vetId: currentUser.id });
+        }
       }
     }
-  }, [open, appointment, form, initialDates]);
+  }, [open, appointment, form, initialDates, locationsData]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAppointmentRequest) => appointmentsApi.create(data),
