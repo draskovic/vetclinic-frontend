@@ -33,6 +33,7 @@ import PrescriptionItemsTable from './PrescriptionItemsTable';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { invoicesApi } from '@/api/invoices';
 import InvoiceModal from '@/pages/invoices/InvoiceModal';
+import { useAuthStore } from '@/store/authStore';
 
 interface MedicalRecordModalProps {
   open: boolean;
@@ -59,6 +60,7 @@ export default function MedicalRecordModal({
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
   const isEditMode = !!currentRecord;
+  const currentUser = useAuthStore((s) => s.user);
 
   const { data: petsData } = useQuery({
     queryKey: ['pets-search', debouncedPetSearch],
@@ -117,6 +119,10 @@ export default function MedicalRecordModal({
         setCreatedRecord(null);
         if (defaultValues) {
           form.setFieldsValue(defaultValues);
+        }
+        // Ako vetId nije postavljen kroz defaultValues, postavi ulogovanog korisnika
+        if (!defaultValues?.vetId && currentUser?.id && currentUser.roleName !== 'SUPER_ADMIN') {
+          form.setFieldsValue({ vetId: currentUser.id });
         }
       }
     }
@@ -189,10 +195,12 @@ export default function MedicalRecordModal({
   }, [petsData, selectedPet]);
 
   const vetOptions =
-    usersData?.content.map((u) => ({
-      label: `${u.firstName} ${u.lastName}`,
-      value: u.id,
-    })) ?? [];
+    usersData?.content
+      .filter((u) => u.roleName !== 'SUPER_ADMIN')
+      .map((u) => ({
+        label: `${u.firstName} ${u.lastName}`,
+        value: u.id,
+      })) ?? [];
 
   const appointmentOptions =
     appointmentsData?.content.map((a) => ({
