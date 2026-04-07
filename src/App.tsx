@@ -36,6 +36,8 @@ import ProfilePage from './pages/profile/ProfilePage';
 import ClinicSettingsPage from './pages/admin/ClinicSettingsPage';
 import ImportOwnersPage from './pages/owners/ImportOwnersPage';
 import ImportServicesPage from './pages/admin/ImportServicesPage';
+import DiagnosisPage from './pages/admin/DiagnosisPage';
+import ProtocolsPage from './pages/admin/ProtocolsPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -246,6 +248,23 @@ export default function App() {
                       element={
                         <PermissionGuard permission='*'>
                           <ServicesPage />
+                        </PermissionGuard>
+                      }
+                    />
+
+                    <Route
+                      path='admin/diagnoses'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <DiagnosisPage />
+                        </PermissionGuard>
+                      }
+                    />
+                    <Route
+                      path='admin/protocols'
+                      element={
+                        <PermissionGuard permission='*'>
+                          <ProtocolsPage />
                         </PermissionGuard>
                       }
                     />

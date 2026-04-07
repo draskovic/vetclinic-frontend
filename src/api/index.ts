@@ -18,3 +18,5 @@ export { treatmentsApi } from './treatments';
 export { documentsApi } from './documents';
 export { auditLogsApi } from './audit-logs';
 export { paymentsApi } from './payments';
+export { diagnosesApi } from './diagnoses';
+export { treatmentProtocolsApi, treatmentProtocolItemsApi } from './treatment-protocols';

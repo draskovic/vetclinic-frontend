@@ -17,6 +17,8 @@ import {
   FolderOutlined,
   AuditOutlined,
   MenuUnfoldOutlined,
+  FileSearchOutlined,
+  SolutionOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/api/auth';
@@ -132,6 +134,16 @@ const allMenuItems = [
         key: '/audit-logs',
         icon: <AuditOutlined style={{ color: '#8c8c8c' }} />,
         label: 'Audit logovi',
+      },
+      {
+        key: '/admin/diagnoses',
+        icon: <FileSearchOutlined style={{ color: '#8c8c8c' }} />,
+        label: 'Dijagnoze',
+      },
+      {
+        key: '/admin/protocols',
+        icon: <SolutionOutlined style={{ color: '#8c8c8c' }} />,
+        label: 'Protokoli',
       },
     ],
   },

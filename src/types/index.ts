@@ -1000,3 +1000,96 @@ export interface ImportResultResponse {
   skipped: number;
   errors: ImportError[];
 }
+// ==================== Diagnosis ====================
+
+export interface Diagnosis {
+  id: string;
+  code: string | null;
+  name: string;
+  category: string | null;
+  description: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateDiagnosisRequest {
+  name: string;
+  code?: string;
+  category?: string;
+  description?: string;
+  active?: boolean;
+}
+
+export interface UpdateDiagnosisRequest {
+  name?: string;
+  code?: string;
+  category?: string;
+  description?: string;
+  active?: boolean;
+}
+
+// ==================== TreatmentProtocol ====================
+
+export interface TreatmentProtocol {
+  id: string;
+  name: string;
+  description: string | null;
+  diagnosisId: string | null;
+  diagnosisName: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTreatmentProtocolRequest {
+  name: string;
+  description?: string;
+  diagnosisId?: string;
+  active?: boolean;
+}
+
+export interface UpdateTreatmentProtocolRequest {
+  name?: string;
+  description?: string;
+  diagnosisId?: string;
+  active?: boolean;
+}
+
+// ==================== TreatmentProtocolItem ====================
+
+export interface TreatmentProtocolItem {
+  id: string;
+  protocolId: string;
+  serviceId: string;
+  serviceName: string;
+  serviceSku: string | null;
+  servicePrice: number;
+  quantity: number;
+  notes: string | null;
+  sortOrder: number;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateTreatmentProtocolItemRequest {
+  protocolId: string;
+  serviceId: string;
+  quantity?: number;
+  notes?: string;
+  sortOrder?: number;
+}
+
+export interface UpdateTreatmentProtocolItemRequest {
+  quantity?: number;
+  notes?: string;
+  sortOrder?: number;
+}
+
+// ==================== ApplyProtocol ====================
+
+export interface ApplyProtocolRequest {
+  protocolId: string;
+  medicalRecordId: string;
+  vetId: string;
+}

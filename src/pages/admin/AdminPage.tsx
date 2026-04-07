@@ -8,6 +8,8 @@ import {
   SafetyOutlined,
   MedicineBoxOutlined,
   ImportOutlined,
+  FileSearchOutlined,
+  SolutionOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
 
@@ -49,6 +51,18 @@ const adminSections = [
     description: 'Cenovnik usluga klinike',
     icon: <MedicineBoxOutlined style={{ fontSize: 32, color: '#eb2f96' }} />,
     path: '/admin/services',
+  },
+  {
+    title: 'Šifarnik dijagnoza',
+    description: 'Upravljanje dijagnozama za intervencije',
+    icon: <FileSearchOutlined style={{ fontSize: 32, color: '#9254de' }} />,
+    path: '/admin/diagnoses',
+  },
+  {
+    title: 'Protokoli terapije',
+    description: 'Šabloni sa unapred definisanim uslugama',
+    icon: <SolutionOutlined style={{ fontSize: 32, color: '#f5222d' }} />,
+    path: '/admin/protocols',
   },
   {
     title: 'Import vlasnika',

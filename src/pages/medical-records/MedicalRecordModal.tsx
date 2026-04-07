@@ -13,6 +13,8 @@ import {
   Tabs,
   Col,
   Space,
+  AutoComplete,
+  Alert,
 } from 'antd';
 import { DollarOutlined, FilePdfOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
@@ -20,10 +22,13 @@ import { medicalRecordsApi } from '@/api/medical-records';
 import { petsApi } from '@/api/pets';
 import { usersApi } from '@/api/users';
 import { appointmentsApi } from '@/api/appointments';
+import { diagnosesApi } from '@/api/diagnoses';
+import { treatmentProtocolsApi } from '@/api/treatment-protocols';
 import type {
   MedicalRecord,
   CreateMedicalRecordRequest,
   UpdateMedicalRecordRequest,
+  ApplyProtocolRequest,
 } from '@/types';
 import dayjs from 'dayjs';
 import TreatmentItemsTable from './TreatmentItemsTable';
@@ -59,7 +64,34 @@ export default function MedicalRecordModal({
   const debouncedAppointmentSearch = useDebouncedValue(appointmentSearch, 300);
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
 
+  // Dijagnoza autocomplete
+  const [diagnosisSearch, setDiagnosisSearch] = useState('');
+  const debouncedDiagnosisSearch = useDebouncedValue(diagnosisSearch, 300);
+  const [selectedDiagnosisId, setSelectedDiagnosisId] = useState<string | null>(null);
+
+  // Protokol ručni izbor
+  const [protocolSearch, setProtocolSearch] = useState('');
+  const debouncedProtocolSearch = useDebouncedValue(protocolSearch, 300);
+
+  const { data: diagnosisSuggestions } = useQuery({
+    queryKey: ['diagnoses-autocomplete', debouncedDiagnosisSearch],
+    queryFn: () => diagnosesApi.autocomplete(0, 20, debouncedDiagnosisSearch || undefined),
+    enabled: debouncedDiagnosisSearch.length > 0,
+  });
+
   const isEditMode = !!currentRecord;
+  const { data: suggestedProtocols } = useQuery({
+    queryKey: ['protocols-by-diagnosis', selectedDiagnosisId],
+    queryFn: () => treatmentProtocolsApi.getByDiagnosis(selectedDiagnosisId!),
+    enabled: !!selectedDiagnosisId && isEditMode,
+  });
+
+  const { data: allProtocolsData } = useQuery({
+    queryKey: ['treatment-protocols-search', debouncedProtocolSearch],
+    queryFn: () => treatmentProtocolsApi.getAll(0, 20, debouncedProtocolSearch || undefined),
+    enabled: isEditMode,
+  });
+
   const followUpRecommended = Form.useWatch('followUpRecommended', form);
 
   const currentUser = useAuthStore((s) => s.user);
@@ -119,6 +151,10 @@ export default function MedicalRecordModal({
       } else {
         form.resetFields();
         setCreatedRecord(null);
+        setSelectedDiagnosisId(null);
+        setDiagnosisSearch('');
+        setProtocolSearch('');
+
         if (defaultValues) {
           form.setFieldsValue(defaultValues);
         }
@@ -162,6 +198,33 @@ export default function MedicalRecordModal({
     },
     onError: () => message.error('Greška pri izmeni!'),
   });
+
+  const applyProtocolMutation = useMutation({
+    mutationFn: (req: ApplyProtocolRequest) => treatmentProtocolsApi.apply(req),
+    onSuccess: (treatments) => {
+      message.success(`Protokol primenjen (${treatments.length} usluga dodato)`);
+      queryClient.invalidateQueries({ queryKey: ['treatments', currentRecord?.id] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-by-record', currentRecord?.id] });
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-items'] });
+    },
+    onError: () => message.error('Greška pri primeni protokola'),
+  });
+
+  const handleApplyProtocol = (protocolId: string, protocolName: string) => {
+    Modal.confirm({
+      title: 'Primena protokola',
+      content: `Da li želite da primenite protokol "${protocolName}"? Sve usluge iz protokola će biti dodate.`,
+      okText: 'Primeni',
+      cancelText: 'Otkaži',
+      onOk: () =>
+        applyProtocolMutation.mutate({
+          protocolId,
+          medicalRecordId: currentRecord!.id,
+          vetId: currentRecord!.vetId,
+        }),
+    });
+  };
 
   const handleSubmit = (values: CreateMedicalRecordRequest & { followUpDate?: dayjs.Dayjs }) => {
     const payload = {
@@ -297,7 +360,21 @@ export default function MedicalRecordModal({
         <Row gutter={12}>
           <Col span={12}>
             <Form.Item name='diagnosis' label='Dijagnoza'>
-              <Input.TextArea placeholder='Dijagnoza...' rows={2} />
+              <AutoComplete
+                options={
+                  diagnosisSuggestions?.content?.map((d) => ({
+                    value: d.name,
+                    label: `${d.code ? d.code + ' — ' : ''}${d.name}${d.category ? ' (' + d.category + ')' : ''}`,
+                    key: d.id,
+                  })) ?? []
+                }
+                onSelect={(_value: string, option: any) => setSelectedDiagnosisId(option.key)}
+                onSearch={(value) => {
+                  setDiagnosisSearch(value);
+                  setSelectedDiagnosisId(null);
+                }}
+                placeholder='Dijagnoza...'
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
@@ -306,6 +383,31 @@ export default function MedicalRecordModal({
             </Form.Item>
           </Col>
         </Row>
+
+        {/* Predlog protokola na osnovu dijagnoze */}
+        {suggestedProtocols && suggestedProtocols.length > 0 && isEditMode && (
+          <Alert
+            type='info'
+            showIcon
+            style={{ marginBottom: 8 }}
+            message='Dostupni protokoli za ovu dijagnozu:'
+            description={
+              <Space wrap>
+                {suggestedProtocols.map((p) => (
+                  <Button
+                    key={p.id}
+                    size='small'
+                    type='link'
+                    loading={applyProtocolMutation.isPending}
+                    onClick={() => handleApplyProtocol(p.id, p.name)}
+                  >
+                    Primeni: {p.name}
+                  </Button>
+                ))}
+              </Space>
+            }
+          />
+        )}
 
         {/* Red 3: Težina, Temperatura, Puls, Preporučena kontrola, Datum kontrole */}
         <Row gutter={12}>
@@ -388,6 +490,39 @@ export default function MedicalRecordModal({
                 )}
               </Space>
             </div>
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: 8,
+              }}
+            >
+              <span style={{ fontWeight: 500 }}>Protokol:</span>
+              <Select
+                showSearch
+                allowClear
+                filterOption={false}
+                placeholder='Izaberi protokol za primenu...'
+                style={{ width: 350 }}
+                value={null}
+                onSearch={(value) => setProtocolSearch(value)}
+                onSelect={(protocolId) => {
+                  const p = allProtocolsData?.content?.find((x) => x.id === protocolId);
+                  if (p) handleApplyProtocol(p.id, p.name);
+                }}
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') e.stopPropagation();
+                }}
+                options={
+                  allProtocolsData?.content?.map((p) => ({
+                    label: p.name,
+                    value: p.id,
+                  })) ?? []
+                }
+              />
+            </div>
+
             <Tabs
               style={{ marginTop: 8 }}
               items={[
