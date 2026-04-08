@@ -227,6 +227,21 @@ export default function MedicalRecordModal({
     onError: () => message.error('Greška pri primeni protokola'),
   });
 
+  const createDiagnosisMutation = useMutation({
+    mutationFn: (name: string) => diagnosesApi.create({ name, active: true }),
+    onSuccess: (newDiag) => {
+      const currentIds = form.getFieldValue('diagnosisIds') || [];
+      const updatedIds = [...currentIds, newDiag.id];
+      form.setFieldsValue({ diagnosisIds: updatedIds });
+      setSelectedDiagnosisIds(updatedIds);
+      setDiagnosisChanged(true);
+      setDiagnosisSearch('');
+      queryClient.invalidateQueries({ queryKey: ['diagnoses-autocomplete'] });
+      message.success(`Dijagnoza "${newDiag.name}" dodata u šifarnik`);
+    },
+    onError: () => message.error('Greška pri kreiranju dijagnoze'),
+  });
+
   const handleApplyProtocol = (protocolId: string, protocolName: string) => {
     Modal.confirm({
       title: 'Primena protokola',
@@ -294,8 +309,19 @@ export default function MedicalRecordModal({
       }
     }
 
+    // Opcija "Dodaj u šifarnik" kad pretraga ne pronađe tačan rezultat
+    if (
+      diagnosisSearch.trim() &&
+      !options.some((o) => o.label.toLowerCase() === diagnosisSearch.trim().toLowerCase())
+    ) {
+      options.push({
+        value: `__create__${diagnosisSearch.trim()}`,
+        label: `+ Dodaj "${diagnosisSearch.trim()}" u šifarnik`,
+      });
+    }
+
     return options;
-  }, [diagnosisSuggestions, record]);
+  }, [diagnosisSuggestions, record, diagnosisSearch]);
 
   const vetOptions =
     usersData?.content
@@ -410,7 +436,18 @@ export default function MedicalRecordModal({
                   setSelectedDiagnosisIds(values);
                   setDiagnosisChanged(true);
                 }}
-                onSelect={() => setDiagnosisDropdownOpen(false)}
+                onSelect={(value: string) => {
+                  if (typeof value === 'string' && value.startsWith('__create__')) {
+                    const name = value.replace('__create__', '');
+                    // Ukloni placeholder iz izabranih vrednosti
+                    const currentIds = (form.getFieldValue('diagnosisIds') || []).filter(
+                      (id: string) => id !== value,
+                    );
+                    form.setFieldsValue({ diagnosisIds: currentIds });
+                    createDiagnosisMutation.mutate(name);
+                  }
+                  setDiagnosisDropdownOpen(false);
+                }}
                 onInputKeyDown={(e) => {
                   if (e.key === ' ') e.stopPropagation();
                 }}
