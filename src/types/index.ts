@@ -310,7 +310,7 @@ export interface MedicalRecord {
   vetId: string;
   vetName: string;
   symptoms: string | null;
-  diagnosis: string | null;
+  diagnoses: Diagnosis[];
   examinationNotes: string | null;
   weightKg: number | null;
   temperatureC: number | null;
@@ -326,7 +326,7 @@ export interface CreateMedicalRecordRequest {
   petId: string;
   vetId: string;
   symptoms?: string;
-  diagnosis?: string;
+  diagnosisIds?: string[];
   examinationNotes?: string;
   weightKg?: number;
   temperatureC?: number;
@@ -340,7 +340,7 @@ export interface UpdateMedicalRecordRequest {
   petId?: string;
   vetId?: string;
   symptoms?: string;
-  diagnosis?: string;
+  diagnosisIds?: string[];
   examinationNotes?: string;
   weightKg?: number;
   temperatureC?: number;

@@ -13,7 +13,6 @@ import {
   Tabs,
   Col,
   Space,
-  AutoComplete,
   Alert,
 } from 'antd';
 import { DollarOutlined, FilePdfOutlined } from '@ant-design/icons';
@@ -67,7 +66,11 @@ export default function MedicalRecordModal({
   // Dijagnoza autocomplete
   const [diagnosisSearch, setDiagnosisSearch] = useState('');
   const debouncedDiagnosisSearch = useDebouncedValue(diagnosisSearch, 300);
-  const [selectedDiagnosisId, setSelectedDiagnosisId] = useState<string | null>(null);
+  const [selectedDiagnosisIds, setSelectedDiagnosisIds] = useState<string[]>([]);
+  const [diagnosisChanged, setDiagnosisChanged] = useState(false);
+  const [diagnosisDropdownOpen, setDiagnosisDropdownOpen] = useState(false);
+
+  const [appliedProtocolIds, setAppliedProtocolIds] = useState<Set<string>>(new Set());
 
   // Protokol ručni izbor
   const [protocolSearch, setProtocolSearch] = useState('');
@@ -76,14 +79,21 @@ export default function MedicalRecordModal({
   const { data: diagnosisSuggestions } = useQuery({
     queryKey: ['diagnoses-autocomplete', debouncedDiagnosisSearch],
     queryFn: () => diagnosesApi.autocomplete(0, 20, debouncedDiagnosisSearch || undefined),
-    enabled: debouncedDiagnosisSearch.length > 0,
   });
 
   const isEditMode = !!currentRecord;
+
   const { data: suggestedProtocols } = useQuery({
-    queryKey: ['protocols-by-diagnosis', selectedDiagnosisId],
-    queryFn: () => treatmentProtocolsApi.getByDiagnosis(selectedDiagnosisId!),
-    enabled: !!selectedDiagnosisId && isEditMode,
+    queryKey: ['protocols-by-diagnoses', selectedDiagnosisIds],
+    queryFn: async () => {
+      const results = await Promise.all(
+        selectedDiagnosisIds.map((id) => treatmentProtocolsApi.getByDiagnosis(id)),
+      );
+      const map = new Map();
+      results.flat().forEach((p) => map.set(p.id, p));
+      return Array.from(map.values());
+    },
+    enabled: selectedDiagnosisIds.length > 0 && isEditMode,
   });
 
   const { data: allProtocolsData } = useQuery({
@@ -143,22 +153,26 @@ export default function MedicalRecordModal({
 
   useEffect(() => {
     if (open) {
+      setDiagnosisChanged(false);
+      setAppliedProtocolIds(new Set());
+
       if (record) {
         form.setFieldsValue({
           ...record,
+          diagnosisIds: record.diagnoses?.map((d) => d.id) ?? [],
           followUpDate: record.followUpDate ? dayjs(record.followUpDate) : null,
         });
+        setSelectedDiagnosisIds(record.diagnoses?.map((d) => d.id) ?? []);
       } else {
         form.resetFields();
         setCreatedRecord(null);
-        setSelectedDiagnosisId(null);
+        setSelectedDiagnosisIds([]);
         setDiagnosisSearch('');
         setProtocolSearch('');
 
         if (defaultValues) {
           form.setFieldsValue(defaultValues);
         }
-        // Ako vetId nije postavljen kroz defaultValues, postavi ulogovanog korisnika
         if (!defaultValues?.vetId && currentUser?.id && currentUser.roleName !== 'SUPER_ADMIN') {
           form.setFieldsValue({ vetId: currentUser.id });
         }
@@ -201,13 +215,15 @@ export default function MedicalRecordModal({
 
   const applyProtocolMutation = useMutation({
     mutationFn: (req: ApplyProtocolRequest) => treatmentProtocolsApi.apply(req),
-    onSuccess: (treatments) => {
+    onSuccess: (treatments, req) => {
       message.success(`Protokol primenjen (${treatments.length} usluga dodato)`);
+      setAppliedProtocolIds((prev) => new Set(prev).add(req.protocolId));
       queryClient.invalidateQueries({ queryKey: ['treatments', currentRecord?.id] });
       queryClient.invalidateQueries({ queryKey: ['invoice-by-record', currentRecord?.id] });
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       queryClient.invalidateQueries({ queryKey: ['invoice-items'] });
     },
+
     onError: () => message.error('Greška pri primeni protokola'),
   });
 
@@ -258,6 +274,28 @@ export default function MedicalRecordModal({
 
     return options;
   }, [petsData, selectedPet]);
+
+  const diagnosisOptions = useMemo(() => {
+    const options =
+      diagnosisSuggestions?.content?.map((d) => ({
+        value: d.id,
+        label: `${d.code ? d.code + ' — ' : ''}${d.name}`,
+      })) ?? [];
+
+    // Dodaj već izabrane dijagnoze iz recorda ako nisu u listi
+    if (record?.diagnoses) {
+      for (const d of record.diagnoses) {
+        if (!options.find((o) => o.value === d.id)) {
+          options.unshift({
+            value: d.id,
+            label: `${d.code ? d.code + ' — ' : ''}${d.name}`,
+          });
+        }
+      }
+    }
+
+    return options;
+  }, [diagnosisSuggestions, record]);
 
   const vetOptions =
     usersData?.content
@@ -359,24 +397,28 @@ export default function MedicalRecordModal({
         {/* Red 2: Dijagnoza, Beleške sa pregleda */}
         <Row gutter={12}>
           <Col span={12}>
-            <Form.Item name='diagnosis' label='Dijagnoza'>
-              <AutoComplete
-                options={
-                  diagnosisSuggestions?.content?.map((d) => ({
-                    value: d.name,
-                    label: `${d.code ? d.code + ' — ' : ''}${d.name}${d.category ? ' (' + d.category + ')' : ''}`,
-                    key: d.id,
-                  })) ?? []
-                }
-                onSelect={(_value: string, option: any) => setSelectedDiagnosisId(option.key)}
-                onSearch={(value) => {
-                  setDiagnosisSearch(value);
-                  setSelectedDiagnosisId(null);
+            <Form.Item name='diagnosisIds' label='Dijagnoze'>
+              <Select
+                mode='multiple'
+                showSearch
+                filterOption={false}
+                placeholder='Pretraži dijagnoze...'
+                open={diagnosisDropdownOpen}
+                onDropdownVisibleChange={setDiagnosisDropdownOpen}
+                onSearch={(value) => setDiagnosisSearch(value)}
+                onChange={(values: string[]) => {
+                  setSelectedDiagnosisIds(values);
+                  setDiagnosisChanged(true);
                 }}
-                placeholder='Dijagnoza...'
+                onSelect={() => setDiagnosisDropdownOpen(false)}
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') e.stopPropagation();
+                }}
+                options={diagnosisOptions}
               />
             </Form.Item>
           </Col>
+
           <Col span={12}>
             <Form.Item name='examinationNotes' label='Beleške sa pregleda'>
               <Input.TextArea placeholder='Beleške...' rows={2} />
@@ -385,26 +427,39 @@ export default function MedicalRecordModal({
         </Row>
 
         {/* Predlog protokola na osnovu dijagnoze */}
-        {suggestedProtocols && suggestedProtocols.length > 0 && isEditMode && (
+        {suggestedProtocols && suggestedProtocols.length > 0 && isEditMode && diagnosisChanged && (
           <Alert
             type='info'
             showIcon
             style={{ marginBottom: 8 }}
-            message='Dostupni protokoli za ovu dijagnozu:'
+            message='Dostupni protokoli za izabrane dijagnoze:'
             description={
-              <Space wrap>
-                {suggestedProtocols.map((p) => (
-                  <Button
-                    key={p.id}
-                    size='small'
-                    type='link'
-                    loading={applyProtocolMutation.isPending}
-                    onClick={() => handleApplyProtocol(p.id, p.name)}
-                  >
-                    Primeni: {p.name}
-                  </Button>
-                ))}
-              </Space>
+              <div>
+                {selectedDiagnosisIds.map((diagId) => {
+                  const diag = diagnosisOptions.find((d) => d.value === diagId);
+                  const protocols = suggestedProtocols.filter((p) => p.diagnosisId === diagId);
+                  if (!protocols.length) return null;
+                  return (
+                    <div key={diagId} style={{ marginBottom: 4 }}>
+                      <strong>{diag?.label || diagId}:</strong>{' '}
+                      <Space wrap>
+                        {protocols.map((p) => (
+                          <Button
+                            key={p.id}
+                            size='small'
+                            type='link'
+                            loading={applyProtocolMutation.isPending}
+                            disabled={appliedProtocolIds.has(p.id)}
+                            onClick={() => handleApplyProtocol(p.id, p.name)}
+                          >
+                            {appliedProtocolIds.has(p.id) ? '✓ Primenjen' : p.name}
+                          </Button>
+                        ))}
+                      </Space>
+                    </div>
+                  );
+                })}
+              </div>
             }
           />
         )}
@@ -515,10 +570,12 @@ export default function MedicalRecordModal({
                   if (e.key === ' ') e.stopPropagation();
                 }}
                 options={
-                  allProtocolsData?.content?.map((p) => ({
-                    label: p.name,
-                    value: p.id,
-                  })) ?? []
+                  allProtocolsData?.content
+                    ?.filter((p) => !appliedProtocolIds.has(p.id))
+                    .map((p) => ({
+                      label: p.name,
+                      value: p.id,
+                    })) ?? []
                 }
               />
             </div>

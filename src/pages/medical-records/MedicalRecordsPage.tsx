@@ -92,11 +92,12 @@ export default function MedicalRecordsPage() {
     },
     {
       title: 'Dijagnoza',
-      dataIndex: 'diagnosis',
-      key: 'diagnosis',
-      render: (val) => val ?? '-',
+      dataIndex: 'diagnoses',
+      key: 'diagnoses',
+      render: (_val, record) => record.diagnoses?.map((d) => d.name).join(', ') || '-',
       ellipsis: true,
     },
+
     {
       title: 'Simptomi',
       dataIndex: 'symptoms',
