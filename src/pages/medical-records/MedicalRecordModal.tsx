@@ -433,24 +433,20 @@ export default function MedicalRecordModal({
                 onDropdownVisibleChange={setDiagnosisDropdownOpen}
                 onSearch={(value) => setDiagnosisSearch(value)}
                 onChange={(values: string[]) => {
-                  setSelectedDiagnosisIds(values);
+                  const createValue = values.find((v) => v.startsWith('__create__'));
+                  if (createValue) {
+                    const name = createValue.replace('__create__', '');
+                    // Ukloni placeholder, zadrži ostale
+                    const cleanIds = values.filter((v) => !v.startsWith('__create__'));
+                    form.setFieldsValue({ diagnosisIds: cleanIds });
+                    setSelectedDiagnosisIds(cleanIds);
+                    createDiagnosisMutation.mutate(name);
+                  } else {
+                    setSelectedDiagnosisIds(values);
+                  }
                   setDiagnosisChanged(true);
                 }}
-                onSelect={(value: string) => {
-                  if (typeof value === 'string' && value.startsWith('__create__')) {
-                    const name = value.replace('__create__', '');
-                    // Ukloni placeholder iz izabranih vrednosti
-                    const currentIds = (form.getFieldValue('diagnosisIds') || []).filter(
-                      (id: string) => id !== value,
-                    );
-                    form.setFieldsValue({ diagnosisIds: currentIds });
-                    createDiagnosisMutation.mutate(name);
-                  }
-                  setDiagnosisDropdownOpen(false);
-                }}
-                onInputKeyDown={(e) => {
-                  if (e.key === ' ') e.stopPropagation();
-                }}
+                onSelect={() => setDiagnosisDropdownOpen(false)}
                 options={diagnosisOptions}
               />
             </Form.Item>
