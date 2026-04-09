@@ -4,6 +4,8 @@ import type {
   CreateDiagnosisRequest,
   UpdateDiagnosisRequest,
   PageResponse,
+  ImportDiagnosisRequest,
+  ImportResultResponse,
 } from '@/types';
 
 export const diagnosesApi = {
@@ -26,4 +28,7 @@ export const diagnosesApi = {
     apiClient.put<Diagnosis>(`/diagnoses/${id}`, data).then((res) => res.data),
 
   remove: (id: string) => apiClient.delete(`/diagnoses/${id}`),
+
+  importDiagnoses: (data: ImportDiagnosisRequest[]) =>
+    apiClient.post<ImportResultResponse>('/diagnoses/import', data).then((res) => res.data),
 };

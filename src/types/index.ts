@@ -1028,6 +1028,12 @@ export interface UpdateDiagnosisRequest {
   description?: string;
   active?: boolean;
 }
+export interface ImportDiagnosisRequest {
+  name: string;
+  code?: string;
+  category?: string;
+  description?: string;
+}
 
 // ==================== TreatmentProtocol ====================
 

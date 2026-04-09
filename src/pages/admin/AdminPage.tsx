@@ -76,6 +76,12 @@ const adminSections = [
     icon: <ImportOutlined style={{ fontSize: 32, color: '#13c2c2' }} />,
     path: '/admin/import-services',
   },
+  {
+    title: 'Import dijagnoza',
+    description: 'Uvoz šifarnika dijagnoza iz CSV/JSON fajla',
+    icon: <ImportOutlined style={{ fontSize: 32, color: '#eb2f96' }} />,
+    path: '/admin/import-diagnoses',
+  },
 ];
 
 const superAdminSections = [

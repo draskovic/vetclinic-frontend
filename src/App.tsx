@@ -38,6 +38,7 @@ import ImportOwnersPage from './pages/owners/ImportOwnersPage';
 import ImportServicesPage from './pages/admin/ImportServicesPage';
 import DiagnosisPage from './pages/admin/DiagnosisPage';
 import ProtocolsPage from './pages/admin/ProtocolsPage';
+import ImportDiagnosesPage from '@/pages/admin/ImportDiagnosesPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -302,6 +303,7 @@ export default function App() {
                       </PermissionGuard>
                     }
                   />
+                  <Route path='admin/import-diagnoses' element={<ImportDiagnosesPage />} />
 
                   <Route path='*' element={<NotFoundPage />} />
                 </Routes>
