@@ -11,7 +11,12 @@ export * from './medical-records';
 export * from './vaccinations';
 export * from './roles';
 export * from './invoices';
-export { inventoryItemsApi, inventoryTransactionsApi } from './inventory';
+export {
+  inventoryItemsApi,
+  inventoryTransactionsApi,
+  serviceInventoryItemsApi,
+  inventoryBatchesApi,
+} from './inventory';
 export { servicesApi } from './services';
 export { labReportsApi } from './lab-reports';
 export { treatmentsApi } from './treatments';

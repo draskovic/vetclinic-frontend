@@ -38,6 +38,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { invoicesApi } from '@/api/invoices';
 import InvoiceModal from '@/pages/invoices/InvoiceModal';
 import { useAuthStore } from '@/store/authStore';
+import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 
 interface MedicalRecordModalProps {
   open: boolean;
@@ -218,10 +219,19 @@ export default function MedicalRecordModal({
     onSuccess: (treatments, req) => {
       message.success(`Protokol primenjen (${treatments.length} usluga dodato)`);
       setAppliedProtocolIds((prev) => new Set(prev).add(req.protocolId));
-      queryClient.invalidateQueries({ queryKey: ['treatments', currentRecord?.id] });
-      queryClient.invalidateQueries({ queryKey: ['invoice-by-record', currentRecord?.id] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['invoice-items'] });
+      invalidateAndBroadcast(queryClient, [
+        ['treatments', currentRecord?.id],
+        ['invoice-by-record', currentRecord?.id],
+        ['invoices'],
+        ['invoice-items'],
+        // Inventar — bulk FIFO dedukcija preko protokola
+        ['inventory-items'],
+        ['inventory-item'],
+        ['inventory-batches'],
+        ['inventory-transactions-by-item'],
+        ['inventory-batches-expiring'],
+        ['dashboard-low-stock'],
+      ]);
     },
 
     onError: () => message.error('Greška pri primeni protokola'),

@@ -1,10 +1,11 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Table, Button, Popconfirm, message, Select, Typography } from 'antd';
-import { DeleteOutlined } from '@ant-design/icons';
-import { servicesApi, treatmentsApi } from '@/api';
+import { Table, Button, Popconfirm, message, Select, Typography, Tooltip, Tag } from 'antd';
+import { DeleteOutlined, WarningOutlined } from '@ant-design/icons';
+import { servicesApi, treatmentsApi, inventoryItemsApi, serviceInventoryItemsApi } from '@/api';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Treatment } from '@/types';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 
 interface TreatmentItemsTableProps {
   medicalRecordId: string | null; // null = nova intervencija, još nije kreirana
@@ -34,6 +35,32 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     }
   }, [treatmentsData]);
 
+  // Low-stock artikli za upozorenja
+  const { data: lowStockData } = useQuery({
+    queryKey: ['dashboard-low-stock'],
+    queryFn: () => inventoryItemsApi.getLowStock().then((r) => r.data),
+  });
+
+  // Mapiranja usluga → inventar artikli (za tooltip upozorenja)
+  const { data: allMappings } = useQuery({
+    queryKey: ['service-inventory-mappings', medicalRecordId],
+    queryFn: async () => {
+      const sids = [...new Set(treatments.map((t) => t.serviceId).filter(Boolean) as string[])];
+      const map: Record<string, Array<{ name: string; isLow: boolean }>> = {};
+      for (const sid of sids) {
+        const res = await serviceInventoryItemsApi.getByService(sid);
+        map[sid] = (res.data ?? []).map((item) => ({
+          name: item.inventoryItemName,
+          isLow: lowStockIds.has(item.inventoryItemId),
+        }));
+      }
+      return map;
+    },
+    enabled: treatments.length > 0 && lowStockData !== undefined,
+  });
+
+  const lowStockIds = useMemo(() => new Set(lowStockData?.map((i) => i.id) ?? []), [lowStockData]);
+
   const serviceOptions = useMemo(
     () =>
       servicesData?.content.map((s) => ({
@@ -54,10 +81,21 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     onSuccess: () => {
       message.success('Usluga dodata!');
       refetch();
-      queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['invoice-items'] });
+      invalidateAndBroadcast(queryClient, [
+        ['invoice-by-record'],
+        ['invoices'],
+        ['invoice-items'],
+        ['service-inventory-mappings'],
+        // Inventar — sva mesta koja prikazuju stanje
+        ['inventory-items'],
+        ['inventory-item'],
+        ['inventory-batches'],
+        ['inventory-transactions-by-item'],
+        ['inventory-batches-expiring'],
+        ['dashboard-low-stock'],
+      ]);
     },
+
     onError: () => message.error('Greška pri dodavanju usluge!'),
   });
 
@@ -66,9 +104,19 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     onSuccess: () => {
       message.success('Usluga uklonjena!');
       refetch();
-      queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] });
-      queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      queryClient.invalidateQueries({ queryKey: ['invoice-items'] });
+      invalidateAndBroadcast(queryClient, [
+        ['invoice-by-record'],
+        ['invoices'],
+        ['invoice-items'],
+        ['service-inventory-mappings'],
+        // Inventar — reverzija FIFO dedukcije
+        ['inventory-items'],
+        ['inventory-item'],
+        ['inventory-batches'],
+        ['inventory-transactions-by-item'],
+        ['inventory-batches-expiring'],
+        ['dashboard-low-stock'],
+      ]);
     },
 
     onError: () => message.error('Greška pri brisanju!'),
@@ -94,7 +142,37 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
             title: 'Usluga',
             dataIndex: 'name',
             key: 'name',
+            render: (name: string, record: Treatment) => {
+              const mapping = allMappings?.[record.serviceId ?? ''];
+              const hasLow = mapping?.some((m) => m.isLow);
+              return (
+                <span>
+                  {name}
+                  {hasLow && (
+                    <Tooltip
+                      title={
+                        <>
+                          Nizak nivo zaliha:
+                          <ul style={{ margin: '4px 0 0 16px', padding: 0 }}>
+                            {mapping
+                              ?.filter((m) => m.isLow)
+                              .map((m) => (
+                                <li key={m.name}>{m.name}</li>
+                              ))}
+                          </ul>
+                        </>
+                      }
+                    >
+                      <Tag color='orange' style={{ marginLeft: 8 }}>
+                        <WarningOutlined /> Nizak lager
+                      </Tag>
+                    </Tooltip>
+                  )}
+                </span>
+              );
+            },
           },
+
           {
             title: '',
             key: 'actions',

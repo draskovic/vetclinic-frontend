@@ -7,14 +7,21 @@ import type {
   CreateInventoryTransactionRequest,
   UpdateInventoryTransactionRequest,
 } from '../../types';
+import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 
 interface Props {
   open: boolean;
   transaction: InventoryTransaction | null;
   onClose: () => void;
+  defaultItemId?: string;
 }
 
-export default function InventoryTransactionModal({ open, transaction, onClose }: Props) {
+export default function InventoryTransactionModal({
+  open,
+  transaction,
+  onClose,
+  defaultItemId,
+}: Props) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!transaction;
@@ -28,8 +35,15 @@ export default function InventoryTransactionModal({ open, transaction, onClose }
     mutationFn: (data: CreateInventoryTransactionRequest) => inventoryTransactionsApi.create(data),
     onSuccess: () => {
       message.success('Transakcija kreirana');
-      queryClient.invalidateQueries({ queryKey: ['inventory-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
+      invalidateAndBroadcast(queryClient, [
+        ['inventory-transactions'],
+        ['inventory-transactions-by-item'],
+        ['inventory-items'],
+        ['inventory-item'],
+        ['inventory-batches'],
+        ['inventory-batches-expiring'],
+        ['dashboard-low-stock'],
+      ]);
       onClose();
     },
   });
@@ -39,8 +53,15 @@ export default function InventoryTransactionModal({ open, transaction, onClose }
       inventoryTransactionsApi.update(transaction!.id, data),
     onSuccess: () => {
       message.success('Transakcija ažurirana');
-      queryClient.invalidateQueries({ queryKey: ['inventory-transactions'] });
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
+      invalidateAndBroadcast(queryClient, [
+        ['inventory-transactions'],
+        ['inventory-transactions-by-item'],
+        ['inventory-items'],
+        ['inventory-item'],
+        ['inventory-batches'],
+        ['inventory-batches-expiring'],
+        ['dashboard-low-stock'],
+      ]);
       onClose();
     },
   });
@@ -51,9 +72,12 @@ export default function InventoryTransactionModal({ open, transaction, onClose }
         form.setFieldsValue(transaction);
       } else {
         form.resetFields();
+        if (defaultItemId) {
+          form.setFieldsValue({ inventoryItemId: defaultItemId });
+        }
       }
     }
-  }, [open, transaction, form]);
+  }, [open, transaction, form, defaultItemId]);
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {

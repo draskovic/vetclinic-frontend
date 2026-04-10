@@ -7,6 +7,7 @@ import type { InventoryTransaction, InventoryTransactionType } from '../../types
 import type { ColumnsType } from 'antd/es/table';
 import InventoryTransactionModal from './InventoryTransactionModal';
 import { useNavigate } from 'react-router-dom';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 import dayjs from 'dayjs';
 
@@ -24,15 +25,21 @@ export default function InventoryTransactionsPage() {
   const [pageSize, setPageSize] = useState(20);
 
   const [search, setSearch] = useState('');
+  const debouncedSearch = useDebouncedValue(search, 300);
   const [filterItem, setFilterItem] = useState<string | undefined>(undefined);
+  const [filterType, setFilterType] = useState<string | undefined>(undefined);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<InventoryTransaction | null>(null);
 
   const queryClient = useQueryClient();
 
   const { data, isLoading } = useQuery({
-    queryKey: ['inventory-transactions', page, pageSize],
-    queryFn: () => inventoryTransactionsApi.getAll(page - 1, pageSize).then((r) => r.data),
+    queryKey: ['inventory-transactions', page, pageSize, debouncedSearch, filterType, filterItem],
+    queryFn: () =>
+      inventoryTransactionsApi
+        .getAll(page - 1, pageSize, debouncedSearch || undefined, filterType, filterItem)
+        .then((r) => r.data),
   });
 
   const { data: items } = useQuery({
@@ -48,28 +55,18 @@ export default function InventoryTransactionsPage() {
     },
   });
 
-  const filtered = data?.content?.filter((tx) => {
-    const matchesSearch = [tx.inventoryItemName, tx.note, tx.performedByName]
-      .filter(Boolean)
-      .some((val) => val!.toLowerCase().includes(search.toLowerCase()));
-    const matchesItem = filterItem ? tx.inventoryItemId === filterItem : true;
-    return matchesSearch && matchesItem;
-  });
-
   const columns: ColumnsType<InventoryTransaction> = [
     {
       title: 'Datum',
       dataIndex: 'createdAt',
       width: 150,
       render: (val: string) => dayjs(val).format('DD.MM.YYYY HH:mm'),
-      sorter: (a, b) => dayjs(a.createdAt).unix() - dayjs(b.createdAt).unix(),
-      defaultSortOrder: 'descend',
     },
     {
       title: 'Artikal',
       dataIndex: 'inventoryItemName',
-      sorter: (a, b) => (a.inventoryItemName ?? '').localeCompare(b.inventoryItemName ?? ''),
     },
+
     {
       title: 'Tip',
       dataIndex: 'type',
@@ -130,14 +127,20 @@ export default function InventoryTransactionsPage() {
             placeholder='Pretraga po artiklu, napomeni...'
             prefix={<SearchOutlined />}
             value={search}
-            onChange={(e) => setSearch(e.target.value)}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
             style={{ width: 300 }}
             allowClear
           />
           <Select
             placeholder='Filtriraj po artiklu'
             value={filterItem}
-            onChange={(val) => setFilterItem(val)}
+            onChange={(val) => {
+              setFilterItem(val);
+              setPage(1);
+            }}
             allowClear
             style={{ width: 250 }}
             showSearch
@@ -149,6 +152,22 @@ export default function InventoryTransactionsPage() {
               </Select.Option>
             ))}
           </Select>
+          <Select
+            placeholder='Tip transakcije'
+            value={filterType}
+            onChange={(val) => {
+              setFilterType(val);
+              setPage(1);
+            }}
+            allowClear
+            style={{ width: 160 }}
+            options={[
+              { value: 'IN', label: 'Ulaz' },
+              { value: 'OUT', label: 'Izlaz' },
+              { value: 'ADJUSTMENT', label: 'Korekcija' },
+              { value: 'EXPIRED', label: 'Isteklo' },
+            ]}
+          />
         </Space>
         <Space>
           <Button onClick={() => navigate('/inventory')}>Artikli</Button>
@@ -169,7 +188,7 @@ export default function InventoryTransactionsPage() {
         rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
         rowKey='id'
         columns={columns}
-        dataSource={filtered}
+        dataSource={data?.content}
         loading={isLoading}
         pagination={{
           current: page,

@@ -512,6 +512,7 @@ export interface InventoryItem {
   sellPrice: number;
   expiryDate: string | null;
   active: boolean;
+  trackBatches: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -528,6 +529,7 @@ export interface CreateInventoryItemRequest {
   sellPrice?: number;
   expiryDate?: string | null;
   active?: boolean;
+  trackBatches?: boolean;
 }
 
 export interface UpdateInventoryItemRequest {
@@ -552,6 +554,7 @@ export interface InventoryTransaction {
   quantity: number;
   referenceType: string | null;
   referenceId: string | null;
+  batchId: string | null;
   performedBy: string | null;
   performedByName: string | null;
   note: string | null;
@@ -565,6 +568,7 @@ export interface CreateInventoryTransactionRequest {
   quantity: number;
   referenceType?: string;
   referenceId?: string;
+  batchId?: string;
   performedBy?: string;
   note?: string;
 }
@@ -575,8 +579,74 @@ export interface UpdateInventoryTransactionRequest {
   quantity?: number;
   referenceType?: string;
   referenceId?: string;
+  batchId?: string;
   performedBy?: string;
   note?: string;
+}
+
+// ===================== Service Inventory Item =====================
+
+export interface ServiceInventoryItem {
+  id: string;
+  serviceId: string;
+  serviceName: string;
+  inventoryItemId: string;
+  inventoryItemName: string;
+  quantityPerUse: number;
+  unit: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateServiceInventoryItemRequest {
+  serviceId: string;
+  inventoryItemId: string;
+  quantityPerUse?: number;
+}
+
+export interface UpdateServiceInventoryItemRequest {
+  quantityPerUse: number;
+}
+// ===================== Inventory Batch =====================
+
+export type InventoryBatchStatus = 'OK' | 'EXPIRING_SOON' | 'EXPIRED';
+
+export interface InventoryBatch {
+  id: string;
+  inventoryItemId: string;
+  inventoryItemName: string | null;
+  inventoryItemUnit: string | null;
+  batchNumber: string;
+  expiryDate: string | null;
+  quantityOnHand: number;
+  receivedAt: string;
+  supplier: string | null;
+  costPrice: number | null;
+  notes: string | null;
+  daysUntilExpiry: number | null;
+  status: InventoryBatchStatus;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateInventoryBatchRequest {
+  inventoryItemId: string;
+  batchNumber: string;
+  expiryDate?: string | null;
+  quantityOnHand: number;
+  receivedAt: string;
+  supplier?: string;
+  costPrice?: number;
+  notes?: string;
+}
+
+export interface UpdateInventoryBatchRequest {
+  batchNumber?: string;
+  expiryDate?: string | null;
+  receivedAt?: string;
+  supplier?: string;
+  costPrice?: number;
+  notes?: string;
 }
 
 // ==================== API RESPONSE ====================

@@ -8,6 +8,7 @@ import {
   MedicineBoxOutlined,
   UserAddOutlined,
   FileAddOutlined,
+  InboxOutlined,
 } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
@@ -15,6 +16,8 @@ import { appointmentsApi } from '@/api/appointments';
 import { medicalRecordsApi } from '@/api/medical-records';
 import { vaccinationsApi } from '@/api/vaccinations';
 import { invoicesApi } from '@/api/invoices';
+import { inventoryItemsApi, inventoryBatchesApi } from '@/api/inventory';
+import type { InventoryItem, InventoryCategory, InventoryBatch } from '@/types';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
 import { useThemeStore } from '@/store/themeStore';
@@ -149,6 +152,16 @@ export default function Dashboard() {
   const { data: recentRecords } = useQuery({
     queryKey: ['dashboard-recent-records'],
     queryFn: () => medicalRecordsApi.getAll(0, 5).then((r) => r.data),
+  });
+
+  const { data: lowStockItems } = useQuery({
+    queryKey: ['dashboard-low-stock'],
+    queryFn: () => inventoryItemsApi.getLowStock().then((r) => r.data),
+  });
+
+  const { data: expiringBatches } = useQuery({
+    queryKey: ['inventory-batches-expiring'],
+    queryFn: () => inventoryBatchesApi.getExpiring(30).then((r) => r.data),
   });
 
   const monthlyRevenue =
@@ -638,6 +651,149 @@ export default function Dashboard() {
           </Card>
         </Col>
       </Row>
+      {(lowStockItems?.length ?? 0) > 0 && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24}>
+            <Card
+              title={
+                <span>
+                  <InboxOutlined style={{ color: '#ef4444', marginRight: 8, fontSize: 18 }} />
+                  Nizak nivo zaliha ({lowStockItems?.length ?? 0})
+                </span>
+              }
+              extra={<Link to='/inventory'>Vidi sve</Link>}
+              style={{
+                borderRadius: 16,
+                border: 'none',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+              }}
+            >
+              <Table
+                rowKey='id'
+                dataSource={lowStockItems?.slice(0, 10)}
+                pagination={false}
+                size='small'
+                columns={[
+                  { title: 'Artikal', dataIndex: 'name' },
+                  {
+                    title: 'Kategorija',
+                    dataIndex: 'category',
+                    width: 150,
+                    render: (cat: InventoryCategory) => {
+                      const labels: Record<string, string> = {
+                        MEDICATION: 'Lek',
+                        SUPPLY: 'Potrošni',
+                        EQUIPMENT: 'Oprema',
+                      };
+                      return labels[cat] || cat;
+                    },
+                  },
+                  {
+                    title: 'Na stanju',
+                    dataIndex: 'quantityOnHand',
+                    width: 120,
+                    align: 'right',
+                    render: (val: number, record: InventoryItem) => (
+                      <span style={{ color: val <= 0 ? '#ff4d4f' : '#fa8c16', fontWeight: 600 }}>
+                        {val} {record.unit || ''}
+                      </span>
+                    ),
+                  },
+                  {
+                    title: 'Min. nivo',
+                    dataIndex: 'reorderLevel',
+                    width: 100,
+                    align: 'right',
+                  },
+                ]}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )}
+
+      {(expiringBatches?.length ?? 0) > 0 && (
+        <Row gutter={[16, 16]} style={{ marginTop: 16 }}>
+          <Col xs={24}>
+            <Card
+              title={
+                <span>
+                  <WarningOutlined style={{ color: '#f59e0b', marginRight: 8, fontSize: 18 }} />
+                  Roba pred istekom ({expiringBatches?.length ?? 0})
+                </span>
+              }
+              extra={<Link to='/inventory'>Vidi sve</Link>}
+              style={{
+                borderRadius: 16,
+                border: 'none',
+                boxShadow: '0 2px 12px rgba(0,0,0,0.08)',
+              }}
+            >
+              <Table
+                rowKey='id'
+                dataSource={expiringBatches?.slice(0, 10)}
+                pagination={false}
+                size='small'
+                columns={[
+                  {
+                    title: 'Artikal',
+                    dataIndex: 'inventoryItemName',
+                    render: (val: string | null, record: InventoryBatch) =>
+                      val ? <Link to={`/inventory/${record.inventoryItemId}`}>{val}</Link> : '—',
+                  },
+                  {
+                    title: 'Broj lota',
+                    dataIndex: 'batchNumber',
+                    width: 140,
+                  },
+                  {
+                    title: 'Rok trajanja',
+                    dataIndex: 'expiryDate',
+                    width: 130,
+                    render: (val: string | null) => (val ? dayjs(val).format('DD.MM.YYYY') : '—'),
+                  },
+                  {
+                    title: 'Dana do isteka',
+                    dataIndex: 'daysUntilExpiry',
+                    width: 140,
+                    align: 'right',
+                    render: (val: number | null) => {
+                      if (val == null) return '—';
+                      if (val < 0)
+                        return <span style={{ color: '#ff4d4f', fontWeight: 600 }}>{val}</span>;
+                      if (val <= 7)
+                        return <span style={{ color: '#ff4d4f', fontWeight: 600 }}>{val}</span>;
+                      return <span style={{ color: '#fa8c16', fontWeight: 600 }}>{val}</span>;
+                    },
+                  },
+                  {
+                    title: 'Količina',
+                    dataIndex: 'quantityOnHand',
+                    width: 120,
+                    align: 'right',
+                    render: (val: number, record: InventoryBatch) => (
+                      <span>
+                        {val} {record.inventoryItemUnit || ''}
+                      </span>
+                    ),
+                  },
+                  {
+                    title: 'Status',
+                    dataIndex: 'status',
+                    width: 130,
+                    render: (val: string) => {
+                      if (val === 'EXPIRED') return <Tag color='red'>Istekao</Tag>;
+                      if (val === 'EXPIRING_SOON') return <Tag color='orange'>Uskoro ističe</Tag>;
+                      return <Tag color='green'>OK</Tag>;
+                    },
+                  },
+                ]}
+              />
+            </Card>
+          </Col>
+        </Row>
+      )}
+
       <MedicalRecordModal
         open={medicalRecordModalOpen}
         record={null}

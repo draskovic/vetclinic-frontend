@@ -9,6 +9,7 @@ import type {
   UpdateInventoryItemRequest,
 } from '../../types';
 import dayjs from 'dayjs';
+import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 
 interface Props {
   open: boolean;
@@ -30,7 +31,7 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
     mutationFn: (data: CreateInventoryItemRequest) => inventoryItemsApi.create(data),
     onSuccess: () => {
       message.success('Artikal kreiran');
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
+      invalidateAndBroadcast(queryClient, [['inventory-items'], ['dashboard-low-stock']]);
       onClose();
     },
   });
@@ -39,7 +40,12 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
     mutationFn: (data: UpdateInventoryItemRequest) => inventoryItemsApi.update(item!.id, data),
     onSuccess: () => {
       message.success('Artikal ažuriran');
-      queryClient.invalidateQueries({ queryKey: ['inventory-items'] });
+      invalidateAndBroadcast(queryClient, [
+        ['inventory-items'],
+        ['inventory-item', item!.id],
+        ['inventory-item'],
+        ['dashboard-low-stock'],
+      ]);
       onClose();
     },
   });
@@ -86,7 +92,13 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
       <Form
         form={form}
         layout='vertical'
-        initialValues={{ active: true, category: 'MEDICATION', quantityOnHand: 0, reorderLevel: 0 }}
+        initialValues={{
+          active: true,
+          category: 'MEDICATION',
+          quantityOnHand: 0,
+          reorderLevel: 0,
+          trackBatches: false,
+        }}
       >
         <Form.Item name='name' label='Naziv' rules={[{ required: true, message: 'Unesite naziv' }]}>
           <Input />
@@ -150,8 +162,40 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
           </Form.Item>
         </div>
 
-        <Form.Item name='active' label='Aktivan' valuePropName='checked'>
-          <Switch />
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+          <Form.Item name='active' label='Aktivan' valuePropName='checked'>
+            <Switch />
+          </Form.Item>
+
+          <Form.Item
+            name='trackBatches'
+            label='Prati po lotovima (FIFO)'
+            valuePropName='checked'
+            tooltip='Lotovi se troše po roku trajanja — najpre ističu, najpre se troše'
+          >
+            <Switch />
+          </Form.Item>
+        </div>
+
+        <Form.Item shouldUpdate={(prev, curr) => prev.trackBatches !== curr.trackBatches} noStyle>
+          {({ getFieldValue }) =>
+            getFieldValue('trackBatches') ? (
+              <div
+                style={{
+                  background: '#fffbe6',
+                  border: '1px solid #ffe58f',
+                  padding: 8,
+                  borderRadius: 4,
+                  marginBottom: 16,
+                  fontSize: 12,
+                  color: '#874d00',
+                }}
+              >
+                Količina na stanju će se računati kao zbir količina svih lotova. Lotove dodaješ
+                kasnije iz tab-a "Lotovi" na detaljnoj stranici artikla.
+              </div>
+            ) : null
+          }
         </Form.Item>
       </Form>
     </Modal>

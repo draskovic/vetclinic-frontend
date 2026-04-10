@@ -39,6 +39,8 @@ import ImportServicesPage from './pages/admin/ImportServicesPage';
 import DiagnosisPage from './pages/admin/DiagnosisPage';
 import ProtocolsPage from './pages/admin/ProtocolsPage';
 import ImportDiagnosesPage from '@/pages/admin/ImportDiagnosesPage';
+import InventoryItemDetailPage from './pages/inventory/InventoryItemDetailPage';
+import { initQueryBroadcast } from '@/lib/queryBroadcast';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -48,6 +50,11 @@ const queryClient = new QueryClient({
     },
   },
 });
+
+// Cross-tab sinhronizacija query cache-a preko BroadcastChannel API-ja.
+// Kad jedna mutacija pozove invalidateAndBroadcast, svi otvoreni tabovi
+// iste aplikacije invalidiraju iste query ključeve (real-time sync).
+initQueryBroadcast(queryClient);
 
 export default function App() {
   const { darkMode } = useThemeStore();
@@ -195,6 +202,15 @@ export default function App() {
                         </PermissionGuard>
                       }
                     />
+                    <Route
+                      path='/inventory/:id'
+                      element={
+                        <PermissionGuard permission='manage_inventory'>
+                          <InventoryItemDetailPage />
+                        </PermissionGuard>
+                      }
+                    />
+
                     <Route
                       path='/inventory-transactions'
                       element={

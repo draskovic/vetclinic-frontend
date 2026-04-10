@@ -1,12 +1,18 @@
 import { useState } from 'react';
 import { Table, Button, Space, Input, Popconfirm, message, Card, Typography, Select } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  SearchOutlined,
+  WarningOutlined,
+} from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { inventoryItemsApi } from '../../api';
 import type { InventoryItem, InventoryCategory } from '../../types';
 import type { ColumnsType } from 'antd/es/table';
 import InventoryItemModal from './InventoryItemModal';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 import dayjs from 'dayjs';
@@ -53,9 +59,17 @@ export default function InventoryPage() {
 
   const getStockStatus = (item: InventoryItem) => {
     if (item.quantityOnHand <= 0)
-      return <span style={{ color: '#ff4d4f', fontWeight: 600 }}>Nema na stanju</span>;
-    if (item.quantityOnHand <= item.reorderLevel)
-      return <span style={{ color: '#fa8c16', fontWeight: 600 }}>Nizak nivo</span>;
+      return (
+        <span style={{ color: '#ff4d4f', fontWeight: 600 }}>
+          <WarningOutlined /> Nema na stanju
+        </span>
+      );
+    if (item.reorderLevel != null && item.quantityOnHand <= item.reorderLevel)
+      return (
+        <span style={{ color: '#fa8c16', fontWeight: 600 }}>
+          <WarningOutlined /> Nizak nivo
+        </span>
+      );
     return <span style={{ color: '#52c41a', fontWeight: 600 }}>Na stanju</span>;
   };
 
@@ -63,7 +77,11 @@ export default function InventoryPage() {
     {
       title: 'Naziv',
       dataIndex: 'name',
+      render: (name: string, record: InventoryItem) => (
+        <Link to={`/inventory/${record.id}`}>{name}</Link>
+      ),
     },
+
     {
       title: 'SKU',
       dataIndex: 'sku',
