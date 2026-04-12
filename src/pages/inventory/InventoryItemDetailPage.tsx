@@ -21,7 +21,12 @@ import {
   serviceInventoryItemsApi,
   inventoryBatchesApi,
 } from '@/api';
-import type { InventoryItem, InventoryTransactionType, InventoryBatch } from '@/types';
+import type {
+  InventoryItem,
+  InventoryTransactionType,
+  InventoryBatch,
+  AdjustmentReason,
+} from '@/types';
 import InventoryItemModal from './InventoryItemModal';
 import InventoryTransactionModal from './InventoryTransactionModal';
 import dayjs from 'dayjs';
@@ -39,6 +44,17 @@ const txTypeLabels: Record<string, { text: string; color: string }> = {
   OUT: { text: 'Izdavanje', color: 'red' },
   ADJUSTMENT: { text: 'Korekcija', color: 'blue' },
   EXPIRED: { text: 'Isteklo', color: 'orange' },
+};
+
+const reasonLabels: Record<AdjustmentReason, string> = {
+  DAMAGED: 'Oštećeno',
+  LOST: 'Izgubljeno',
+  STOLEN: 'Ukradeno',
+  EXPIRED: 'Isteklo',
+  RECOUNT: 'Popis (neslaganje)',
+  CORRECTION: 'Korekcija unosa',
+  OPENING_BALANCE: 'Otvaranje kartice',
+  OTHER: 'Ostalo',
 };
 
 export default function InventoryItemDetailPage() {
@@ -183,6 +199,12 @@ export default function InventoryItemDetailPage() {
             align: 'right',
           },
           {
+            title: 'Razlog',
+            dataIndex: 'reason',
+            width: 140,
+            render: (val: AdjustmentReason | null) => (val ? reasonLabels[val] || val : '—'),
+          },
+          {
             title: 'Izvršio',
             dataIndex: 'performedByName',
             render: (val: string | null) => val || '—',
@@ -193,6 +215,7 @@ export default function InventoryItemDetailPage() {
             ellipsis: true,
             render: (val: string | null) => val || '—',
           },
+
           {
             title: 'Referenca',
             dataIndex: 'referenceType',

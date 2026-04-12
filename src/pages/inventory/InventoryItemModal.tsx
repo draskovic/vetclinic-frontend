@@ -95,7 +95,7 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
         initialValues={{
           active: true,
           category: 'MEDICATION',
-          quantityOnHand: 0,
+          initialQuantity: 0,
           reorderLevel: 0,
           trackBatches: false,
         }}
@@ -122,10 +122,22 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
           </Form.Item>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-          <Form.Item name='quantityOnHand' label='Količina na stanju'>
-            <InputNumber style={{ width: '100%' }} min={0} />
-          </Form.Item>
+        <div
+          style={{
+            display: 'grid',
+            gridTemplateColumns: isEditing ? '1fr 1fr' : '1fr 1fr 1fr',
+            gap: 16,
+          }}
+        >
+          {!isEditing && (
+            <Form.Item
+              name='initialQuantity'
+              label='Početno stanje'
+              tooltip='Kreira IN transakciju sa razlogom "Otvaranje kartice". Za artikle sa lotovima, stanje se unosi kroz tab Lotovi.'
+            >
+              <InputNumber style={{ width: '100%' }} min={0} />
+            </Form.Item>
+          )}
 
           <Form.Item name='unit' label='Jedinica mere'>
             <Input placeholder='kom, ml, g...' />
@@ -191,8 +203,8 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
                   color: '#874d00',
                 }}
               >
-                Količina na stanju će se računati kao zbir količina svih lotova. Lotove dodaješ
-                kasnije iz tab-a "Lotovi" na detaljnoj stranici artikla.
+                Količina na stanju se računa kao zbir količina svih lotova. Početno stanje se unosi
+                kroz tab "Lotovi" na detaljnoj stranici artikla.
               </div>
             ) : null
           }

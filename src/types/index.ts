@@ -497,6 +497,15 @@ export interface UpdateInvoiceItemRequest {
 
 export type InventoryCategory = 'MEDICATION' | 'SUPPLY' | 'EQUIPMENT';
 export type InventoryTransactionType = 'IN' | 'OUT' | 'ADJUSTMENT' | 'EXPIRED';
+export type AdjustmentReason =
+  | 'DAMAGED'
+  | 'LOST'
+  | 'STOLEN'
+  | 'EXPIRED'
+  | 'RECOUNT'
+  | 'CORRECTION'
+  | 'OPENING_BALANCE'
+  | 'OTHER';
 
 export interface InventoryItem {
   id: string;
@@ -530,6 +539,7 @@ export interface CreateInventoryItemRequest {
   expiryDate?: string | null;
   active?: boolean;
   trackBatches?: boolean;
+  initialQuantity?: number;
 }
 
 export interface UpdateInventoryItemRequest {
@@ -558,6 +568,7 @@ export interface InventoryTransaction {
   performedBy: string | null;
   performedByName: string | null;
   note: string | null;
+  reason: AdjustmentReason | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -571,6 +582,7 @@ export interface CreateInventoryTransactionRequest {
   batchId?: string;
   performedBy?: string;
   note?: string;
+  reason?: AdjustmentReason;
 }
 
 export interface UpdateInventoryTransactionRequest {
@@ -582,6 +594,7 @@ export interface UpdateInventoryTransactionRequest {
   batchId?: string;
   performedBy?: string;
   note?: string;
+  reason?: AdjustmentReason;
 }
 
 // ===================== Service Inventory Item =====================

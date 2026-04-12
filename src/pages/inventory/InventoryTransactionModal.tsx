@@ -6,6 +6,7 @@ import type {
   InventoryTransaction,
   CreateInventoryTransactionRequest,
   UpdateInventoryTransactionRequest,
+  AdjustmentReason,
 } from '../../types';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 
@@ -25,6 +26,19 @@ export default function InventoryTransactionModal({
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!transaction;
+  const selectedType = Form.useWatch('type', form);
+  const requiresReason = selectedType === 'ADJUSTMENT' || selectedType === 'EXPIRED';
+
+  const reasonLabels: Record<AdjustmentReason, string> = {
+    DAMAGED: 'Oštećeno',
+    LOST: 'Izgubljeno',
+    STOLEN: 'Ukradeno',
+    EXPIRED: 'Isteklo',
+    RECOUNT: 'Popis (neslaganje)',
+    CORRECTION: 'Korekcija unosa',
+    OPENING_BALANCE: 'Otvaranje kartice',
+    OTHER: 'Ostalo',
+  };
 
   const { data: items } = useQuery({
     queryKey: ['inventory-items-all'],
@@ -78,6 +92,12 @@ export default function InventoryTransactionModal({
       }
     }
   }, [open, transaction, form, defaultItemId]);
+
+  useEffect(() => {
+    if (!requiresReason) {
+      form.setFieldValue('reason', undefined);
+    }
+  }, [requiresReason, form]);
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
@@ -136,6 +156,22 @@ export default function InventoryTransactionModal({
             <InputNumber style={{ width: '100%' }} min={1} />
           </Form.Item>
         </div>
+
+        {requiresReason && (
+          <Form.Item
+            name='reason'
+            label='Razlog'
+            rules={[{ required: true, message: 'Izaberite razlog za korekciju/isteklo' }]}
+          >
+            <Select placeholder='Izaberite razlog'>
+              {(Object.keys(reasonLabels) as AdjustmentReason[]).map((key) => (
+                <Select.Option key={key} value={key}>
+                  {reasonLabels[key]}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        )}
 
         <Form.Item name='note' label='Napomena'>
           <Input.TextArea rows={3} placeholder='Razlog transakcije, dobavljač, referenca...' />
