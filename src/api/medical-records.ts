@@ -7,9 +7,21 @@ import type {
 } from '@/types';
 
 export const medicalRecordsApi = {
-  getAll: (page = 0, size = 10, search?: string) =>
+  getAll: (
+    page = 0,
+    size = 10,
+    search?: string,
+    filters?: { dateFrom?: string; dateTo?: string; vetId?: string },
+  ) =>
     apiClient.get<PageResponse<MedicalRecord>>('/medical-records', {
-      params: { page, size, search: search || undefined },
+      params: {
+        page,
+        size,
+        search: search || undefined,
+        dateFrom: filters?.dateFrom || undefined,
+        dateTo: filters?.dateTo || undefined,
+        vetId: filters?.vetId || undefined,
+      },
     }),
 
   getById: (id: string) => apiClient.get<MedicalRecord>(`/medical-records/${id}`),
@@ -18,6 +30,9 @@ export const medicalRecordsApi = {
 
   getByAppointment: (appointmentId: string) =>
     apiClient.get<MedicalRecord>(`/medical-records/by-appointment/${appointmentId}`),
+
+  startFromAppointment: (appointmentId: string) =>
+    apiClient.post<MedicalRecord>(`/medical-records/start-from-appointment/${appointmentId}`),
 
   create: (data: CreateMedicalRecordRequest) =>
     apiClient.post<MedicalRecord>('/medical-records', data),

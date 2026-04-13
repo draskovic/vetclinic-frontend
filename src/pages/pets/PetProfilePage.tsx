@@ -26,6 +26,8 @@ import {
   PlusOutlined,
   CameraOutlined,
   PictureOutlined,
+  ExperimentOutlined,
+  MedicineBoxOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -35,9 +37,14 @@ import { medicalRecordsApi } from '@/api/medical-records';
 import { vaccinationsApi } from '@/api/vaccinations';
 import { labReportsApi } from '@/api/lab-reports';
 import { documentsApi } from '@/api/documents';
+import VaccinationModal from '../vaccinations/VaccinationModal';
+import LabReportModal from '../lab-reports/LabReportModal';
+
 import type { Appointment, MedicalRecord, Vaccination, LabReport, DocumentRecord } from '@/types';
 import MedicalRecordModal from '../medical-records/MedicalRecordModal';
+import MedicalRecordEditor from '../medical-records/MedicalRecordEditor';
 import { useAuthStore } from '@/store/authStore';
+import QuickVaccinationForm from './QuickVaccinationForm';
 
 const { Title } = Typography;
 
@@ -94,8 +101,11 @@ export default function PetProfilePage() {
   const { petId } = useParams<{ petId: string }>();
   const navigate = useNavigate();
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [expandedMrKeys, setExpandedMrKeys] = useState<string[]>([]);
   const [selectedRecord, setSelectedRecord] = useState<MedicalRecord | null>(null);
   const [recordModalOpen, setRecordModalOpen] = useState(false);
+  const [vaccinationModalOpen, setVaccinationModalOpen] = useState(false);
+  const [labReportModalOpen, setLabReportModalOpen] = useState(false);
 
   const { data: pet, isLoading: petLoading } = useQuery({
     queryKey: ['pet', petId],
@@ -441,6 +451,23 @@ export default function PetProfilePage() {
             loading={mrLoading}
             pagination={{ pageSize: 10 }}
             size='small'
+            expandable={{
+              expandedRowKeys: expandedMrKeys,
+              onExpandedRowsChange: (keys) => setExpandedMrKeys(keys as string[]),
+              expandedRowRender: (record) => (
+                <MedicalRecordEditor
+                  record={record}
+                  compact
+                  onSaved={() => {
+                    queryClient.invalidateQueries({
+                      queryKey: ['medical-records', 'by-pet', petId],
+                    });
+                    setExpandedMrKeys((prev) => prev.filter((k) => k !== record.id));
+                  }}
+                />
+              ),
+              rowExpandable: () => true,
+            }}
           />
         </>
       ),
@@ -451,7 +478,7 @@ export default function PetProfilePage() {
       label: `Vakcinacije (${vaccinations.length})`,
       children: (
         <>
-          <div style={{ marginBottom: 12, textAlign: 'right' }}>
+          <div style={{ marginBottom: 12, display: 'flex', justifyContent: 'flex-end' }}>
             <Button
               icon={<FilePdfOutlined />}
               onClick={handleDownloadVaccinationPdf}
@@ -460,6 +487,7 @@ export default function PetProfilePage() {
               Štampaj vakcinacioni list
             </Button>
           </div>
+          <QuickVaccinationForm petId={petId!} vetId={user?.id ?? ''} />
           <Table
             dataSource={vaccinations}
             columns={vaccinationColumns}
@@ -504,14 +532,41 @@ export default function PetProfilePage() {
 
   return (
     <div style={{ padding: '0 24px' }}>
-      <Space style={{ marginBottom: 16 }}>
-        <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/pets')}>
-          Nazad na ljubimce
-        </Button>
-        <Button icon={<QrcodeOutlined />} onClick={() => setQrModalOpen(true)} disabled={!pet}>
-          Upload dokumenata sa telefona
-        </Button>
-      </Space>
+      <div
+        style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: 16,
+        }}
+      >
+        <Space>
+          <Button icon={<ArrowLeftOutlined />} onClick={() => navigate('/pets')}>
+            Nazad na ljubimce
+          </Button>
+          <Button icon={<QrcodeOutlined />} onClick={() => setQrModalOpen(true)} disabled={!pet}>
+            Upload dokumenata sa telefona
+          </Button>
+        </Space>
+        <Space>
+          <Button
+            type='primary'
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setSelectedRecord(null);
+              setRecordModalOpen(true);
+            }}
+          >
+            Novi pregled
+          </Button>
+          <Button icon={<MedicineBoxOutlined />} onClick={() => setVaccinationModalOpen(true)}>
+            Vakcinacija
+          </Button>
+          <Button icon={<ExperimentOutlined />} onClick={() => setLabReportModalOpen(true)}>
+            Lab izveštaj
+          </Button>
+        </Space>
+      </div>
 
       <Card style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
@@ -610,6 +665,24 @@ export default function PetProfilePage() {
           setSelectedRecord(null);
         }}
         defaultValues={{ petId: petId, vetId: user?.id }}
+      />
+      <VaccinationModal
+        open={vaccinationModalOpen}
+        vaccination={null}
+        onClose={() => {
+          setVaccinationModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['vaccinations', 'by-pet', petId] });
+        }}
+        defaultValues={{ petId: petId, vetId: user?.id }}
+      />
+      <LabReportModal
+        open={labReportModalOpen}
+        labReport={null}
+        onClose={() => {
+          setLabReportModalOpen(false);
+          queryClient.invalidateQueries({ queryKey: ['lab-reports', 'by-pet', petId] });
+        }}
+        petId={petId}
       />
     </div>
   );

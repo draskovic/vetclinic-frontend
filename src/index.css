@@ -270,6 +270,14 @@ body {
 .compact-medical-form .ant-form-item {
   margin-bottom: 8px;
 }
+/* Inline expandable editor — compact mode */
+.compact-medical-editor .ant-table-title .ant-select .ant-select-selector {
+  background-color: #fff !important;
+  border: 1px solid #d9d9d9 !important;
+}
+.compact-medical-editor .ant-form-item:last-child {
+  margin-top: 16px;
+}
 
 /* Sidebar scrollbar - svetla tema */
 .sidebar-menu-scroll::-webkit-scrollbar {
@@ -305,4 +313,138 @@ body {
 
 .dark-theme .sidebar-menu-scroll::-webkit-scrollbar-thumb:hover {
   background: rgba(255, 255, 255, 0.35);
+}
+/* Command Palette (Ctrl+K) */
+.command-palette-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 1100;
+  display: flex;
+  justify-content: center;
+  padding-top: 15vh;
+}
+
+.command-palette-container {
+  width: 640px;
+  max-height: 480px;
+  background: #fff;
+  border-radius: 12px;
+  box-shadow: 0 16px 70px rgba(0, 0, 0, 0.2);
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+}
+
+.dark-theme .command-palette-container {
+  background: #1f1f1f;
+  box-shadow: 0 16px 70px rgba(0, 0, 0, 0.5);
+}
+
+[cmdk-root] {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+[cmdk-input] {
+  width: 100%;
+  padding: 16px 20px;
+  font-size: 16px;
+  border: none;
+  border-bottom: 1px solid #f0f0f0;
+  outline: none;
+  background: transparent;
+  color: inherit;
+}
+
+.dark-theme [cmdk-input] {
+  border-bottom-color: #333;
+  color: #fff;
+}
+
+[cmdk-input]::placeholder {
+  color: #bfbfbf;
+}
+
+[cmdk-list] {
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px;
+}
+
+[cmdk-group-heading] {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #8c8c8c;
+  padding: 8px 12px 4px;
+}
+
+[cmdk-item] {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-radius: 8px;
+  cursor: pointer;
+  font-size: 14px;
+  color: inherit;
+  transition: background 0.1s;
+}
+
+[cmdk-item][data-selected='true'] {
+  background: #f0f5ff;
+}
+
+.dark-theme [cmdk-item][data-selected='true'] {
+  background: #2a2a2a;
+}
+
+[cmdk-item]:hover {
+  background: #f5f5f5;
+}
+
+.dark-theme [cmdk-item]:hover {
+  background: #2a2a2a;
+}
+
+[cmdk-empty] {
+  padding: 24px;
+  text-align: center;
+  color: #8c8c8c;
+  font-size: 14px;
+}
+
+.cmd-type {
+  display: inline-block;
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  background: #e6f4ff;
+  color: #1677ff;
+  padding: 2px 6px;
+  border-radius: 4px;
+  flex-shrink: 0;
+}
+
+.dark-theme .cmd-type {
+  background: #111d2c;
+  color: #4096ff;
+}
+
+.cmd-code {
+  font-family: monospace;
+  font-size: 12px;
+  color: #8c8c8c;
+  flex-shrink: 0;
+}
+
+.cmd-meta {
+  color: #8c8c8c;
+  font-size: 13px;
 }

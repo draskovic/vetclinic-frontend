@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, Col, Row, Typography, Table, Tag, Empty, Button, Space, Tooltip } from 'antd';
+import { Card, Col, Row, Typography, Table, Tag, Empty, Button, Space, message } from 'antd';
 import {
   WarningOutlined,
   CalendarOutlined,
@@ -9,8 +9,10 @@ import {
   UserAddOutlined,
   FileAddOutlined,
   InboxOutlined,
+  PlayCircleOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
 import { appointmentsApi } from '@/api/appointments';
 import { medicalRecordsApi } from '@/api/medical-records';
@@ -106,6 +108,23 @@ export default function Dashboard() {
   const [newPatientModalOpen, setNewPatientModalOpen] = useState(false);
   const [medicalRecordModalOpen, setMedicalRecordModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [startedRecord, setStartedRecord] = useState<MedicalRecord | null>(null);
+
+  const queryClient = useQueryClient();
+
+  const startMutation = useMutation({
+    mutationFn: (appointmentId: string) => medicalRecordsApi.startFromAppointment(appointmentId),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['dashboard-appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['medical-records'] });
+      // Otvori modal sa kreiranim/postojećim rekordom
+      setSelectedAppointment(null);
+      setStartedRecord(response.data);
+      setMedicalRecordModalOpen(true);
+    },
+    onError: () => message.error('Greška pri pokretanju intervencije!'),
+  });
 
   const todayFrom = dayjs().startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
   const todayTo = dayjs().endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
@@ -116,11 +135,13 @@ export default function Dashboard() {
   const { data: todayAppointments } = useQuery({
     queryKey: ['dashboard-appointments', todayFrom],
     queryFn: () => appointmentsApi.getByDateRange(todayFrom, todayTo).then((r) => r.data),
+    staleTime: 0,
   });
 
   const { data: upcomingAppointments } = useQuery({
     queryKey: ['dashboard-upcoming-appointments', tomorrowFrom],
     queryFn: () => appointmentsApi.getByDateRange(tomorrowFrom, weekTo).then((r) => r.data),
+    staleTime: 0,
   });
 
   const { data: issuedInvoices } = useQuery({
@@ -225,20 +246,51 @@ export default function Dashboard() {
     },
     {
       title: '',
-      width: 50,
-      render: (_: unknown, record: Appointment) => (
-        <Tooltip title='Kreiraj intervenciju'>
-          <Button
-            type='text'
-            size='small'
-            icon={<MedicineBoxOutlined />}
-            onClick={() => {
-              setSelectedAppointment(record);
-              setMedicalRecordModalOpen(true);
-            }}
-          />
-        </Tooltip>
-      ),
+      width: 120,
+      render: (_: unknown, record: Appointment) => {
+        if (record.status === 'COMPLETED') {
+          return (
+            <Button
+              size='small'
+              icon={<FolderOpenOutlined />}
+              loading={startMutation.isPending}
+              onClick={() => startMutation.mutate(record.id)}
+            >
+              Karton
+            </Button>
+          );
+        }
+
+        if (record.status === 'IN_PROGRESS') {
+          return (
+            <Button
+              size='small'
+              type='primary'
+              ghost
+              icon={<PlayCircleOutlined />}
+              loading={startMutation.isPending}
+              onClick={() => startMutation.mutate(record.id)}
+            >
+              Nastavi
+            </Button>
+          );
+        }
+        if (record.status === 'SCHEDULED' || record.status === 'CONFIRMED') {
+          return (
+            <Button
+              size='small'
+              type='primary'
+              style={{ backgroundColor: '#22c55e', borderColor: '#22c55e' }}
+              icon={<PlayCircleOutlined />}
+              loading={startMutation.isPending}
+              onClick={() => startMutation.mutate(record.id)}
+            >
+              Start
+            </Button>
+          );
+        }
+        return null;
+      },
     },
   ];
   const upcomingColumns: ColumnsType<Appointment> = [
@@ -796,10 +848,11 @@ export default function Dashboard() {
 
       <MedicalRecordModal
         open={medicalRecordModalOpen}
-        record={null}
+        record={startedRecord}
         onClose={() => {
           setMedicalRecordModalOpen(false);
           setSelectedAppointment(null);
+          setStartedRecord(null);
         }}
         defaultValues={
           selectedAppointment

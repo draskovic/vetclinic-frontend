@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -19,6 +19,7 @@ import {
   FilePdfOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import type { ColumnsType } from 'antd/es/table';
 import { invoicesApi } from '@/api/invoices';
 import type { Invoice, InvoiceStatus } from '@/types';
@@ -45,7 +46,15 @@ const formatCurrency = (amount: number, currency: string) => {
 export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+
+  useEffect(() => {
+    if (searchParams.has('search')) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
   const debouncedSearch = useDebouncedValue(search);
   const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);

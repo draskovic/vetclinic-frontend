@@ -1,4 +1,5 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
 import {
   PlusOutlined,
@@ -13,10 +14,12 @@ import type { ColumnsType } from 'antd/es/table';
 import { medicalRecordsApi } from '@/api/medical-records';
 import dayjs from 'dayjs';
 import MedicalRecordModal from './MedicalRecordModal';
+import MedicalRecordEditor from './MedicalRecordEditor';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import InvoiceModal from '../invoices/InvoiceModal';
 import { invoicesApi } from '@/api';
 import type { MedicalRecord, Invoice } from '@/types';
+import { useAuthStore } from '@/store/authStore';
 
 const { Title } = Typography;
 
@@ -24,9 +27,22 @@ export default function MedicalRecordsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [search, setSearch] = useState('');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const [search, setSearch] = useState(searchParams.get('search') || '');
+
+  // Očisti URL parametar posle inicijalizacije
+  useEffect(() => {
+    if (searchParams.has('search')) {
+      setSearchParams({}, { replace: true });
+    }
+  }, []);
+
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
+  const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
+  const [activeFilter, setActiveFilter] = useState<string>('all');
+  const { user } = useAuthStore();
+
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [invoiceDefaults, setInvoiceDefaults] = useState<
     { ownerId?: string; medicalRecordId?: string } | undefined
@@ -35,14 +51,38 @@ export default function MedicalRecordsPage() {
 
   const queryClient = useQueryClient();
   const debouncedSearch = useDebouncedValue(search, 300);
+  const filterParams = useMemo(() => {
+    const now = dayjs();
+    switch (activeFilter) {
+      case 'today':
+        return {
+          dateFrom: now.startOf('day').toISOString(),
+          dateTo: now.endOf('day').toISOString(),
+        };
+
+      case 'week':
+        return {
+          dateFrom: now.startOf('week').toISOString(),
+          dateTo: now.endOf('week').toISOString(),
+        };
+
+      case 'mine':
+        return { vetId: user?.id };
+      default:
+        return {};
+    }
+  }, [activeFilter, user?.id]);
+
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch]);
+  }, [debouncedSearch, activeFilter]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['medical-records', page, pageSize, debouncedSearch],
+    queryKey: ['medical-records', page, pageSize, debouncedSearch, activeFilter],
     queryFn: () =>
-      medicalRecordsApi.getAll(page - 1, pageSize, debouncedSearch).then((r) => r.data),
+      medicalRecordsApi
+        .getAll(page - 1, pageSize, debouncedSearch, filterParams)
+        .then((r) => r.data),
   });
 
   const deleteMutation = useMutation({
@@ -210,11 +250,45 @@ export default function MedicalRecordsPage() {
           allowClear
         />
 
+        <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+          {[
+            { key: 'all', label: 'Sve' },
+            { key: 'today', label: 'Danas' },
+            { key: 'week', label: 'Ova nedelja' },
+            { key: 'mine', label: 'Moji pacijenti' },
+          ].map((chip) => (
+            <Button
+              key={chip.key}
+              type={activeFilter === chip.key ? 'primary' : 'default'}
+              size='small'
+              onClick={() => setActiveFilter(chip.key)}
+              style={{ borderRadius: 16 }}
+            >
+              {chip.label}
+            </Button>
+          ))}
+        </div>
+
         <Table
           rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
           columns={columns}
           dataSource={data?.content}
           rowKey='id'
+          expandable={{
+            expandedRowKeys,
+            onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
+            expandedRowRender: (record) => (
+              <MedicalRecordEditor
+                record={record}
+                compact
+                onSaved={() => {
+                  queryClient.invalidateQueries({ queryKey: ['medical-records'] });
+                  setExpandedRowKeys((prev) => prev.filter((k) => k !== record.id));
+                }}
+              />
+            ),
+            rowExpandable: () => true,
+          }}
           loading={isLoading}
           pagination={{
             current: page,

@@ -17,18 +17,20 @@ import {
   EditOutlined,
   DeleteOutlined,
   CalendarOutlined,
+  PlayCircleOutlined,
+  FolderOpenOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { appointmentsApi } from '@/api/appointments';
-import type { Appointment, AppointmentStatus, AppointmentType } from '@/types';
+import type { Appointment, AppointmentStatus, AppointmentType, MedicalRecord } from '@/types';
 import dayjs from 'dayjs';
 import AppointmentModal from './AppointmentModal';
 import {} from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
-import { MedicineBoxOutlined } from '@ant-design/icons';
 import MedicalRecordModal from '../medical-records/MedicalRecordModal';
+import { medicalRecordsApi } from '@/api/medical-records';
 
 const { Title } = Typography;
 
@@ -64,6 +66,19 @@ export default function AppointmentsPage() {
   const navigate = useNavigate();
   const [medRecordModalOpen, setMedRecordModalOpen] = useState(false);
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
+  const [startedRecord, setStartedRecord] = useState<MedicalRecord | null>(null);
+
+  const startMutation = useMutation({
+    mutationFn: (appointmentId: string) => medicalRecordsApi.startFromAppointment(appointmentId),
+    onSuccess: (response) => {
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['medical-records'] });
+      setSelectedAppointment(null);
+      setStartedRecord(response.data);
+      setMedRecordModalOpen(true);
+    },
+    onError: () => message.error('Greška pri pokretanju intervencije!'),
+  });
 
   // When searching, load all data (size=1000) so client-side filter works across all appointments
   // When not searching, paginate normally (10 per page)
@@ -149,16 +164,38 @@ export default function AppointmentsPage() {
       width: 160,
       render: (_, record) => (
         <Space>
-          <Tooltip title='Kreiraj intervenciju'>
-            <Button
-              type='text'
-              icon={<MedicineBoxOutlined />}
-              onClick={() => {
-                setSelectedAppointment(record);
-                setMedRecordModalOpen(true);
-              }}
-            />
-          </Tooltip>
+          {(record.status === 'SCHEDULED' || record.status === 'CONFIRMED') && (
+            <Tooltip title='Pokreni intervenciju'>
+              <Button
+                type='text'
+                style={{ color: '#22c55e' }}
+                icon={<PlayCircleOutlined />}
+                loading={startMutation.isPending}
+                onClick={() => startMutation.mutate(record.id)}
+              />
+            </Tooltip>
+          )}
+          {record.status === 'IN_PROGRESS' && (
+            <Tooltip title='Nastavi intervenciju'>
+              <Button
+                type='text'
+                style={{ color: '#fa8c16' }}
+                icon={<PlayCircleOutlined />}
+                loading={startMutation.isPending}
+                onClick={() => startMutation.mutate(record.id)}
+              />
+            </Tooltip>
+          )}
+          {record.status === 'COMPLETED' && (
+            <Tooltip title='Otvori karton'>
+              <Button
+                type='text'
+                icon={<FolderOpenOutlined />}
+                loading={startMutation.isPending}
+                onClick={() => startMutation.mutate(record.id)}
+              />
+            </Tooltip>
+          )}
 
           <Button
             type='text'
@@ -277,10 +314,11 @@ export default function AppointmentsPage() {
       />
       <MedicalRecordModal
         open={medRecordModalOpen}
-        record={null}
+        record={startedRecord}
         onClose={() => {
           setMedRecordModalOpen(false);
           setSelectedAppointment(null);
+          setStartedRecord(null);
         }}
         defaultValues={
           selectedAppointment

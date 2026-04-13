@@ -20,6 +20,7 @@
     "antd": "^6.3.0",
     "antd-img-crop": "^4.30.0",
     "axios": "^1.13.5",
+    "cmdk": "^1.1.1",
     "dayjs": "^1.11.19",
     "papaparse": "^5.5.3",
     "qrcode.react": "^4.2.0",

@@ -11,9 +11,15 @@ interface VaccinationModalProps {
   open: boolean;
   vaccination: Vaccination | null;
   onClose: () => void;
+  defaultValues?: { petId?: string; vetId?: string };
 }
 
-export default function VaccinationModal({ open, vaccination, onClose }: VaccinationModalProps) {
+export default function VaccinationModal({
+  open,
+  vaccination,
+  onClose,
+  defaultValues,
+}: VaccinationModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!vaccination;
@@ -39,6 +45,9 @@ export default function VaccinationModal({ open, vaccination, onClose }: Vaccina
         });
       } else {
         form.resetFields();
+        if (defaultValues) {
+          form.setFieldsValue(defaultValues);
+        }
       }
     }
   }, [open, vaccination, form]);
@@ -47,7 +56,8 @@ export default function VaccinationModal({ open, vaccination, onClose }: Vaccina
     mutationFn: (data: CreateVaccinationRequest) => vaccinationsApi.create(data),
     onSuccess: () => {
       message.success('Vakcinacija je zabeležena!');
-      queryClient.invalidateQueries({ queryKey: ['vaccinations'] });
+      queryClient.invalidateQueries({ queryKey: ['vaccinations', 'by-pet'] });
+
       onClose();
     },
     onError: () => message.error('Greška pri dodavanju!'),

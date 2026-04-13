@@ -19,14 +19,16 @@ import {
   MenuUnfoldOutlined,
   FileSearchOutlined,
   SolutionOutlined,
+  SunOutlined,
+  MoonOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/api/auth';
 import { usePermissions } from '@/hooks/usePermissions';
-import { SunOutlined, MoonOutlined } from '@ant-design/icons';
 import { useThemeStore } from '@/store/themeStore';
-import { ExperimentOutlined } from '@ant-design/icons';
+import { ExperimentOutlined, SearchOutlined } from '@ant-design/icons';
 import NotificationBell from '../components/NotificationBell';
+import CommandPalette from '../components/CommandPalette';
 
 const { Header, Sider, Content } = Layout;
 
@@ -151,6 +153,7 @@ const allMenuItems = [
 
 export default function MainLayout() {
   const [collapsed, setCollapsed] = useState(false);
+  const [paletteOpen, setPaletteOpen] = useState(false);
   const navigate = useNavigate();
   const location = useLocation();
   const { user, clearAuth } = useAuthStore();
@@ -256,6 +259,25 @@ export default function MainLayout() {
           </button>
 
           <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+            <Button
+              type='text'
+              icon={<SearchOutlined />}
+              onClick={() => setPaletteOpen(true)}
+              style={{
+                fontSize: 13,
+                color: token.colorTextSecondary,
+                display: 'flex',
+                alignItems: 'center',
+                gap: 4,
+                border: `1px solid ${token.colorBorderSecondary}`,
+                borderRadius: 6,
+                padding: '4px 12px',
+              }}
+            >
+              Pretraži
+              <span style={{ fontSize: 11, opacity: 0.5, marginLeft: 8 }}>Ctrl+K</span>
+            </Button>
+
             <NotificationBell />
             <Button
               type='text'
@@ -286,6 +308,7 @@ export default function MainLayout() {
           <Outlet />
         </Content>
       </Layout>
+      <CommandPalette open={paletteOpen} onOpenChange={setPaletteOpen} />
     </Layout>
   );
 }
