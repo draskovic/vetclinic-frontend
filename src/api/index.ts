@@ -25,3 +25,4 @@ export { auditLogsApi } from './audit-logs';
 export { paymentsApi } from './payments';
 export { diagnosesApi } from './diagnoses';
 export { treatmentProtocolsApi, treatmentProtocolItemsApi } from './treatment-protocols';
+export { bookingSettingsApi } from './booking-settings';

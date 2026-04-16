@@ -41,6 +41,8 @@ import ProtocolsPage from './pages/admin/ProtocolsPage';
 import ImportDiagnosesPage from '@/pages/admin/ImportDiagnosesPage';
 import InventoryItemDetailPage from './pages/inventory/InventoryItemDetailPage';
 import { initQueryBroadcast } from '@/lib/queryBroadcast';
+import BookingPage from './pages/booking/BookingPage';
+import BookingCancelPage from './pages/booking/BookingCancelPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -320,6 +322,8 @@ export default function App() {
                     }
                   />
                   <Route path='admin/import-diagnoses' element={<ImportDiagnosesPage />} />
+                  <Route path='/book/:clinicId' element={<BookingPage />} />
+                  <Route path='/book/cancel' element={<BookingCancelPage />} />
 
                   <Route path='*' element={<NotFoundPage />} />
                 </Routes>

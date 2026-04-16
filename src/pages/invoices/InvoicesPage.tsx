@@ -50,7 +50,16 @@ export default function InvoicesPage() {
   const [search, setSearch] = useState(searchParams.get('search') || '');
 
   useEffect(() => {
-    if (searchParams.has('search')) {
+    const searchFromUrl = searchParams.get('search');
+    const statusFromUrl = searchParams.get('status');
+    if (searchFromUrl) {
+      setSearch(searchFromUrl);
+    }
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+    }
+    // Ukloni iz URL-a posle čitanja (da refresh ne "zamrzne" filter)
+    if (searchFromUrl || statusFromUrl) {
       setSearchParams({}, { replace: true });
     }
   }, []);

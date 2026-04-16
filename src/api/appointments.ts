@@ -35,4 +35,8 @@ export const appointmentsApi = {
 
   getByOwner: (ownerId: string) =>
     apiClient.get<Appointment[]>(`/appointments/by-owner/${ownerId}`),
+
+  approve: (id: string) => apiClient.post(`/appointments/${id}/approve`),
+  reject: (id: string) => apiClient.post(`/appointments/${id}/reject`),
+  countPending: () => apiClient.get<number>('/appointments/count-pending'),
 };

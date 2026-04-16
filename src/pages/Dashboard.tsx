@@ -39,6 +39,7 @@ import type {
 const { Title, Text } = Typography;
 
 const statusConfig: Record<AppointmentStatus, { color: string; label: string }> = {
+  PENDING: { color: 'gold', label: 'Na čekanju' },
   SCHEDULED: { color: 'blue', label: 'Zakazan' },
   CONFIRMED: { color: 'cyan', label: 'Potvrđen' },
   IN_PROGRESS: { color: 'orange', label: 'U toku' },
@@ -55,6 +56,18 @@ const invoiceStatusConfig: Record<string, { color: string; label: string }> = {
 
 const getStatCards = (dark: boolean) => [
   {
+    key: 'pending',
+    title: 'Termini na čekanju',
+    icon: <ClockCircleOutlined />,
+    gradient: dark
+      ? 'linear-gradient(135deg, #2e2a1a 0%, #5f4a1e 100%)'
+      : 'linear-gradient(135deg, #fef9e7 0%, #fde68a 100%)',
+    iconBg: '#faad14',
+    lg: 6,
+    valueFontSize: 32,
+    path: '/appointments?status=PENDING',
+  },
+  {
     key: 'appointments',
     title: 'Termini danas',
     icon: <CalendarOutlined />,
@@ -62,8 +75,9 @@ const getStatCards = (dark: boolean) => [
       ? 'linear-gradient(135deg, #1a2e22 0%, #1e4a30 100%)'
       : 'linear-gradient(135deg, #e8faf0 0%, #d0f0e0 100%)',
     iconBg: '#22c55e',
-    lg: 5,
+    lg: 6,
     valueFontSize: 32,
+    path: '/calendar',
   },
   {
     key: 'upcoming',
@@ -75,6 +89,7 @@ const getStatCards = (dark: boolean) => [
     iconBg: '#3b82f6',
     lg: 6,
     valueFontSize: 32,
+    path: '/appointments',
   },
   {
     key: 'unpaid',
@@ -86,17 +101,7 @@ const getStatCards = (dark: boolean) => [
     iconBg: '#ef4444',
     lg: 6,
     valueFontSize: 32,
-  },
-  {
-    key: 'revenue',
-    title: 'Prihod ovog meseca',
-    icon: <DollarOutlined />,
-    gradient: dark
-      ? 'linear-gradient(135deg, #2e2a1a 0%, #4a3a1e 100%)'
-      : 'linear-gradient(135deg, #fef6e8 0%, #faecd0 100%)',
-    iconBg: '#f59e0b',
-    lg: 7,
-    valueFontSize: 24,
+    path: '/invoices?status=ISSUED',
   },
 ];
 
@@ -132,6 +137,11 @@ export default function Dashboard() {
   const tomorrowFrom = dayjs().add(1, 'day').startOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
   const weekTo = dayjs().add(7, 'day').endOf('day').format('YYYY-MM-DDTHH:mm:ssZ');
 
+  const { data: pendingCount } = useQuery({
+    queryKey: ['appointments-count-pending'],
+    queryFn: () => appointmentsApi.countPending().then((res) => res.data),
+    staleTime: 0,
+  });
   const { data: todayAppointments } = useQuery({
     queryKey: ['dashboard-appointments', todayFrom],
     queryFn: () => appointmentsApi.getByDateRange(todayFrom, todayTo).then((r) => r.data),
@@ -196,10 +206,10 @@ export default function Dashboard() {
     (overdueInvoices?.length ?? 0);
 
   const statValues: Record<string, number> = {
+    pending: pendingCount ?? 0,
     appointments: todayAppointments?.length ?? 0,
     upcoming: upcomingAppointments?.length ?? 0,
     unpaid: unpaidCount,
-    revenue: monthlyRevenue,
   };
 
   const appointmentColumns: ColumnsType<Appointment> = [
@@ -424,12 +434,57 @@ export default function Dashboard() {
 
   return (
     <div>
-      <div style={{ marginBottom: 24 }}>
-        <Title level={3} style={{ margin: 0 }}>
-          Dobrodošli, {user?.firstName} {user?.lastName}! 👋
-        </Title>
-        <Text type='secondary'>Pregled stanja klinike</Text>
-      </div>
+      <Row justify='space-between' align='top' gutter={[16, 16]} style={{ marginBottom: 24 }}>
+        <Col>
+          <Title level={3} style={{ margin: 0 }}>
+            Dobrodošli, {user?.firstName} {user?.lastName}! 👋
+          </Title>
+          <Text type='secondary'>Pregled stanja klinike</Text>
+        </Col>
+        <Col>
+          <div
+            onClick={() => navigate('/invoices?status=PAID')}
+            style={{
+              cursor: 'pointer',
+              padding: '10px 20px',
+              borderRadius: 12,
+              background: darkMode
+                ? 'linear-gradient(135deg, #2e2a1a 0%, #4a3a1e 100%)'
+                : 'linear-gradient(135deg, #fef6e8 0%, #faecd0 100%)',
+              display: 'flex',
+              alignItems: 'center',
+              gap: 12,
+              transition: 'transform 0.2s',
+            }}
+            onMouseEnter={(e) => (e.currentTarget.style.transform = 'translateY(-2px)')}
+            onMouseLeave={(e) => (e.currentTarget.style.transform = 'translateY(0)')}
+          >
+            <DollarOutlined style={{ fontSize: 24, color: '#f59e0b' }} />
+            <div>
+              <div
+                style={{
+                  fontSize: 11,
+                  color: darkMode ? 'rgba(255,255,255,0.5)' : 'rgba(0,0,0,0.45)',
+                  fontWeight: 600,
+                }}
+              >
+                Prihod ovog meseca
+              </div>
+              <div
+                style={{
+                  fontSize: 18,
+                  fontWeight: 700,
+                  lineHeight: 1.1,
+                  color: darkMode ? '#fff' : 'rgba(0,0,0,0.85)',
+                }}
+              >
+                {monthlyRevenue.toLocaleString('sr-RS', { minimumFractionDigits: 2 })} RSD
+              </div>
+            </div>
+          </div>
+        </Col>
+      </Row>
+
       <Row style={{ marginBottom: 16 }}>
         <Space>
           <Button type='primary' icon={<CalendarOutlined />} onClick={() => navigate('/calendar')}>
@@ -451,6 +506,8 @@ export default function Dashboard() {
         {statCards.map((card) => (
           <Col xs={24} sm={12} lg={card.lg} key={card.key}>
             <Card
+              hoverable
+              onClick={() => navigate(card.path)}
               style={{
                 borderRadius: 16,
                 border: 'none',

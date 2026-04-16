@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   Table,
   Button,
@@ -10,6 +10,7 @@ import {
   Popconfirm,
   message,
   Select,
+  Modal,
 } from 'antd';
 import {
   PlusOutlined,
@@ -19,6 +20,8 @@ import {
   CalendarOutlined,
   PlayCircleOutlined,
   FolderOpenOutlined,
+  CheckCircleOutlined,
+  CloseCircleOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
@@ -31,10 +34,12 @@ import { useNavigate } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import MedicalRecordModal from '../medical-records/MedicalRecordModal';
 import { medicalRecordsApi } from '@/api/medical-records';
+import { useSearchParams } from 'react-router-dom';
 
 const { Title } = Typography;
 
 const statusConfig: Record<AppointmentStatus, { label: string; color: string }> = {
+  PENDING: { label: 'Na čekanju', color: '#faad14' },
   SCHEDULED: { label: 'Zakazan', color: '#1890ff' },
   CONFIRMED: { label: 'Potvrđen', color: '#13c2c2' },
   IN_PROGRESS: { label: 'U toku', color: '#fa8c16' },
@@ -68,6 +73,15 @@ export default function AppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [startedRecord, setStartedRecord] = useState<MedicalRecord | null>(null);
 
+  const [searchParams] = useSearchParams();
+
+  useEffect(() => {
+    const statusFromUrl = searchParams.get('status');
+    if (statusFromUrl) {
+      setStatusFilter(statusFromUrl);
+    }
+  }, [searchParams]);
+
   const startMutation = useMutation({
     mutationFn: (appointmentId: string) => medicalRecordsApi.startFromAppointment(appointmentId),
     onSuccess: (response) => {
@@ -100,6 +114,35 @@ export default function AppointmentsPage() {
   });
 
   const filteredData = data?.content;
+
+  const handleApprove = async (id: string) => {
+    try {
+      await appointmentsApi.approve(id);
+      message.success('Termin je potvrđen');
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+    } catch {
+      message.error('Greška pri potvrdi termina');
+    }
+  };
+
+  const handleReject = async (id: string) => {
+    Modal.confirm({
+      title: 'Odbij termin',
+      content: 'Da li ste sigurni da želite da odbijete ovaj termin?',
+      okText: 'Da, odbij',
+      okType: 'danger',
+      cancelText: 'Otkaži',
+      onOk: async () => {
+        try {
+          await appointmentsApi.reject(id);
+          message.success('Termin je odbijen');
+          queryClient.invalidateQueries({ queryKey: ['appointments'] });
+        } catch {
+          message.error('Greška pri odbijanju termina');
+        }
+      },
+    });
+  };
 
   const columns: ColumnsType<Appointment> = [
     {
@@ -175,6 +218,23 @@ export default function AppointmentsPage() {
               />
             </Tooltip>
           )}
+          {record.status === 'PENDING' && (
+            <>
+              <Tooltip title='Potvrdi'>
+                <CheckCircleOutlined
+                  style={{ color: '#52c41a', fontSize: '18px', cursor: 'pointer', marginRight: 8 }}
+                  onClick={() => handleApprove(record.id)}
+                />
+              </Tooltip>
+              <Tooltip title='Odbij'>
+                <CloseCircleOutlined
+                  style={{ color: '#ff4d4f', fontSize: '18px', cursor: 'pointer' }}
+                  onClick={() => handleReject(record.id)}
+                />
+              </Tooltip>
+            </>
+          )}
+
           {record.status === 'IN_PROGRESS' && (
             <Tooltip title='Nastavi intervenciju'>
               <Button

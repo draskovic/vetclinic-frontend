@@ -16,6 +16,7 @@ import type { Appointment, AppointmentStatus, AppointmentType } from '../../type
 
 // Boje po statusu termina
 const statusColors: Record<AppointmentStatus, string> = {
+  PENDING: '#faad14', // žuta
   SCHEDULED: '#1890ff', // plava
   CONFIRMED: '#13c2c2', // tirkizna
   IN_PROGRESS: '#fa8c16', // narandžasta
@@ -25,6 +26,7 @@ const statusColors: Record<AppointmentStatus, string> = {
 };
 
 const statusLabels: Record<AppointmentStatus, string> = {
+  PENDING: 'Na čekanju',
   SCHEDULED: 'Zakazan',
   CONFIRMED: 'Potvrđen',
   IN_PROGRESS: 'U toku',

@@ -220,6 +220,7 @@ export interface UpdateBreedRequest {
 
 // ==================== APPOINTMENT ====================
 export type AppointmentStatus =
+  | 'PENDING'
   | 'SCHEDULED'
   | 'CONFIRMED'
   | 'IN_PROGRESS'
