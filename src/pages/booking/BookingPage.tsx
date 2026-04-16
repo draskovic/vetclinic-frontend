@@ -144,7 +144,13 @@ export default function BookingPage() {
       <div style={s.card}>
         {/* Header */}
         <div style={{ textAlign: 'center', marginBottom: '20px' }}>
-          {clinicInfo.logoUrl && <img src={clinicInfo.logoUrl} alt='Logo' style={s.logo} />}
+          {clinicInfo.logoUrl && (
+            <img
+              src={`${import.meta.env.VITE_API_BASE_URL || '/api'}${clinicInfo.logoUrl}`}
+              alt='Logo'
+              style={s.logo}
+            />
+          )}
           <h1 style={s.clinicName}>{clinicInfo.clinicName}</h1>
           <p style={s.subtitle}>Online zakazivanje termina</p>
         </div>
