@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { Card, Select, Tag, Tooltip, Modal } from 'antd';
 import { UnorderedListOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
@@ -11,6 +11,7 @@ import type { EventClickArg, DatesSetArg, DateSelectArg } from '@fullcalendar/co
 import dayjs from 'dayjs';
 import { appointmentsApi } from '../../api';
 import { usersApi } from '../../api';
+import { clinicLocationsApi } from '../../api/clinic-locations';
 import AppointmentModal from './AppointmentModal';
 import type { Appointment, AppointmentStatus, AppointmentType } from '../../types';
 
@@ -44,6 +45,42 @@ const typeLabels: Record<AppointmentType, string> = {
   GROOMING: 'Šišanje',
 };
 
+const dayNameToNumber: Record<string, number> = {
+  sunday: 0,
+  monday: 1,
+  tuesday: 2,
+  wednesday: 3,
+  thursday: 4,
+  friday: 5,
+  saturday: 6,
+};
+
+type WorkingPeriod = { open?: string; close?: string };
+
+const parseBusinessHours = (workingHoursJson: string | null | undefined) => {
+  if (!workingHoursJson) return [];
+  try {
+    const wh = JSON.parse(workingHoursJson) as Record<
+      string,
+      WorkingPeriod | WorkingPeriod[] | null
+    >;
+    const result: { daysOfWeek: number[]; startTime: string; endTime: string }[] = [];
+    Object.entries(dayNameToNumber).forEach(([name, dayNum]) => {
+      const val = wh[name];
+      if (!val) return;
+      const periods = Array.isArray(val) ? val : [val];
+      periods.forEach((p) => {
+        if (p?.open && p?.close) {
+          result.push({ daysOfWeek: [dayNum], startTime: p.open, endTime: p.close });
+        }
+      });
+    });
+    return result;
+  } catch {
+    return [];
+  }
+};
+
 const AppointmentCalendarPage = () => {
   const navigate = useNavigate();
 
@@ -66,6 +103,28 @@ const AppointmentCalendarPage = () => {
 
   // State za filter po veterinaru
   const [selectedVetId, setSelectedVetId] = useState<string | undefined>(undefined);
+
+  const [selectedLocationId, setSelectedLocationId] = useState<string | undefined>(undefined);
+
+  const { data: locations = [] } = useQuery({
+    queryKey: ['clinic-locations', 'active'],
+    queryFn: () => clinicLocationsApi.getActive().then((r) => r.data),
+  });
+
+  // Auto-selektuj kad postoji samo jedna lokacija, ili glavnu kad ih je više
+  useEffect(() => {
+    if (!selectedLocationId && locations.length > 0) {
+      const main = locations.find((l) => l.isMain) ?? locations[0];
+      if (locations.length === 1 || main.isMain) {
+        setSelectedLocationId(main.id);
+      }
+    }
+  }, [locations, selectedLocationId]);
+
+  const businessHours = useMemo(() => {
+    const loc = locations.find((l) => l.id === selectedLocationId);
+    return parseBusinessHours(loc?.workingHours);
+  }, [locations, selectedLocationId]);
 
   // State za modal
   const [modalOpen, setModalOpen] = useState(false);
@@ -199,6 +258,18 @@ const AppointmentCalendarPage = () => {
         title='Kalendar termina'
         extra={
           <div style={{ display: 'flex', gap: '12px', alignItems: 'center' }}>
+            {locations.length > 1 && (
+              <Select
+                placeholder='Izaberi lokaciju'
+                style={{ width: 200 }}
+                value={selectedLocationId}
+                onChange={setSelectedLocationId}
+                options={locations.map((l) => ({
+                  value: l.id,
+                  label: l.name + (l.isMain ? ' (glavna)' : ''),
+                }))}
+              />
+            )}
             <Select
               placeholder='Svi veterinari'
               allowClear
@@ -255,6 +326,8 @@ const AppointmentCalendarPage = () => {
           select={handleDateSelect}
           eventContent={renderEventContent}
           height='auto'
+          businessHours={businessHours}
+          selectConstraint={businessHours.length > 0 ? 'businessHours' : undefined}
           allDaySlot={false}
           slotMinTime='07:00:00'
           slotMaxTime='21:00:00'
