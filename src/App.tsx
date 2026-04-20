@@ -43,6 +43,7 @@ import InventoryItemDetailPage from './pages/inventory/InventoryItemDetailPage';
 import { initQueryBroadcast } from '@/lib/queryBroadcast';
 import BookingPage from './pages/booking/BookingPage';
 import BookingCancelPage from './pages/booking/BookingCancelPage';
+import LandingPage from './pages/landing/LandingPage';
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -87,17 +88,17 @@ export default function App() {
             <AntApp>
               <BrowserRouter>
                 <Routes>
+                  <Route path='/' element={<LandingPage />} />
                   <Route path='/login' element={<LoginPage />} />
                   <Route path='/quick-upload' element={<QuickUploadPage />} />
                   <Route
-                    path='/'
                     element={
                       <ProtectedRoute>
                         <MainLayout />
                       </ProtectedRoute>
                     }
                   >
-                    <Route index element={<Dashboard />} />
+                    <Route path='dashboard' element={<Dashboard />} />
                     <Route path='profile' element={<ProfilePage />} />
 
                     <Route

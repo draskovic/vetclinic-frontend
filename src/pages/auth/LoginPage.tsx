@@ -45,7 +45,7 @@ export default function LoginPage() {
       const { accessToken, refreshToken, user } = response.data;
       setAuth(user, accessToken, refreshToken, user.clinicId);
       message.success('Uspešno ste se prijavili!');
-      navigate('/');
+      navigate('/appointments');
     } catch {
       message.error('Pogrešan email ili lozinka!');
     } finally {

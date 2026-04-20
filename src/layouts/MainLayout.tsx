@@ -34,7 +34,7 @@ const { Header, Sider, Content } = Layout;
 
 const allMenuItems = [
   {
-    key: '/',
+    key: '/dashboard',
     icon: <DashboardOutlined style={{ color: '#1890ff' }} />,
     label: 'Dashboard',
     permission: null,
