@@ -53,8 +53,8 @@ export default function LandingPage() {
       <header className='hero'>
         <h1>Vi lečite, VetClinic radi ostalo.</h1>
         <p>
-          Softver za srpsko tržište koji vam štedi vreme na administraciji i sam vraća pacijente
-          putem SMS podsetnika.
+          Softver koji vam štedi vreme na administraciji i sam vraća pacijente putem SMS podsetnika
+          i smanjuje gužvu na recepciji putem on-line zakazivanja
         </p>
         <div className='hero-image-wrap'>
           <img
