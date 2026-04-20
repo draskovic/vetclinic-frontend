@@ -11,7 +11,13 @@
   --dark: #1e293b;
   --light-bg: #f8fafc;
   --text-muted: #64748b;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  font-family:
+    'Inter',
+    -apple-system,
+    BlinkMacSystemFont,
+    'Segoe UI',
+    Roboto,
+    sans-serif;
   color: var(--dark);
   line-height: 1.6;
   background: #fff;
@@ -67,9 +73,18 @@
 
 /* Hero Sekcija */
 .landing-page .hero {
-  text-align: center;
-  padding: 80px 5%;
-  background: linear-gradient(to bottom, #eff6ff, #fff);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 40px;
+  padding: 60px 5%;
+  background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  text-align: left;
+  overflow: hidden;
+}
+.landing-page .hero-content {
+  flex: 1;
+  max-width: 600px;
 }
 .landing-page .hero h1 {
   font-size: 48px;
@@ -81,16 +96,33 @@
 .landing-page .hero p {
   font-size: 20px;
   color: var(--text-muted);
-  max-width: 700px;
-  margin: 0 auto 30px;
+  margin: 0 0 30px;
 }
-.landing-page .hero-image-wrap {
-  margin-top: 20px;
+.landing-page .hero-image-container {
+  flex: 1.2;
+  position: relative;
 }
-.landing-page .hero-image-wrap img {
-  max-width: 100%;
+.landing-page .hero img {
+  width: 110%;
+  max-height: 450px;
+  object-fit: cover;
+  object-position: left;
   border-radius: 12px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  box-shadow: -20px 20px 50px rgba(0, 0, 0, 0.15);
+  transform: perspective(1000px) rotateY(-5deg);
+}
+@media (max-width: 992px) {
+  .landing-page .hero {
+    flex-direction: column;
+    text-align: center;
+  }
+  .landing-page .hero p {
+    margin: 0 auto 30px;
+  }
+  .landing-page .hero img {
+    width: 100%;
+    transform: none;
+  }
 }
 
 /* Segmentacija */
@@ -106,7 +138,9 @@
   padding: 40px;
   border-radius: 16px;
   border: 1px solid #e2e8f0;
-  transition: transform 0.3s, box-shadow 0.3s;
+  transition:
+    transform 0.3s,
+    box-shadow 0.3s;
   background: #fff;
 }
 .landing-page .segment-card:hover {
@@ -306,6 +340,71 @@
   font-size: 14px;
   opacity: 0.8;
 }
+.landing-page .cta-form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+  max-width: 440px;
+  margin: 30px auto 0;
+}
+.landing-page .cta-input {
+  width: 100%;
+  padding: 14px 18px;
+  border: 1px solid rgba(255, 255, 255, 0.3);
+  border-radius: 8px;
+  font-size: 16px;
+  font-family: inherit;
+  background: rgba(255, 255, 255, 0.95);
+  color: var(--dark);
+  outline: none;
+  transition:
+    border-color 0.2s,
+    background 0.2s;
+}
+.landing-page .cta-input:focus {
+  background: #fff;
+  border-color: #fff;
+}
+.landing-page .cta-input::placeholder {
+  color: #94a3b8;
+}
+.landing-page .cta-form .cta-btn-white {
+  margin-top: 4px;
+  width: 100%;
+}
+
+/* Pioneer Badge */
+.landing-page .pioneer-badge {
+  max-width: 760px;
+  margin: 0 auto 40px;
+  padding: 30px 40px;
+  /* Nežna zelena pozadina koja ne "vrišti" */
+  background: #f0fdf4;
+  /* Diskretnija zelena ivica */
+  border: 2px dashed #86efac;
+  border-radius: 16px;
+  text-align: center;
+}
+.landing-page .pioneer-badge h3 {
+  color: #166534; /* Tamno zelena za bolju čitljivost */
+  margin-top: 0;
+  margin: 0 0 12px;
+  font-size: 22px;
+  font-weight: 700;
+}
+.landing-page .pioneer-badge p {
+  margin: 0;
+  /* Koristimo tamno zelenu umesto braon/narandžaste */
+  color: #166534;
+  font-size: 16px;
+  line-height: 1.55;
+}
+@media (max-width: 768px) {
+  .landing-page .pioneer-badge {
+    margin: 0 20px;
+    padding: 24px 20px;
+  }
+}
 
 /* Footer */
 .landing-page .lp-footer {
@@ -318,12 +417,22 @@
 
 /* Responsive */
 @media (max-width: 768px) {
-  .landing-page .hero h1 { font-size: 32px; }
-  .landing-page .hero p { font-size: 17px; }
-  .landing-page .calc-grid { grid-template-columns: 1fr; }
+  .landing-page .hero h1 {
+    font-size: 32px;
+  }
+  .landing-page .hero p {
+    font-size: 17px;
+  }
+  .landing-page .calc-grid {
+    grid-template-columns: 1fr;
+  }
   .landing-page .calculator-section h2,
-  .landing-page .features h2 { font-size: 26px; }
-  .landing-page .cta h2 { font-size: 28px; }
+  .landing-page .features h2 {
+    font-size: 26px;
+  }
+  .landing-page .cta h2 {
+    font-size: 28px;
+  }
 }
 
 body {

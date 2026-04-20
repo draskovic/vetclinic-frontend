@@ -1,10 +1,11 @@
 import { useMemo, useState } from 'react';
 import { useAuthStore } from '@/store/authStore';
 
-const MAIL_TO = 'mailto:draskovic.nenad@gmail.com?subject=Demo VetClinic';
-
 export default function LandingPage() {
   const { isAuthenticated } = useAuthStore();
+
+  // Kontakt forma state
+  const [form, setForm] = useState({ name: '', contact: '' });
 
   // Kalkulator state
   const [patients, setPatients] = useState(10);
@@ -23,6 +24,12 @@ export default function LandingPage() {
   const scrollToKontakt = (e: React.MouseEvent) => {
     e.preventDefault();
     document.getElementById('kontakt')?.scrollIntoView({ behavior: 'smooth' });
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const body = `Ime: ${form.name}%0AKontakt: ${form.contact}`;
+    window.location.href = `mailto:draskovic.nenad@gmail.com?subject=Demo VetClinic&body=${body}`;
   };
 
   return (
@@ -51,16 +58,16 @@ export default function LandingPage() {
 
       {/* ═══ HERO ═══ */}
       <header className='hero'>
-        <h1>Vi lečite, VetClinic radi ostalo.</h1>
-        <p>
-          Softver koji vam štedi vreme na administraciji i sam vraća pacijente putem SMS podsetnika
-          i smanjuje gužvu na recepciji putem on-line zakazivanja
-        </p>
-        <div className='hero-image-wrap'>
-          <img
-            src='https://via.placeholder.com/800x450?text=Prikaz+Dashboard-a+na+Tabletu'
-            alt='Dashboard'
-          />
+        <div className='hero-content'>
+          <h1>Vi lečite, VetClinic radi ostalo.</h1>
+          <p>
+            Softver koji vam štedi vreme na administraciji i sam vraća pacijente
+            putem SMS podsetnika i smanjuje gužvu na recepciji uz pomoć on-line
+            zakazivanja.
+          </p>
+        </div>
+        <div className='hero-image-container'>
+          <img src='/dashboard-preview.webp' alt='VetClinic Dashboard' />
         </div>
       </header>
 
@@ -212,13 +219,43 @@ export default function LandingPage() {
         </div>
       </section>
 
-      {/* ═══ CTA ═══ */}
+      {/* ═══ PIONEER BADGE ═══ */}
+      <div className='pioneer-badge'>
+        <h3>🚀 Postanite naš Partner Osnivač</h3>
+        <p>
+          Ne tražimo novac, tražimo partnere. Prvih 5 klinika dobija{' '}
+          <strong>doživotni Professional paket</strong> potpuno besplatno, uz uslov da nam pomognete
+          svojim savetima da budemo još bolji.
+        </p>
+      </div>
+
+      {/* ═══ CTA / KONTAKT FORMA ═══ */}
       <section className='cta' id='kontakt'>
         <h2>Spremni da oslobodite 1h dnevno?</h2>
         <p>Probajte besplatno 30 dana. Bez obaveza. Bez kartice.</p>
-        <a href={MAIL_TO} className='cta-btn-white'>
-          Pokreni besplatnu probu →
-        </a>
+
+        <form className='cta-form' onSubmit={handleSubmit}>
+          <input
+            type='text'
+            placeholder='Vaše ime'
+            required
+            value={form.name}
+            onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+            className='cta-input'
+          />
+          <input
+            type='text'
+            placeholder='Telefon ili email'
+            required
+            value={form.contact}
+            onChange={(e) => setForm((f) => ({ ...f, contact: e.target.value }))}
+            className='cta-input'
+          />
+          <button type='submit' className='cta-btn-white'>
+            Pokreni besplatnu probu →
+          </button>
+        </form>
+
         <p className='cta-subtle'>Prebacićemo vaše podatke iz starog softvera besplatno.</p>
       </section>
 
