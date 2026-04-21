@@ -12,7 +12,7 @@ export default function LandingPage() {
   const [rate, setRate] = useState(2000);
 
   const { hoursSaved, moneyEarned } = useMemo(() => {
-    const MINS_PER_PATIENT = 15;
+    const MINS_PER_PATIENT = 10;
     const WORK_DAYS = 22;
     const hours = Math.round((patients * MINS_PER_PATIENT * WORK_DAYS) / 60);
     return {
@@ -59,17 +59,54 @@ export default function LandingPage() {
       {/* ═══ HERO ═══ */}
       <header className='hero'>
         <div className='hero-content'>
-          <h1>Vi lečite, VetClinic radi ostalo.</h1>
+          <h1>Manje administracije. Više dolazaka i bolja kontrola rada.</h1>
           <p>
-            Softver koji vam štedi vreme na administraciji i sam vraća pacijente
-            putem SMS podsetnika i smanjuje gužvu na recepciji uz pomoć on-line
-            zakazivanja.
+            Softver koji preuzima vašu administraciju i smanjuje gužvu na recepciji pomoću on-line
+            zakazivanja, kako biste mogli više vremena da posvetite lečenju. Sistem sam vraća
+            pacijente putem SMS-a i vodi računa o vašem lageru.
           </p>
+          <div className='hero-trust-badge'>
+            <span className='hero-trust-icon'>✅</span>
+            <span>Prebacujemo vaše stare podatke besplatno</span>
+          </div>
         </div>
         <div className='hero-image-container'>
           <img src='/dashboard-preview.webp' alt='VetClinic Dashboard' />
         </div>
       </header>
+
+      {/* ═══ PAIN POINTS ═══ */}
+      <section className='pain-points-section'>
+        <div className='container'>
+          <h2 className='section-title'>Da li vam se ovo dešava?</h2>
+          <div className='pain-grid'>
+            <div className='pain-item'>
+              <span className='pain-icon'>📅</span>
+              <p>Klijenti zaboravljaju vakcine i kontrole</p>
+            </div>
+            <div className='pain-item'>
+              <span className='pain-icon'>🤯</span>
+              <p>Haos sa terminima ili preklapanja u smeni</p>
+            </div>
+            <div className='pain-item'>
+              <span className='pain-icon'>🔍</span>
+              <p>Nemate jasan pregled istorije lečenja pacijenta</p>
+            </div>
+            <div className='pain-item'>
+              <span className='pain-icon'>⏳</span>
+              <p>Gubite vreme na administraciju i traženje podataka</p>
+            </div>
+            <div className='pain-item pain-item--highlight'>
+              <span className='pain-icon'>🐌</span>
+              <p>Softver koji trenutno koristite vas usporava</p>
+            </div>
+            <div className='pain-item'>
+              <span className='pain-icon'>💸</span>
+              <p>Bacate novac zbog isteklih rokova trajanja lekova</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* ═══ SEGMENTACIJA ═══ */}
       <section className='segments'>
@@ -89,8 +126,10 @@ export default function LandingPage() {
               kalendar se puni dok ste vi u operacionoj sali.
             </li>
             <li>
-              <strong>Karton u 1 klik:</strong> Dugme "Start" automatski otvara istoriju bolesti i
-              priprema sve za unos.
+              <strong>Karton na 1 klik:</strong> Dugme "Start" automatski popunjava podatke o
+              vlasniku i pacijentu, vi samo unosite dijagnozu i protokol po potrebi, a sistem sam
+              upisuje usluge, kreira fakturu i sve je odmah spremno za štampu. Nema duplih unosa
+              podataka.
             </li>
             <li>
               <strong>Telefon kao skener:</strong> Slikajte laboratorijski nalaz direktno u
@@ -107,17 +146,13 @@ export default function LandingPage() {
           <div className='icon'>🏢</div>
           <h2>Za velike klinike</h2>
           <p className='segment-slogan'>
-            <strong>"Gvozdena disciplina i nula gubitaka."</strong>
+            <strong>Imate pregled nad zalihama i manje bacanja lekova.</strong>
           </p>
           <p>
             Vodite tim i želite potpunu preglednost? VetClinic vam daje uvid u svaki mililitar leka
             i svaki minut radnog vremena.
           </p>
           <ul>
-            <li>
-              <strong>FIFO (pametan) Lager:</strong> Sistem automatski troši lekove kojima najranije
-              ističe rok. Stop bacanju novca zbog isteka zaliha.
-            </li>
             <li>
               <strong>Online zakazivanje:</strong> Oslobodite recepciju. Klijenti sami biraju
               slobodne termine, vi ih samo potvrđujete.
@@ -126,6 +161,10 @@ export default function LandingPage() {
               <strong>Analitika tima:</strong> Pratite učinak svakog veterinara i profitabilnost
               klinike u realnom vremenu.
             </li>
+            <li>
+              <strong>FIFO (pametan) Lager:</strong> Sistem automatski troši lekove kojima najranije
+              ističe rok. Stop bacanju novca zbog isteka zaliha.
+            </li>
           </ul>
           <div className='segment-quote'>
             "Sprečite curenje novca. Znate tačno gde je završila svaka ampula i ko je izvršio koju
@@ -133,10 +172,31 @@ export default function LandingPage() {
           </div>
         </div>
       </section>
-
+      {/* ═══ KAKO POČINJETE ═══ */}
+      <section className='how-it-works'>
+        <h2>Kako počinjete</h2>
+        <p className='how-subtitle'>Bez komplikacija. Bez instalacije. Bez rizika.</p>
+        <div className='steps-grid'>
+          <div className='step-card'>
+            <div className='step-number'>1</div>
+            <h3>Mi unesemo vaše podatke</h3>
+            <p>Prebacujemo istoriju iz starog programa ili sveski — dok vi radite.</p>
+          </div>
+          <div className='step-card'>
+            <div className='step-number'>2</div>
+            <h3>Podesimo sistem za vas</h3>
+            <p>Prilagođavamo VetClinic vašoj ambulanti. Sve je veoma brzo gotovo .</p>
+          </div>
+          <div className='step-card'>
+            <div className='step-number'>3</div>
+            <h3>Vi radite kao i do sada</h3>
+            <p>Samo bez papira, bez propuštenih vakcina i termina, bez stresa.</p>
+          </div>
+        </div>
+      </section>
       {/* ═══ FEATURES ═══ */}
       <section className='features'>
-        <h2>Diferencijacija: Zašto veterinari biraju nas?</h2>
+        <h2>Zašto kolege biraju VetClinic i šta vam stvarno štedi vreme svaki dan?</h2>
         <div className='f-grid'>
           <div className='f-item'>
             <h3>⚡ Brzina ispred svega</h3>
@@ -155,7 +215,7 @@ export default function LandingPage() {
           <div className='f-item'>
             <h3>📦 Pametan lager</h3>
             <p>
-              Prvi trošite lekove kojima rok najranije ističe. Sistem vas upozorava pre nego što
+              Prvo trošite lekove kojima rok najranije ističe. Sistem vas upozorava pre nego što
               ostanete bez zaliha.
             </p>
           </div>
@@ -173,7 +233,7 @@ export default function LandingPage() {
       <section className='calculator-section'>
         <h2>Izračunajte koliko vam VetClinic štedi vremena</h2>
         <p style={{ color: 'var(--text-muted)' }}>
-          Zahvaljujući automatizaciji "Start" workflow-a, štedite bar 15 minuta po pacijentu.
+          Zahvaljujući automatizaciji "Start" workflow-a, štedite bar 10 minuta po pacijentu.
         </p>
 
         <div className='calc-container'>
@@ -218,15 +278,85 @@ export default function LandingPage() {
           <p className='calc-note'>*Računato na bazi 22 radna dana u mesecu.</p>
         </div>
       </section>
+      {/* ═══ FAQ ═══ */}
+      <section className='faq-section'>
+        <h2>Česta pitanja</h2>
+        <div className='faq-list'>
+          <details className='faq-item'>
+            <summary>
+              Da li je komplikovano za korišćenje?
+              <span className='faq-icon'>+</span>
+            </summary>
+            <div className='faq-answer'>
+              Ne. Mi sve podešavamo i obučavamo vas besplatno. Nije potrebno tehničko znanje — ako
+              znate da koristite Facebook, znate da koristite VetClinic.
+            </div>
+          </details>
+
+          <details className='faq-item'>
+            <summary>
+              Da li moram da menjam način rada?
+              <span className='faq-icon'>+</span>
+            </summary>
+            <div className='faq-answer'>
+              Ne. VetClinic se prilagođava vama, ne vi njemu. Radite kao i do sada, samo bez papira
+              i bez propuštenih vakcina i termina.
+            </div>
+          </details>
+
+          <details className='faq-item'>
+            <summary>
+              Šta sa mojim starim podacima?
+              <span className='faq-icon'>+</span>
+            </summary>
+            <div className='faq-answer'>
+              Prebacujemo ih besplatno. Kartoteka iz sveski, Excela ili starog softvera — sve možemo
+              uvesti u VetClinic bez dodatnih troškova.
+            </div>
+          </details>
+
+          <details className='faq-item'>
+            <summary>
+              Koliko košta?
+              <span className='faq-icon'>+</span>
+            </summary>
+            <div className='faq-answer'>
+              Prvih nekoliko klinika koje uđu u Partner Osnivač program dobija Professional paket
+              besplatno dok razvijamo + dodatnih godinu dana ili po dogovoru. Za ostale ćemo
+              dogovoriti cenu u direktnom razgovoru, bez obaveza.
+            </div>
+          </details>
+
+          <details className='faq-item'>
+            <summary>
+              Da li radi na tabletu ili telefonu?
+              <span className='faq-icon'>+</span>
+            </summary>
+            <div className='faq-answer'>
+              Da. VetClinic radi u pretraživaču — na računaru, tabletu i telefonu. Nema instalacije,
+              nema ažuriranja. Slikajte nalaze telefonom direktno u karton pacijenta.
+            </div>
+          </details>
+        </div>
+      </section>
 
       {/* ═══ PIONEER BADGE ═══ */}
       <div className='pioneer-badge'>
-        <h3>🚀 Postanite naš Partner Osnivač</h3>
-        <p>
-          Ne tražimo novac, tražimo partnere. Prvih 5 klinika dobija{' '}
-          <strong>doživotni Professional paket</strong> potpuno besplatno, uz uslov da nam pomognete
-          svojim savetima da budemo još bolji.
-        </p>
+        <h3>🚀 Program za prve korisnike</h3>
+        <p className='pioneer-intro'>Otvaramo saradnju sa nekoliko ambulanti u Srbiji:</p>
+        <ul className='pioneer-list'>
+          <li>
+            <span className='pioneer-check'>✔</span> Besplatno korišćenje sistema
+          </li>
+          <li>
+            <span className='pioneer-check'>✔</span> Kompletno podešavanje i podrška
+          </li>
+          <li>
+            <span className='pioneer-check'>✔</span> Prilagođavanje sistema vašem načinu rada
+          </li>
+          <li>👉 Mi sve podešavamo za vas — ne morate da menjate način rada.</li>
+        </ul>
+        <p className='pioneer-closing'>Prilagođavamo sistem vašem načinu rada, ne obrnuto.</p>
       </div>
 
       {/* ═══ CTA / KONTAKT FORMA ═══ */}
