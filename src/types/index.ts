@@ -566,10 +566,14 @@ export interface InventoryTransaction {
   referenceType: string | null;
   referenceId: string | null;
   batchId: string | null;
+  batchNumber: string | null;
   performedBy: string | null;
   performedByName: string | null;
   note: string | null;
   reason: AdjustmentReason | null;
+  reversalOfTransactionId: string | null; // ← NOVO
+  reversed: boolean; // ← NOVO
+  batchDeleted: boolean; // ← NOVO
   createdAt: string;
   updatedAt: string;
 }

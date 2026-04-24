@@ -96,7 +96,7 @@ export default function LandingPage() {
               <span className='pain-icon'>⏳</span>
               <p>Gubite vreme na administraciju i traženje podataka</p>
             </div>
-            <div className='pain-item pain-item--highlight'>
+            <div className='pain-item'>
               <span className='pain-icon'>🐌</span>
               <p>Softver koji trenutno koristite vas usporava</p>
             </div>
@@ -321,7 +321,7 @@ export default function LandingPage() {
               <span className='faq-icon'>+</span>
             </summary>
             <div className='faq-answer'>
-              Prvih nekoliko klinika koje uđu u Partner Osnivač program dobija Professional paket
+              Prvih nekoliko klinika koje uđu u Program za prve korisnike dobija Professional paket
               besplatno dok razvijamo + dodatnih godinu dana ili po dogovoru. Za ostale ćemo
               dogovoriti cenu u direktnom razgovoru, bez obaveza.
             </div>
@@ -334,7 +334,7 @@ export default function LandingPage() {
             </summary>
             <div className='faq-answer'>
               Da. VetClinic radi u pretraživaču — na računaru, tabletu i telefonu. Nema instalacije,
-              nema ažuriranja. Slikajte nalaze telefonom direktno u karton pacijenta.
+              nema ažuriranja. Slikajte nalaze telefonom i prebacite ih direktno u karton pacijenta.
             </div>
           </details>
         </div>

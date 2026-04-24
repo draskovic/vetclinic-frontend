@@ -12,8 +12,9 @@ import {
   Spin,
   Popconfirm,
   message,
+  Tooltip,
 } from 'antd';
-import { ArrowLeftOutlined, EditOutlined, WarningOutlined } from '@ant-design/icons';
+import { ArrowLeftOutlined, EditOutlined, WarningOutlined, UndoOutlined } from '@ant-design/icons';
 import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
 import {
   inventoryItemsApi,
@@ -23,6 +24,7 @@ import {
 } from '@/api';
 import type {
   InventoryItem,
+  InventoryTransaction,
   InventoryTransactionType,
   InventoryBatch,
   AdjustmentReason,
@@ -89,6 +91,26 @@ export default function InventoryItemDetailPage() {
     enabled: !!id && !!item?.trackBatches,
   });
   const batches: InventoryBatch[] = batchesData?.data ?? [];
+
+  const reverseMutation = useMutation({
+    mutationFn: (txId: string) => inventoryTransactionsApi.reverse(txId),
+    onSuccess: () => {
+      message.success('Transakcija stornirana');
+      invalidateAndBroadcast(queryClient, [
+        ['inventory-transactions-by-item', id],
+        ['inventory-transactions'],
+        ['inventory-item', id],
+        ['inventory-item'],
+        ['inventory-items'],
+        ['inventory-batches', id],
+        ['inventory-batches'],
+        ['dashboard-low-stock'],
+      ]);
+    },
+    onError: (err: any) => {
+      message.error(err?.response?.data?.message ?? 'Greška pri storniranju');
+    },
+  });
 
   const deleteBatchMutation = useMutation({
     mutationFn: (batchId: string) => inventoryBatchesApi.delete(batchId),
@@ -175,6 +197,9 @@ export default function InventoryItemDetailPage() {
         dataSource={txData?.data ?? []}
         rowKey='id'
         pagination={false}
+        onRow={(tx: InventoryTransaction) => ({
+          style: tx.reversed ? { opacity: 0.5 } : {},
+        })}
         size='small'
         columns={[
           {
@@ -186,10 +211,16 @@ export default function InventoryItemDetailPage() {
           {
             title: 'Tip',
             dataIndex: 'type',
-            width: 100,
-            render: (val: InventoryTransactionType) => {
+            width: 140,
+            render: (val: InventoryTransactionType, tx: InventoryTransaction) => {
               const info = txTypeLabels[val] || { text: val, color: 'default' };
-              return <Tag color={info.color}>{info.text}</Tag>;
+              return (
+                <Space size={4}>
+                  <Tag color={info.color}>{info.text}</Tag>
+                  {tx.reversed && <Tag color='default'>Stornirano</Tag>}
+                  {tx.reversalOfTransactionId && <Tag color='orange'>Storno</Tag>}
+                </Space>
+              );
             },
           },
           {
@@ -197,6 +228,15 @@ export default function InventoryItemDetailPage() {
             dataIndex: 'quantity',
             width: 100,
             align: 'right',
+          },
+          {
+            title: 'Lot',
+            dataIndex: 'batchId',
+            width: 120,
+            render: (_: unknown, tx: InventoryTransaction) => {
+              if (!tx.batchId) return '—';
+              return tx.batchNumber ?? '—';
+            },
           },
           {
             title: 'Razlog',
@@ -221,6 +261,41 @@ export default function InventoryItemDetailPage() {
             dataIndex: 'referenceType',
             width: 100,
             render: (val: string | null) => val || '—',
+          },
+          {
+            title: 'Akcije',
+            width: 100,
+            render: (_: unknown, tx: InventoryTransaction) => {
+              const isAdjustment = tx.type === 'ADJUSTMENT';
+              const isStorno = tx.reversalOfTransactionId != null;
+              if (isAdjustment || isStorno || tx.reversed) return null;
+
+              const btn = (
+                <Button size='small' icon={<UndoOutlined />} disabled={tx.batchDeleted} danger>
+                  Storniraj
+                </Button>
+              );
+
+              if (tx.batchDeleted) {
+                return (
+                  <Tooltip title='Storniranje onemogućeno jer je pripadajući lot obrisan.'>
+                    <span>{btn}</span>
+                  </Tooltip>
+                );
+              }
+
+              return (
+                <Popconfirm
+                  title='Storniraj transakciju?'
+                  description='Biće kreirana suprotna transakcija. Oba zapisa ostaju vidljiva.'
+                  okText='Da, storniraj'
+                  cancelText='Otkaži'
+                  onConfirm={() => reverseMutation.mutate(tx.id)}
+                >
+                  {btn}
+                </Popconfirm>
+              );
+            },
           },
         ]}
       />

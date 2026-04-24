@@ -87,7 +87,7 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
       onCancel={onClose}
       confirmLoading={createMutation.isPending || updateMutation.isPending}
       width={600}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form
         form={form}

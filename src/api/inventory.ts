@@ -57,6 +57,9 @@ export const inventoryTransactionsApi = {
 
   delete: (id: string) => apiClient.delete(`/inventory-transactions/${id}`),
 
+  reverse: (id: string) =>
+    apiClient.post<InventoryTransaction>(`/inventory-transactions/${id}/reverse`),
+
   getByItem: (inventoryItemId: string) =>
     apiClient.get<InventoryTransaction[]>(`/inventory-transactions/by-item/${inventoryItemId}`),
 };

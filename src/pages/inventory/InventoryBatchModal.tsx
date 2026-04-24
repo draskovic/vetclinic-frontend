@@ -114,7 +114,7 @@ export default function InventoryBatchModal({ open, inventoryItemId, batch, onCl
       onCancel={onClose}
       confirmLoading={createMutation.isPending || updateMutation.isPending}
       width={560}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout='vertical'>
         <Form.Item

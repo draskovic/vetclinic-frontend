@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Form, Input, Button, Card, message, Typography, Steps } from 'antd';
 import { LockOutlined, MailOutlined, BankOutlined } from '@ant-design/icons';
 import { useNavigate } from 'react-router-dom';
@@ -45,13 +45,19 @@ export default function LoginPage() {
       const { accessToken, refreshToken, user } = response.data;
       setAuth(user, accessToken, refreshToken, user.clinicId);
       message.success('Uspešno ste se prijavili!');
-      navigate('/appointments');
+      navigate('/dashboard');
     } catch {
       message.error('Pogrešan email ili lozinka!');
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (step === 1) {
+      setTimeout(() => loginForm.getFieldInstance('email')?.focus(), 50);
+    }
+  }, [step, loginForm]);
 
   const { token } = theme.useToken();
   return (

@@ -179,7 +179,7 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
     >
       <Form form={form} layout='vertical' onFinish={handleSubmit} style={{ marginTop: 16 }}>
         <Row gutter={16}>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item
               name='name'
               label='Ime ljubimca'
@@ -188,13 +188,13 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
               <Input placeholder='Ime ljubimca' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item name='patientCode' label='Br. kartona'>
               <Input placeholder='Auto-dodela' disabled={!isEditing} />
             </Form.Item>
           </Col>
 
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item
               name='ownerId'
               label='Vlasnik'
@@ -216,7 +216,7 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
               />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item name='speciesId' label='Vrsta'>
               <Select
                 placeholder='Izaberite vrstu...'
@@ -236,7 +236,7 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
         </Row>
 
         <Row gutter={16}>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item name='breedId' label='Rasa'>
               <Select
                 placeholder='Izaberite rasu...'
@@ -250,24 +250,21 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
               />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item name='dateOfBirth' label='Datum rođenja'>
               <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
             </Form.Item>
           </Col>
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item name='gender' label='Pol'>
               <Select placeholder='Izaberite pol...' options={genderOptions} allowClear />
             </Form.Item>
           </Col>
-        </Row>
-        <Row gutter={16}>
-          {' '}
-          <Col span={8}>
+          <Col span={6}>
             <Form.Item name='legacyCode' label='Stari br. kartona'>
               <Input placeholder='Iz stare kartoteke' />
             </Form.Item>
-          </Col>{' '}
+          </Col>
         </Row>
 
         <Row gutter={16}>

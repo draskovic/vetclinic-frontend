@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Modal, Form, Input, InputNumber, Select, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { inventoryTransactionsApi, inventoryItemsApi } from '../../api';
+import { inventoryTransactionsApi, inventoryItemsApi, inventoryBatchesApi } from '../../api';
 import type {
   InventoryTransaction,
   CreateInventoryTransactionRequest,
@@ -9,6 +9,7 @@ import type {
   AdjustmentReason,
 } from '../../types';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import dayjs from 'dayjs';
 
 interface Props {
   open: boolean;
@@ -27,6 +28,13 @@ export default function InventoryTransactionModal({
   const queryClient = useQueryClient();
   const isEditing = !!transaction;
   const selectedType = Form.useWatch('type', form);
+
+  const selectedItemId = Form.useWatch('inventoryItemId', form);
+  const { data: selectedItem } = useQuery({
+    queryKey: ['inventory-item-select', selectedItemId],
+    queryFn: () => inventoryItemsApi.getById(selectedItemId!).then((r) => r.data),
+    enabled: !!selectedItemId,
+  });
   const requiresReason = selectedType === 'ADJUSTMENT' || selectedType === 'EXPIRED';
 
   const reasonLabels: Record<AdjustmentReason, string> = {
@@ -45,6 +53,13 @@ export default function InventoryTransactionModal({
     queryFn: () => inventoryItemsApi.getAll(0, 1000).then((r) => r.data),
   });
 
+  const { data: batchesData } = useQuery({
+    queryKey: ['inventory-batches', selectedItemId],
+    queryFn: () => inventoryBatchesApi.getByItem(selectedItemId!),
+    enabled: !!selectedItemId,
+  });
+
+  const batches = batchesData?.data ?? [];
   const createMutation = useMutation({
     mutationFn: (data: CreateInventoryTransactionRequest) => inventoryTransactionsApi.create(data),
     onSuccess: () => {
@@ -99,6 +114,13 @@ export default function InventoryTransactionModal({
     }
   }, [requiresReason, form]);
 
+  useEffect(() => {
+    const currentBatchId = form.getFieldValue('batchId');
+    if (currentBatchId && batches.length > 0 && !batches.some((b) => b.id === currentBatchId)) {
+      form.setFieldValue('batchId', undefined);
+    }
+  }, [batches, form]);
+
   const handleSubmit = () => {
     form.validateFields().then((values) => {
       if (isEditing) {
@@ -117,7 +139,7 @@ export default function InventoryTransactionModal({
       onCancel={onClose}
       confirmLoading={createMutation.isPending || updateMutation.isPending}
       width={500}
-      destroyOnClose
+      destroyOnHidden
     >
       <Form form={form} layout='vertical' initialValues={{ type: 'IN', quantity: 1 }}>
         <Form.Item
@@ -125,15 +147,42 @@ export default function InventoryTransactionModal({
           label='Artikal'
           rules={[{ required: true, message: 'Izaberite artikal' }]}
         >
-          <Select showSearch optionFilterProp='children' placeholder='Izaberite artikal'>
-            {items?.content?.map((item) => (
-              <Select.Option key={item.id} value={item.id}>
-                {item.name} {item.sku ? `(${item.sku})` : ''}
-              </Select.Option>
-            ))}
+          <Select
+            showSearch
+            optionFilterProp='children'
+            placeholder='Izaberite artikal'
+            disabled={!!defaultItemId}
+          >
+            {(() => {
+              const list = items?.content ?? [];
+              const hasSelected = selectedItemId && list.some((i) => i.id === selectedItemId);
+              const merged = !hasSelected && selectedItem ? [selectedItem, ...list] : list;
+              return merged.map((item) => (
+                <Select.Option key={item.id} value={item.id}>
+                  {item.name} {item.sku ? `(${item.sku})` : ''}
+                </Select.Option>
+              ));
+            })()}
           </Select>
         </Form.Item>
 
+        {selectedItem?.trackBatches && (
+          <Form.Item
+            name='batchId'
+            label='Lot'
+            rules={[{ required: true, message: 'Izaberite lot' }]}
+            extra='IN uvećava lot, OUT/EXPIRED smanjuje lot. Za popis (neslaganje) koristite IN ili OUT sa razlogom.'
+          >
+            <Select placeholder='Izaberite lot' allowClear>
+              {batches.map((b) => (
+                <Select.Option key={b.id} value={b.id}>
+                  {b.batchNumber} — stanje {b.quantityOnHand}
+                  {b.expiryDate ? `, rok ${dayjs(b.expiryDate).format('DD.MM.YYYY')}` : ''}
+                </Select.Option>
+              ))}
+            </Select>
+          </Form.Item>
+        )}
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Form.Item
             name='type'

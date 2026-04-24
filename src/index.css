@@ -186,10 +186,6 @@
   font-weight: 500;
 }
 
-/* Poslednja kartica — emocionalni vrhunac */
-.landing-page .pain-item--highlight {
-}
-
 @media (max-width: 992px) {
   .landing-page .pain-grid {
     grid-template-columns: repeat(2, 1fr);
