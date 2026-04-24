@@ -478,6 +478,15 @@ const ClinicSettingsPage = () => {
                 <Input />
               </Form.Item>
             </Col>
+            <Col span={8}>
+              <Form.Item
+                name='phoneCountryCode'
+                label='Pozivni broj države'
+                rules={[{ required: true, message: 'Unesite pozivni broj!' }]}
+              >
+                <Input placeholder='+381' />
+              </Form.Item>
+            </Col>
           </Row>
 
           <Row gutter={16}>

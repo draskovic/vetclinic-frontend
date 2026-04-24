@@ -694,6 +694,7 @@ export interface Clinic {
   address: string | null;
   city: string | null;
   country: string | null;
+  phoneCountryCode: string;
   registrationNumber: string | null;
   activityCode: string | null;
   bankAccount: string | null;
@@ -716,6 +717,7 @@ export interface CreateClinicRequest {
   address?: string;
   city?: string;
   country?: string;
+  phoneCountryCode?: string;
   registrationNumber?: string;
   activityCode?: string;
   bankAccount?: string;
@@ -736,6 +738,7 @@ export interface UpdateClinicRequest {
   address?: string;
   city?: string;
   country?: string;
+  phoneCountryCode?: string;
   registrationNumber?: string;
   activityCode?: string;
   bankAccount?: string;
