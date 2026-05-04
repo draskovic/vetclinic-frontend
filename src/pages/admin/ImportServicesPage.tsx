@@ -15,8 +15,62 @@ import { UploadOutlined, ImportOutlined, DeleteOutlined } from '@ant-design/icon
 import { useMutation } from '@tanstack/react-query';
 import { servicesApi } from '@/api';
 import Papa from 'papaparse';
+import * as XLSX from 'xlsx';
 
 const { Title, Text } = Typography;
+
+const parsePrice = (val: any): number => {
+  if (!val) return 0;
+  const str = String(val).replace(/\s/g, '');
+  const match = str.match(/[\d]+([.,]\d+)?/);
+  return match ? parseFloat(match[0].replace(',', '.')) : 0;
+};
+
+const CATEGORY_PREFIXES: Record<string, string> = {
+  KLINIČKI: 'KLN',
+  APLIKACIJA: 'APL',
+  ANESTEZIJA: 'ANE',
+  LABORATORIJSKA: 'LAB',
+  ULTRAZVUČNA: 'ULT',
+  PORODILJSTVO: 'POR',
+  STERILIZACIJA: 'STE',
+  HIRURGIJA: 'HIR',
+  KOZMETIKA: 'KOZ',
+  PREVENTIVA: 'PRE',
+  TERAPIJA: 'TER',
+  EUTANAZIJA: 'EUT',
+};
+
+const getCategoryPrefix = (category: string): string => {
+  const upper = category.toUpperCase();
+  for (const [key, prefix] of Object.entries(CATEGORY_PREFIXES)) {
+    if (upper.includes(key)) return prefix;
+  }
+  return 'USL';
+};
+
+const CATEGORY_TO_ENUM: Record<string, string> = {
+  KLINIČKI: 'EXAMINATION',
+  APLIKACIJA: 'MEDICATION_APPLICATION',
+  ANESTEZIJA: 'ANESTHESIA',
+  LABORATORIJSKA: 'LAB',
+  ULTRAZVUČNA: 'ULTRASOUND',
+  PORODILJSTVO: 'REPRODUCTION',
+  STERILIZACIJA: 'STERILIZATION',
+  HIRURGIJA: 'SURGERY',
+  KOZMETIKA: 'GROOMING',
+  PREVENTIVA: 'PREVENTIVE',
+  TERAPIJA: 'THERAPY',
+  EUTANAZIJA: 'EUTHANASIA',
+};
+
+const getCategoryEnum = (category: string): string => {
+  const upper = category.toUpperCase();
+  for (const [key, val] of Object.entries(CATEGORY_TO_ENUM)) {
+    if (upper.includes(key)) return val;
+  }
+  return 'OTHER';
+};
 
 interface ImportServiceRow {
   sku: string;
@@ -74,11 +128,58 @@ const ImportServicesPage: React.FC = () => {
           },
           error: () => setParseError('Greška pri parsiranju CSV fajla'),
         });
+      } else if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+        const buffer = e.target?.result as ArrayBuffer;
+        const wb = XLSX.read(buffer, { type: 'array' });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+
+        const parsed: ImportServiceRow[] = [];
+        let currentCategory = 'OTHER';
+        let categoryPrefix = 'USL';
+        const categoryCounters: Record<string, number> = {};
+
+        rows.forEach((row) => {
+          const naziv = String(row[0] || '').trim();
+          const cenaRaw = row[1];
+          const jedinica = String(row[2] || 'kom').trim();
+
+          if (!naziv) return;
+
+          const hasPrice = cenaRaw !== '' && cenaRaw !== null && cenaRaw !== undefined;
+
+          if (!hasPrice) {
+            // Ovo je header kategorije
+            currentCategory = naziv.replace(/^\d+\.\s*/, '').trim();
+            categoryPrefix = getCategoryPrefix(currentCategory);
+            return;
+          }
+
+          const counter = (categoryCounters[categoryPrefix] || 0) + 1;
+          categoryCounters[categoryPrefix] = counter;
+          const sku = `${categoryPrefix}-${String(counter).padStart(3, '0')}`;
+
+          parsed.push({
+            sku,
+            name: naziv,
+            price: parsePrice(cenaRaw),
+            unit: jedinica || 'kom',
+            category: getCategoryEnum(currentCategory),
+          });
+        });
+
+        setData(parsed);
+        setParseError(null);
+        setResult(null);
       } else {
         setParseError('Podržani formati: .json i .csv');
       }
     };
-    reader.readAsText(file, 'UTF-8');
+    if (file.name.endsWith('.xlsx') || file.name.endsWith('.xls')) {
+      reader.readAsArrayBuffer(file);
+    } else {
+      reader.readAsText(file, 'UTF-8');
+    }
     return false;
   };
 
@@ -113,12 +214,13 @@ const ImportServicesPage: React.FC = () => {
       <Card style={{ marginBottom: 16 }}>
         <Space direction='vertical' style={{ width: '100%' }}>
           <Text>Učitajte JSON ili CSV fajl sa šifarnikom usluga.</Text>
-          <Text type='secondary'>
-            CSV kolone: šifra (sku), naziv (name), cena (price), jedinica (unit), kategorija
-            (category)
-          </Text>
+          <Text type='secondary'>Podržani formati: .xlsx (cenovnik), .csv, .json (category)</Text>
           <Space>
-            <Upload accept='.json,.csv' showUploadList={false} beforeUpload={handleFileUpload}>
+            <Upload
+              accept='.json,.csv, .xlsx,.xls'
+              showUploadList={false}
+              beforeUpload={handleFileUpload}
+            >
               <Button icon={<UploadOutlined />}>Izaberi fajl</Button>
             </Upload>
             {data.length > 0 && (

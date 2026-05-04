@@ -9,12 +9,20 @@ import ServiceModal from './ServiceModal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const categoryConfig: Record<ServiceCategory, { color: string; label: string }> = {
-  EXAMINATION: { color: '#1890ff', label: 'Pregled' },
+  EXAMINATION: { color: '#1890ff', label: 'Klinički pregled' },
+  MEDICATION_APPLICATION: { color: '#722ed1', label: 'Aplikacija lekova' },
+  ANESTHESIA: { color: '#eb2f96', label: 'Anestezija' },
+  LAB: { color: '#b37feb', label: 'Laboratorijska dijagnostika' },
+  ULTRASOUND: { color: '#9254de', label: 'Ultrazvučna dijagnostika' },
+  REPRODUCTION: { color: '#f759ab', label: 'Porodiljstvo i V.O.' },
+  STERILIZATION: { color: '#ff7a45', label: 'Sterilizacija i kastracija' },
   SURGERY: { color: '#ff4d4f', label: 'Hirurgija' },
+  GROOMING: { color: '#fa8c16', label: 'Kozmetika' },
+  PREVENTIVE: { color: '#73d13d', label: 'Preventiva' },
   VACCINATION: { color: '#52c41a', label: 'Vakcinacija' },
-  LAB: { color: '#b37feb', label: 'Laboratorija' },
   DENTAL: { color: '#13c2c2', label: 'Stomatologija' },
-  GROOMING: { color: '#fa8c16', label: 'Grooming' },
+  THERAPY: { color: '#36cfc9', label: 'Terapija' },
+  EUTHANASIA: { color: '#595959', label: 'Eutanazija' },
   OTHER: { color: 'default', label: 'Ostalo' },
 };
 

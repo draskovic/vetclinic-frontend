@@ -755,11 +755,19 @@ export interface UpdateClinicRequest {
 
 export type ServiceCategory =
   | 'EXAMINATION'
-  | 'SURGERY'
-  | 'VACCINATION'
+  | 'MEDICATION_APPLICATION'
+  | 'ANESTHESIA'
   | 'LAB'
-  | 'DENTAL'
+  | 'ULTRASOUND'
+  | 'REPRODUCTION'
+  | 'STERILIZATION'
+  | 'SURGERY'
   | 'GROOMING'
+  | 'PREVENTIVE'
+  | 'VACCINATION'
+  | 'DENTAL'
+  | 'THERAPY'
+  | 'EUTHANASIA'
   | 'OTHER';
 
 export interface Service {

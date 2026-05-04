@@ -28,12 +28,20 @@ import type {
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 const categoryOptions: { value: ServiceCategory; label: string }[] = [
-  { value: 'EXAMINATION', label: 'Pregled' },
+  { value: 'EXAMINATION', label: 'Klinički pregled' },
+  { value: 'MEDICATION_APPLICATION', label: 'Aplikacija lekova' },
+  { value: 'ANESTHESIA', label: 'Anestezija' },
+  { value: 'LAB', label: 'Laboratorijska dijagnostika' },
+  { value: 'ULTRASOUND', label: 'Ultrazvučna dijagnostika' },
+  { value: 'REPRODUCTION', label: 'Porodiljstvo i V.O.' },
+  { value: 'STERILIZATION', label: 'Sterilizacija i kastracija' },
   { value: 'SURGERY', label: 'Hirurgija' },
+  { value: 'GROOMING', label: 'Kozmetika' },
+  { value: 'PREVENTIVE', label: 'Preventiva' },
   { value: 'VACCINATION', label: 'Vakcinacija' },
-  { value: 'LAB', label: 'Laboratorija' },
   { value: 'DENTAL', label: 'Stomatologija' },
-  { value: 'GROOMING', label: 'Grooming' },
+  { value: 'THERAPY', label: 'Terapija' },
+  { value: 'EUTHANASIA', label: 'Eutanazija' },
   { value: 'OTHER', label: 'Ostalo' },
 ];
 
