@@ -460,6 +460,9 @@ export default function MedicalRecordEditor({
                 open={diagnosisDropdownOpen}
                 onDropdownVisibleChange={setDiagnosisDropdownOpen}
                 onSearch={(value) => setDiagnosisSearch(value)}
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') e.stopPropagation();
+                }} // ← DODATI OVO
                 onChange={(values: string[]) => {
                   const createValue = values.find((v) => v.startsWith('__create__'));
                   if (createValue) {

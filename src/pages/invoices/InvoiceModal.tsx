@@ -45,10 +45,13 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
+  const [autoItemsTriggered, setAutoItemsTriggered] = useState(false);
   const [paidImmediately, setPaidImmediately] = useState(false);
   const [ownerSearch, setOwnerSearch] = useState('');
   const debouncedOwnerSearch = useDebouncedValue(ownerSearch, 300);
-  const currentInvoice = invoice ?? createdInvoice;
+
+  const currentInvoice = createdInvoice ?? invoice;
+
   const selectedOwnerId = Form.useWatch('ownerId', form);
 
   const isEditing = !!currentInvoice;
@@ -96,51 +99,11 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
 
   const createMutation = useMutation({
     mutationFn: (data: CreateInvoiceRequest) => invoicesApi.create(data),
-    onSuccess: async (response) => {
+    onSuccess: (response) => {
       message.success('Faktura je kreirana!');
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
-      const newInvoice = response.data;
-
-      // Auto-kreiranje stavki iz usluga intervencije
-      if (defaultValues?.medicalRecordId) {
-        try {
-          const treatmentsRes = await treatmentsApi.getByMedicalRecord(
-            defaultValues.medicalRecordId,
-          );
-          const treatments = treatmentsRes.data;
-
-          for (let i = 0; i < treatments.length; i++) {
-            const t = treatments[i];
-            if (t.serviceId) {
-              const service = await servicesApi.getById(t.serviceId);
-              const quantity = 1;
-              const unitPrice = service.price;
-              const taxRate = service.taxRate ?? 20;
-              const lineTotal = quantity * unitPrice * (1 + taxRate / 100);
-
-              await invoiceItemsApi.create({
-                invoiceId: newInvoice.id,
-                serviceId: t.serviceId,
-                description: t.name,
-                quantity,
-                unitPrice,
-                taxRate,
-                discountPercent: 0,
-                lineTotal: +lineTotal.toFixed(2),
-                sortOrder: i + 1,
-              });
-            }
-          }
-
-          queryClient.invalidateQueries({ queryKey: ['invoice-items', newInvoice.id] });
-        } catch (e) {
-          message.warning('Stavke fakture nisu automatski dodate');
-        }
-      }
-
-      setCreatedInvoice(newInvoice);
+      setCreatedInvoice(response.data);
     },
-
     onError: (error: any) => {
       const msg = error?.response?.data?.message || '';
       if (msg.includes('uq_invoice_medical_record_id')) {
@@ -150,6 +113,62 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
       }
     },
   });
+  // Auto-kreiranje stavki PO mountovanju InvoiceItemsTable (kad createdInvoice postane non-null)
+  useEffect(() => {
+    if (!createdInvoice || autoItemsTriggered || !defaultValues?.medicalRecordId) return;
+    setAutoItemsTriggered(true);
+
+    (async () => {
+      try {
+        const treatmentsRes = await treatmentsApi.getByMedicalRecord(
+          defaultValues.medicalRecordId!,
+        );
+        const treatments = treatmentsRes.data;
+
+        for (let i = 0; i < treatments.length; i++) {
+          const t = treatments[i];
+          if (t.serviceId) {
+            const service = await servicesApi.getById(t.serviceId);
+            const quantity = 1;
+            const unitPrice = service.price;
+            const taxRate = service.taxRate ?? 20;
+            const lineTotal = quantity * unitPrice * (1 + taxRate / 100);
+
+            await invoiceItemsApi.create({
+              invoiceId: createdInvoice.id,
+              serviceId: t.serviceId,
+              description: t.name,
+              quantity,
+              unitPrice,
+              taxRate,
+              discountPercent: 0,
+              lineTotal: +lineTotal.toFixed(2),
+              sortOrder: i + 1,
+            });
+          }
+        }
+
+        // InvoiceItemsTable je sada montiran i subscribed - invalidate trigguje refetch
+        await queryClient.invalidateQueries({
+          queryKey: ['invoice-items', createdInvoice.id],
+        });
+
+        // Osveži totale fakture
+        const freshInvoiceRes = await invoicesApi.getById(createdInvoice.id);
+        setCreatedInvoice(freshInvoiceRes.data);
+      } catch (e) {
+        message.warning('Stavke fakture nisu automatski dodate');
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [createdInvoice?.id]);
+
+  // Reset autoItemsTriggered kad se modal zatvori
+  useEffect(() => {
+    if (!open) {
+      setAutoItemsTriggered(false);
+    }
+  }, [open]);
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateInvoiceRequest) => invoicesApi.update(currentInvoice!.id, data),
