@@ -1,5 +1,11 @@
 import apiClient from './client';
-import type { Breed, CreateBreedRequest, UpdateBreedRequest, PageResponse } from '@/types';
+import type {
+  Breed,
+  CreateBreedRequest,
+  UpdateBreedRequest,
+  PageResponse,
+  ImportResultResponse,
+} from '@/types';
 
 export const breedsApi = {
   getAll: (page = 0, size = 100) =>
@@ -14,4 +20,6 @@ export const breedsApi = {
   update: (id: string, data: UpdateBreedRequest) => apiClient.put<Breed>(`/breeds/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/breeds/${id}`),
+  seedDefaultDogs: (speciesId: string) =>
+    apiClient.post<ImportResultResponse>(`/breeds/seed-default-dogs?speciesId=${speciesId}`),
 };

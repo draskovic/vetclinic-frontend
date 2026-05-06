@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { Table, Button, Space, Card, Typography, Popconfirm, message } from 'antd';
-import { PlusOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Card, Typography, Popconfirm, message, Modal } from 'antd';
+import { PlusOutlined, EditOutlined, DeleteOutlined, DownloadOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { breedsApi } from '@/api/breeds';
+import { speciesApi } from '@/api/species';
 import type { Breed } from '@/types';
 import BreedModal from './BreedModal';
 
@@ -22,6 +23,11 @@ export default function BreedPage() {
     queryFn: () => breedsApi.getAll(page - 1, pageSize).then((r) => r.data),
   });
 
+  const { data: speciesData } = useQuery({
+    queryKey: ['species', 'all-for-seed'],
+    queryFn: () => speciesApi.getAll(0, 100).then((r) => r.data),
+  });
+
   const deleteMutation = useMutation({
     mutationFn: (id: string) => breedsApi.delete(id),
     onSuccess: () => {
@@ -30,6 +36,44 @@ export default function BreedPage() {
     },
     onError: () => message.error('Greška pri brisanju!'),
   });
+
+  const seedDogsMutation = useMutation({
+    mutationFn: (speciesId: string) => breedsApi.seedDefaultDogs(speciesId).then((r) => r.data),
+    onSuccess: (result) => {
+      Modal.info({
+        title: 'Učitavanje predefinisanih rasa pasa',
+        content: (
+          <div>
+            <p>
+              Ukupno obrađeno: <strong>{result.totalProcessed}</strong>
+            </p>
+            <p>
+              Novih dodato: <strong>{result.created}</strong>
+            </p>
+            <p>
+              Preskočeno (već postoje): <strong>{result.skipped}</strong>
+            </p>
+            {result.errors.length > 0 && (
+              <p style={{ color: '#ff4d4f' }}>
+                Greške: <strong>{result.errors.length}</strong>
+              </p>
+            )}
+          </div>
+        ),
+      });
+      queryClient.invalidateQueries({ queryKey: ['breeds'] });
+    },
+    onError: () => message.error('Greška pri učitavanju rasa!'),
+  });
+
+  const handleSeedDogs = () => {
+    const dogSpecies = speciesData?.content.find((s) => s.name.trim().toLowerCase() === 'pas');
+    if (!dogSpecies) {
+      message.error("Vrsta 'Pas' ne postoji u šifarniku vrsta. Prvo je dodajte.");
+      return;
+    }
+    seedDogsMutation.mutate(dogSpecies.id);
+  };
 
   const columns: ColumnsType<Breed> = [
     {
@@ -85,16 +129,35 @@ export default function BreedPage() {
         <Title level={3} style={{ margin: 0 }}>
           Rase
         </Title>
-        <Button
-          type='primary'
-          icon={<PlusOutlined />}
-          onClick={() => {
-            setEditingBreed(null);
-            setModalOpen(true);
-          }}
-        >
-          Dodaj rasu
-        </Button>
+        <Space>
+          <Popconfirm
+            title='Učitaj predefinisane rase pasa'
+            description={
+              <div style={{ maxWidth: 320 }}>
+                Biće dodato do 95 najčešćih rasa pasa u šifarnik.
+                <br />
+                Postojeće rase neće biti dirane.
+              </div>
+            }
+            onConfirm={handleSeedDogs}
+            okText='Da, učitaj'
+            cancelText='Odustani'
+          >
+            <Button icon={<DownloadOutlined />} loading={seedDogsMutation.isPending}>
+              Učitaj rase pasa
+            </Button>
+          </Popconfirm>
+          <Button
+            type='primary'
+            icon={<PlusOutlined />}
+            onClick={() => {
+              setEditingBreed(null);
+              setModalOpen(true);
+            }}
+          >
+            Dodaj rasu
+          </Button>
+        </Space>
       </div>
 
       <Card>
