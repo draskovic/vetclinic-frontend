@@ -931,6 +931,8 @@ export interface Prescription {
   startDate: string;
   endDate: string | null;
   instructions: string | null;
+  inventoryItemId: string | null;
+  inventoryItemName: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -946,6 +948,7 @@ export interface CreatePrescriptionRequest {
   startDate: string;
   endDate?: string;
   instructions?: string;
+  inventoryItemId?: string;
 }
 
 export interface UpdatePrescriptionRequest {
@@ -956,6 +959,7 @@ export interface UpdatePrescriptionRequest {
   startDate?: string;
   endDate?: string;
   instructions?: string;
+  inventoryItemId?: string;
 }
 
 // ===== Documents =====

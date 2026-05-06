@@ -12,6 +12,7 @@ import {
   Typography,
   InputNumber,
   Tooltip,
+  AutoComplete,
 } from 'antd';
 import {
   PlusOutlined,
@@ -21,8 +22,10 @@ import {
   FilePdfOutlined,
 } from '@ant-design/icons';
 import { prescriptionsApi } from '@/api/prescriptions';
+import { inventoryItemsApi } from '@/api/inventory';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import type { Prescription } from '@/types';
+import type { Prescription, InventoryItem } from '@/types';
 import dayjs from 'dayjs';
 
 interface PrescriptionItemsTableProps {
@@ -45,12 +48,24 @@ export default function PrescriptionItemsTable({
   const [startDate, setStartDate] = useState<dayjs.Dayjs>(dayjs());
   const [endDate, setEndDate] = useState<dayjs.Dayjs | null>(null);
   const [instructions, setInstructions] = useState('');
+  const [medicationSearch, setMedicationSearch] = useState('');
+  const [inventoryItemId, setInventoryItemId] = useState<string | null>(null);
+  const debouncedMedicationSearch = useDebouncedValue(medicationSearch, 300);
 
   const { data: prescriptionsData, refetch } = useQuery({
     queryKey: ['prescriptions-by-mr', medicalRecordId],
     queryFn: () => prescriptionsApi.getByMedicalRecord(medicalRecordId!),
     enabled: !!medicalRecordId,
   });
+
+  const { data: medicationsData } = useQuery({
+    queryKey: ['inventory-medications-search', debouncedMedicationSearch],
+    queryFn: () =>
+      inventoryItemsApi.getAll(0, 20, debouncedMedicationSearch || undefined, 'MEDICATION'),
+    enabled: adding,
+  });
+
+  const medications: InventoryItem[] = medicationsData?.data?.content ?? [];
 
   useEffect(() => {
     if (prescriptionsData) {
@@ -66,6 +81,8 @@ export default function PrescriptionItemsTable({
     setStartDate(dayjs());
     setEndDate(null);
     setInstructions('');
+    setMedicationSearch('');
+    setInventoryItemId(null);
     setAdding(false);
   };
 
@@ -82,6 +99,7 @@ export default function PrescriptionItemsTable({
         startDate: startDate.format('YYYY-MM-DD'),
         endDate: endDate ? endDate.format('YYYY-MM-DD') : undefined,
         instructions: instructions || undefined,
+        inventoryItemId: inventoryItemId ?? undefined,
       }),
     onSuccess: () => {
       message.success('Recept dodat!');
@@ -115,6 +133,12 @@ export default function PrescriptionItemsTable({
     }
   };
 
+  const handleMedicationNameChange = (value: string) => {
+    setMedicationName(value);
+    setMedicationSearch(value);
+    const matched = medications.find((m) => m.name === value);
+    setInventoryItemId(matched?.id ?? null);
+  };
   const isFormValid = medicationName.trim() && dosage.trim() && frequency.trim() && startDate;
 
   if (!medicalRecordId) {
@@ -186,10 +210,28 @@ export default function PrescriptionItemsTable({
             <div>
               <Row gutter={8} style={{ marginBottom: 8 }}>
                 <Col span={8}>
-                  <Input
+                  <AutoComplete
                     placeholder='Naziv leka *'
                     value={medicationName}
-                    onChange={(e) => setMedicationName(e.target.value)}
+                    onChange={handleMedicationNameChange}
+                    style={{ width: '100%' }}
+                    filterOption={false}
+                    onInputKeyDown={(e) => {
+                      if (e.key === ' ') e.stopPropagation();
+                    }}
+                    options={medications.map((item) => ({
+                      value: item.name,
+                      label: (
+                        <div style={{ display: 'flex', justifyContent: 'space-between' }}>
+                          <span>{item.name}</span>
+                          <span style={{ color: '#52c41a', fontSize: 12 }}>
+                            {item.quantityOnHand > 0
+                              ? `${item.quantityOnHand} ${item.unit ?? ''}`
+                              : 'Van lagera'}
+                          </span>
+                        </div>
+                      ),
+                    }))}
                   />
                 </Col>
                 <Col span={8}>

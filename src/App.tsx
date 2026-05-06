@@ -39,6 +39,7 @@ import ImportServicesPage from './pages/admin/ImportServicesPage';
 import DiagnosisPage from './pages/admin/DiagnosisPage';
 import ProtocolsPage from './pages/admin/ProtocolsPage';
 import ImportDiagnosesPage from '@/pages/admin/ImportDiagnosesPage';
+import ImportMedicationsPage from '@/pages/admin/ImportMedicationsPage';
 import InventoryItemDetailPage from './pages/inventory/InventoryItemDetailPage';
 import { initQueryBroadcast } from '@/lib/queryBroadcast';
 import BookingPage from './pages/booking/BookingPage';
@@ -323,6 +324,7 @@ export default function App() {
                     }
                   />
                   <Route path='admin/import-diagnoses' element={<ImportDiagnosesPage />} />
+                  <Route path='admin/import-medications' element={<ImportMedicationsPage />} />
                   <Route path='/book/:clinicId' element={<BookingPage />} />
                   <Route path='/book/cancel' element={<BookingCancelPage />} />
 

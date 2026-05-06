@@ -82,6 +82,12 @@ const adminSections = [
     icon: <ImportOutlined style={{ fontSize: 32, color: '#eb2f96' }} />,
     path: '/admin/import-diagnoses',
   },
+  {
+    title: 'Import lekova za recept',
+    description: 'Uvoz šifarnika lekova iz Excel/CSV fajla — za prepisivanje recepata',
+    icon: <ImportOutlined style={{ fontSize: 32, color: '#fa8c16' }} />,
+    path: '/admin/import-medications',
+  },
 ];
 
 const superAdminSections = [
