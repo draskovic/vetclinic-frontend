@@ -34,6 +34,7 @@ import TreatmentItemsTable from './TreatmentItemsTable';
 import LabReportItemsTable from './LabReportItemsTable';
 import VaccinationItemsTable from './VaccinationItemsTable';
 import PrescriptionItemsTable from './PrescriptionItemsTable';
+import AdministeredMedicationItemsTable from './AdministeredMedicationItemsTable';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { invoicesApi } from '@/api/invoices';
 import InvoiceModal from '@/pages/invoices/InvoiceModal';
@@ -672,6 +673,17 @@ export default function MedicalRecordEditor({
                     <LabReportItemsTable
                       medicalRecordId={currentRecord?.id ?? null}
                       petId={currentRecord?.petId ?? ''}
+                    />
+                  ),
+                },
+                {
+                  key: 'administered-medications',
+                  label: 'Aplikovani lekovi',
+                  children: (
+                    <AdministeredMedicationItemsTable
+                      medicalRecordId={currentRecord?.id ?? null}
+                      petId={currentRecord?.petId ?? ''}
+                      vetId={currentRecord?.vetId ?? ''}
                     />
                   ),
                 },

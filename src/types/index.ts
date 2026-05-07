@@ -962,6 +962,48 @@ export interface UpdatePrescriptionRequest {
   inventoryItemId?: string;
 }
 
+// ==================== MEDICATION ADMINISTRATION za lekove koji su primenjeni u ambulanti ====================
+export type MedicationRoute = 'IV' | 'IM' | 'SC' | 'PO' | 'TOPICAL' | 'INHALATION';
+
+export interface MedicationAdministration {
+  id: string;
+  medicalRecordId: string;
+  petId: string;
+  petName: string;
+  vetId: string;
+  vetName: string;
+  inventoryItemId: string | null;
+  inventoryItemName: string | null;
+  medicationName: string;
+  dosage: string;
+  route: MedicationRoute | null;
+  administeredDate: string;
+  instructions: string | null;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateMedicationAdministrationRequest {
+  medicalRecordId: string;
+  petId: string;
+  vetId: string;
+  inventoryItemId?: string;
+  medicationName: string;
+  dosage: string;
+  route?: MedicationRoute;
+  administeredDate: string;
+  instructions?: string;
+}
+
+export interface UpdateMedicationAdministrationRequest {
+  inventoryItemId?: string;
+  medicationName?: string;
+  dosage?: string;
+  route?: MedicationRoute;
+  administeredDate?: string;
+  instructions?: string;
+}
+
 // ===== Documents =====
 export type FileType = 'IMAGE' | 'PDF' | 'LAB_RESULT' | 'XRAY' | 'OTHER';
 
