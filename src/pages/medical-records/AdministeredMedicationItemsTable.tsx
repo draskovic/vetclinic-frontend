@@ -152,7 +152,7 @@ export default function AdministeredMedicationItemsTable({
           { title: 'Lek', dataIndex: 'medicationName', key: 'medicationName' },
           { title: 'Doza', dataIndex: 'dosage', key: 'dosage' },
           {
-            title: 'Put',
+            title: 'Način primene',
             dataIndex: 'route',
             key: 'route',
             width: 90,
