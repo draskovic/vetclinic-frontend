@@ -226,7 +226,7 @@ export default function AdministeredMedicationItemsTable({
                 </Col>
                 <Col span={5}>
                   <Select
-                    placeholder='Put primene'
+                    placeholder='Način primene'
                     value={route}
                     onChange={(v) => setRoute(v)}
                     options={ROUTE_OPTIONS}
