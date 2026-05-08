@@ -37,10 +37,19 @@ import { medicalRecordsApi } from '@/api/medical-records';
 import { vaccinationsApi } from '@/api/vaccinations';
 import { labReportsApi } from '@/api/lab-reports';
 import { documentsApi } from '@/api/documents';
+import { medicationAdministrationsApi } from '@/api/medication-administrations';
+import { ROUTE_LABEL } from '@/constants/medicationRoutes';
 import VaccinationModal from '../vaccinations/VaccinationModal';
 import LabReportModal from '../lab-reports/LabReportModal';
 
-import type { Appointment, MedicalRecord, Vaccination, LabReport, DocumentRecord } from '@/types';
+import type {
+  Appointment,
+  MedicalRecord,
+  Vaccination,
+  LabReport,
+  DocumentRecord,
+  MedicationAdministration,
+} from '@/types';
 import MedicalRecordModal from '../medical-records/MedicalRecordModal';
 import MedicalRecordEditor from '../medical-records/MedicalRecordEditor';
 import { useAuthStore } from '@/store/authStore';
@@ -172,6 +181,11 @@ export default function PetProfilePage() {
     enabled: !!petId,
   });
 
+  const { data: medicationAdministrations = [], isLoading: medAdminLoading } = useQuery({
+    queryKey: ['medication-administrations', 'by-pet', petId],
+    queryFn: () => medicationAdministrationsApi.getByPet(petId!).then((r) => r.data),
+    enabled: !!petId,
+  });
   const { data: documents = [], isLoading: docLoading } = useQuery({
     queryKey: ['documents', 'by-pet', petId],
     queryFn: () => documentsApi.getByPet(petId!).then((r) => r.data),
@@ -408,6 +422,32 @@ export default function PetProfilePage() {
       ),
     },
   ];
+  const medicationAdministrationColumns: ColumnsType<MedicationAdministration> = [
+    {
+      title: 'Datum',
+      dataIndex: 'administeredDate',
+      key: 'administeredDate',
+      width: 110,
+      render: (v: string) => dayjs(v).format('DD.MM.YYYY'),
+    },
+    { title: 'Lek', dataIndex: 'medicationName', key: 'medicationName' },
+    { title: 'Doza', dataIndex: 'dosage', key: 'dosage' },
+    {
+      title: 'Put',
+      dataIndex: 'route',
+      key: 'route',
+      width: 90,
+      render: (v: MedicationAdministration['route']) => (v ? ROUTE_LABEL[v] : '-'),
+    },
+    { title: 'Veterinar', dataIndex: 'vetName', key: 'vetName' },
+    {
+      title: 'Beleška',
+      dataIndex: 'instructions',
+      key: 'instructions',
+      ellipsis: true,
+      render: (v: string | null) => v || '-',
+    },
+  ];
 
   if (petLoading) return <Spin size='large' style={{ display: 'block', marginTop: 80 }} />;
   if (!pet) return null;
@@ -497,6 +537,20 @@ export default function PetProfilePage() {
             size='small'
           />
         </>
+      ),
+    },
+    {
+      key: 'medication-administrations',
+      label: `Aplikovani lekovi (${medicationAdministrations.length})`,
+      children: (
+        <Table
+          dataSource={medicationAdministrations}
+          columns={medicationAdministrationColumns}
+          rowKey='id'
+          loading={medAdminLoading}
+          pagination={{ pageSize: 10 }}
+          size='small'
+        />
       ),
     },
     {

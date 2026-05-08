@@ -463,7 +463,9 @@ export interface InvoiceItem {
   description: string;
   quantity: number;
   unitPrice: number;
-  taxRate: number;
+  taxRateId: string;
+  taxRateLabel: string;
+  taxRatePercent: number;
   discountPercent: number;
   lineTotal: number;
   sortOrder: number;
@@ -473,11 +475,11 @@ export interface InvoiceItem {
 
 export interface CreateInvoiceItemRequest {
   invoiceId: string;
-  serviceId?: string;
+  serviceId?: string | null;
   description: string;
   quantity?: number;
   unitPrice: number;
-  taxRate?: number;
+  taxRateId?: string;
   discountPercent?: number;
   lineTotal: number;
   sortOrder?: number;
@@ -488,7 +490,7 @@ export interface UpdateInvoiceItemRequest {
   description?: string;
   quantity?: number;
   unitPrice?: number;
-  taxRate?: number;
+  taxRateId?: string;
   discountPercent?: number;
   lineTotal?: number;
   sortOrder?: number;
@@ -751,6 +753,15 @@ export interface UpdateClinicRequest {
   settings?: string;
 }
 
+export interface TaxRate {
+  id: string;
+  countryCode: string;
+  label: string;
+  percent: number;
+  description: string;
+  active: boolean;
+}
+
 // ============== Services (Usluge) ==============
 
 export type ServiceCategory =
@@ -769,7 +780,6 @@ export type ServiceCategory =
   | 'THERAPY'
   | 'EUTHANASIA'
   | 'OTHER';
-
 export interface Service {
   id: string;
   category: ServiceCategory;
@@ -778,7 +788,9 @@ export interface Service {
   unit?: string;
   description?: string;
   price: number;
-  taxRate: number;
+  taxRateId: string;
+  taxRateLabel: string | null;
+  taxRatePercent: number | null;
   durationMinutes?: number;
   active: boolean;
   createdAt: string;
@@ -792,7 +804,7 @@ export interface CreateServiceRequest {
   unit?: string;
   description?: string;
   price: number;
-  taxRate?: number;
+  taxRateId?: string;
   durationMinutes?: number;
   active?: boolean;
 }
@@ -804,7 +816,7 @@ export interface UpdateServiceRequest {
   unit?: string;
   description?: string;
   price?: number;
-  taxRate?: number;
+  taxRateId?: string;
   durationMinutes?: number;
   active?: boolean;
 }

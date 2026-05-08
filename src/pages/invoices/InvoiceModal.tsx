@@ -131,8 +131,8 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
             const service = await servicesApi.getById(t.serviceId);
             const quantity = 1;
             const unitPrice = service.price;
-            const taxRate = service.taxRate ?? 20;
-            const lineTotal = quantity * unitPrice * (1 + taxRate / 100);
+            const taxPercent = service.taxRatePercent ?? 0;
+            const lineTotal = quantity * unitPrice * (1 + taxPercent / 100);
 
             await invoiceItemsApi.create({
               invoiceId: createdInvoice.id,
@@ -140,7 +140,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
               description: t.name,
               quantity,
               unitPrice,
-              taxRate,
+              taxRateId: service.taxRateId,
               discountPercent: 0,
               lineTotal: +lineTotal.toFixed(2),
               sortOrder: i + 1,

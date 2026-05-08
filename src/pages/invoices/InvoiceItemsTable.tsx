@@ -91,12 +91,12 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
   const calculateLineTotal = () => {
     const quantity = form.getFieldValue('quantity') ?? 1;
     const unitPrice = form.getFieldValue('unitPrice') ?? 0;
-    const taxRate = form.getFieldValue('taxRate') ?? 20;
+    const taxRatePercent = form.getFieldValue('taxRatePercent') ?? 0;
     const discountPercent = form.getFieldValue('discountPercent') ?? 0;
     const base = quantity * unitPrice;
     const discount = base * (discountPercent / 100);
     const subtotal = base - discount;
-    const tax = subtotal * (taxRate / 100);
+    const tax = subtotal * (taxRatePercent / 100);
     const lineTotal = +(subtotal + tax).toFixed(2);
     form.setFieldValue('lineTotal', lineTotal);
   };
@@ -107,10 +107,11 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
       form.setFieldsValue({
         description: service.name,
         unitPrice: service.price,
-        taxRate: service.taxRate,
+        taxRateId: service.taxRateId,
+        taxRateLabel: service.taxRateLabel,
+        taxRatePercent: service.taxRatePercent ?? 0,
       });
       calculateLineTotal();
-      // Auto-save posle izbora usluge
       setTimeout(() => handleSave(), 0);
     }
   };
@@ -123,7 +124,9 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
       description: record.description,
       quantity: record.quantity,
       unitPrice: record.unitPrice,
-      taxRate: record.taxRate,
+      taxRateId: record.taxRateId,
+      taxRateLabel: record.taxRateLabel,
+      taxRatePercent: record.taxRatePercent,
       discountPercent: record.discountPercent,
       lineTotal: record.lineTotal,
     });
@@ -137,7 +140,9 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
       description: '',
       quantity: 1,
       unitPrice: 0,
-      taxRate: 20,
+      taxRateId: undefined,
+      taxRateLabel: '',
+      taxRatePercent: 0,
       discountPercent: 0,
       lineTotal: 0,
     });
@@ -243,24 +248,23 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
         ),
     },
     {
-      title: 'PDV %',
-      dataIndex: 'taxRate',
-      width: 90,
+      title: 'PDV',
+      dataIndex: 'taxRateLabel',
+      width: 110,
       align: 'right',
-      render: (val: number, record) =>
-        isRowEditing(record) ? (
-          <Form.Item name='taxRate' style={{ margin: 0 }}>
-            <InputNumber
-              min={0}
-              max={100}
-              step={1}
-              style={{ width: '100%' }}
-              onChange={calculateLineTotal}
-            />
-          </Form.Item>
-        ) : (
-          `${val}%`
-        ),
+      render: (_label: string | null, record) => {
+        // U edit modu prikazujemo vrednost iz forme (može biti tek popunjeno iz handleServiceSelect)
+        if (isRowEditing(record)) {
+          const formLabel = form.getFieldValue('taxRateLabel') as string | undefined;
+          const formPercent = form.getFieldValue('taxRatePercent') as number | undefined;
+          return formLabel ? (
+            `${formLabel} (${formPercent ?? 0}%)`
+          ) : (
+            <Typography.Text type='secondary'>auto</Typography.Text>
+          );
+        }
+        return `${record.taxRateLabel ?? '—'} (${record.taxRatePercent ?? 0}%)`;
+      },
     },
     {
       title: 'Popust %',
@@ -334,6 +338,15 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
       <Form.Item name='description' hidden>
         <input type='hidden' />
       </Form.Item>
+      <Form.Item name='taxRateId' hidden>
+        <input type='hidden' />
+      </Form.Item>
+      <Form.Item name='taxRateLabel' hidden>
+        <input type='hidden' />
+      </Form.Item>
+      <Form.Item name='taxRatePercent' hidden>
+        <input type='hidden' />
+      </Form.Item>
 
       <div
         style={{
@@ -368,9 +381,14 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
                   description: '',
                   quantity: 1,
                   unitPrice: 0,
-                  taxRate: 20,
+                  taxRateId: '',
+                  taxRateLabel: '',
+                  taxRatePercent: 0,
                   discountPercent: 0,
                   lineTotal: 0,
+                  sortOrder: 0,
+                  createdAt: '',
+                  updatedAt: '',
                 } as InvoiceItem,
               ]
             : []),

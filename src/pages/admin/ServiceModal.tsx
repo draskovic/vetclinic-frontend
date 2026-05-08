@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { servicesApi, serviceInventoryItemsApi, inventoryItemsApi } from '@/api';
+import { servicesApi, serviceInventoryItemsApi, inventoryItemsApi, taxRatesApi } from '@/api';
 import type {
   Service,
   CreateServiceRequest,
@@ -72,6 +72,11 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
     queryFn: () => inventoryItemsApi.getAll(0, 20, debouncedItemSearch || undefined),
   });
 
+  const { data: taxRates } = useQuery({
+    queryKey: ['tax-rates', 'RS'],
+    queryFn: () => taxRatesApi.getAll('RS'),
+  });
+
   const inventoryOptions = useMemo(
     () =>
       inventoryData?.data?.content.map((i) => ({
@@ -120,7 +125,7 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
         form.setFieldsValue(service);
       } else {
         form.resetFields();
-        form.setFieldsValue({ taxRate: 20, active: true });
+        form.setFieldsValue({ active: true });
       }
     }
   }, [open, service, form]);
@@ -212,11 +217,18 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
           </Col>
           <Col span={8}>
             <Form.Item
-              name='taxRate'
-              label='PDV stopa (%)'
-              rules={[{ required: true, message: 'Unesite PDV' }]}
+              name='taxRateId'
+              label='Poreska stopa'
+              tooltip='Ako se ne izabere, sistem koristi default stopu klinike (Ђ za PDV obveznika, А za neobveznika).'
             >
-              <InputNumber min={0} max={100} precision={2} style={{ width: '100%' }} />
+              <Select
+                placeholder='Default stopa klinike'
+                allowClear
+                options={(taxRates ?? []).map((tr) => ({
+                  value: tr.id,
+                  label: `${tr.label} — ${tr.percent}% (${tr.description})`,
+                }))}
+              />
             </Form.Item>
           </Col>
           <Col span={8}>

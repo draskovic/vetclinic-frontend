@@ -21,30 +21,13 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import type { MedicationAdministration, MedicationRoute, InventoryItem } from '@/types';
 import dayjs from 'dayjs';
+import { ROUTE_OPTIONS, ROUTE_LABEL } from '@/constants/medicationRoutes';
 
 interface AdministeredMedicationItemsTableProps {
   medicalRecordId: string | null;
   petId: string;
   vetId: string;
 }
-
-const ROUTE_OPTIONS: { value: MedicationRoute; label: string }[] = [
-  { value: 'IV', label: 'IV — intravenozno' },
-  { value: 'IM', label: 'IM — intramuskularno' },
-  { value: 'SC', label: 'SC — subkutano' },
-  { value: 'PO', label: 'PO — oralno' },
-  { value: 'TOPICAL', label: 'Lokalno' },
-  { value: 'INHALATION', label: 'Inhalaciono' },
-];
-
-const ROUTE_LABEL: Record<MedicationRoute, string> = {
-  IV: 'IV',
-  IM: 'IM',
-  SC: 'SC',
-  PO: 'PO',
-  TOPICAL: 'Lokalno',
-  INHALATION: 'Inhal.',
-};
 
 export default function AdministeredMedicationItemsTable({
   medicalRecordId,

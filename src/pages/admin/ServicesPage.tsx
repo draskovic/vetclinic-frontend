@@ -99,11 +99,12 @@ export default function ServicesPage() {
       render: (val: number) => `${val.toFixed(2)} RSD`,
     },
     {
-      title: 'PDV %',
-      dataIndex: 'taxRate',
-      width: 80,
+      title: 'PDV',
+      dataIndex: 'taxRateLabel',
+      width: 110,
       align: 'right',
-      render: (val: number) => `${val}%`,
+      render: (label: string | null, record) =>
+        label ? `${label} (${record.taxRatePercent}%)` : '—',
     },
     {
       title: 'Trajanje',
