@@ -422,6 +422,7 @@ export interface Invoice {
   note: string | null;
   createdAt: string;
   updatedAt: string;
+  version?: number;
 }
 
 export interface CreateInvoiceRequest {
@@ -440,6 +441,14 @@ export interface CreateInvoiceRequest {
   note?: string;
 }
 
+export interface CreateInvoiceFromMedicalRecordRequest {
+  locationId?: string;
+  issuedAt?: string; // ISO8601
+  dueDate?: string; // YYYY-MM-DD
+  currency?: string;
+  note?: string;
+}
+
 export interface UpdateInvoiceRequest {
   appointmentId?: string | null;
   ownerId?: string;
@@ -453,6 +462,11 @@ export interface UpdateInvoiceRequest {
   total?: number;
   currency?: string;
   note?: string;
+}
+
+export interface InvoiceWithItemsResponse {
+  invoice: Invoice;
+  items: InvoiceItem[];
 }
 
 export interface InvoiceItem {

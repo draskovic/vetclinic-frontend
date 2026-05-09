@@ -7,6 +7,8 @@ import type {
   CreateInvoiceItemRequest,
   UpdateInvoiceItemRequest,
   PageResponse,
+  CreateInvoiceFromMedicalRecordRequest,
+  InvoiceWithItemsResponse,
 } from '@/types';
 import type { InvoiceStatus } from '@/types';
 
@@ -34,6 +36,12 @@ export const invoicesApi = {
 
   getByMedicalRecord: (medicalRecordId: string) =>
     apiClient.get<Invoice>(`/invoices/by-medical-record/${medicalRecordId}`),
+
+  createFromMedicalRecord: (medicalRecordId: string, data: CreateInvoiceFromMedicalRecordRequest) =>
+    apiClient.post<InvoiceWithItemsResponse>(
+      `/invoices/from-medical-record/${medicalRecordId}`,
+      data,
+    ),
 };
 
 export const invoiceItemsApi = {

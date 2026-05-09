@@ -17,13 +17,15 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invoicesApi } from '@/api/invoices';
 import { ownersApi } from '@/api/owners';
 import { clinicLocationsApi } from '@/api/clinic-locations';
-import type { Invoice, CreateInvoiceRequest, UpdateInvoiceRequest } from '@/types';
+import type {
+  Invoice,
+  CreateInvoiceRequest,
+  UpdateInvoiceRequest,
+  CreateInvoiceFromMedicalRecordRequest,
+} from '@/types';
 import InvoiceItemsTable from './InvoiceItemsTable';
 import dayjs from 'dayjs';
 import PaymentItemsTable from './PaymentItemsTable';
-import { treatmentsApi } from '@/api/treatments';
-import { servicesApi } from '@/api/services';
-import { invoiceItemsApi } from '@/api/invoices';
 import { paymentsApi } from '@/api/payments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { FilePdfOutlined } from '@ant-design/icons';
@@ -45,7 +47,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const [createdInvoice, setCreatedInvoice] = useState<Invoice | null>(null);
-  const [autoItemsTriggered, setAutoItemsTriggered] = useState(false);
+
   const [paidImmediately, setPaidImmediately] = useState(false);
   const [ownerSearch, setOwnerSearch] = useState('');
   const debouncedOwnerSearch = useDebouncedValue(ownerSearch, 300);
@@ -97,6 +99,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
     }
   }, [open, invoice, form]);
 
+  // Standardna kreacija — koristi se kad NEMA medicalRecordId u defaultValues
   const createMutation = useMutation({
     mutationFn: (data: CreateInvoiceRequest) => invoicesApi.create(data),
     onSuccess: (response) => {
@@ -104,71 +107,33 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
       queryClient.invalidateQueries({ queryKey: ['invoices'] });
       setCreatedInvoice(response.data);
     },
+    onError: () => message.error('Greška pri kreiranju!'),
+  });
+
+  // Atomska kreacija iz medical record-a — kreira invoice + sve stavke u 1 API pozivu
+  const createFromRecordMutation = useMutation({
+    mutationFn: (data: CreateInvoiceFromMedicalRecordRequest) =>
+      invoicesApi.createFromMedicalRecord(defaultValues!.medicalRecordId!, data),
+    onSuccess: (response) => {
+      const { invoice, items } = response.data;
+      message.success('Faktura je kreirana!');
+      queryClient.invalidateQueries({ queryKey: ['invoices'] });
+      queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] });
+      // Pre-popuni cache stavkama → InvoiceItemsTable se montira sa već popunjenim podacima, bez GET-a
+      queryClient.setQueryData(['invoice-items', invoice.id], items);
+      setCreatedInvoice(invoice);
+    },
     onError: (error: any) => {
-      const msg = error?.response?.data?.message || '';
-      if (msg.includes('uq_invoice_medical_record_id')) {
+      const status = error?.response?.status;
+      if (status === 409) {
         message.warning('Za ovu intervenciju već postoji faktura!');
       } else {
         message.error('Greška pri kreiranju!');
       }
     },
   });
+
   // Auto-kreiranje stavki PO mountovanju InvoiceItemsTable (kad createdInvoice postane non-null)
-  useEffect(() => {
-    if (!createdInvoice || autoItemsTriggered || !defaultValues?.medicalRecordId) return;
-    setAutoItemsTriggered(true);
-
-    (async () => {
-      try {
-        const treatmentsRes = await treatmentsApi.getByMedicalRecord(
-          defaultValues.medicalRecordId!,
-        );
-        const treatments = treatmentsRes.data;
-
-        for (let i = 0; i < treatments.length; i++) {
-          const t = treatments[i];
-          if (t.serviceId) {
-            const service = await servicesApi.getById(t.serviceId);
-            const quantity = 1;
-            const unitPrice = service.price;
-            const taxPercent = service.taxRatePercent ?? 0;
-            const lineTotal = quantity * unitPrice * (1 + taxPercent / 100);
-
-            await invoiceItemsApi.create({
-              invoiceId: createdInvoice.id,
-              serviceId: t.serviceId,
-              description: t.name,
-              quantity,
-              unitPrice,
-              taxRateId: service.taxRateId,
-              discountPercent: 0,
-              lineTotal: +lineTotal.toFixed(2),
-              sortOrder: i + 1,
-            });
-          }
-        }
-
-        // InvoiceItemsTable je sada montiran i subscribed - invalidate trigguje refetch
-        await queryClient.invalidateQueries({
-          queryKey: ['invoice-items', createdInvoice.id],
-        });
-
-        // Osveži totale fakture
-        const freshInvoiceRes = await invoicesApi.getById(createdInvoice.id);
-        setCreatedInvoice(freshInvoiceRes.data);
-      } catch (e) {
-        message.warning('Stavke fakture nisu automatski dodate');
-      }
-    })();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [createdInvoice?.id]);
-
-  // Reset autoItemsTriggered kad se modal zatvori
-  useEffect(() => {
-    if (!open) {
-      setAutoItemsTriggered(false);
-    }
-  }, [open]);
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateInvoiceRequest) => invoicesApi.update(currentInvoice!.id, data),
@@ -194,9 +159,12 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
       ...(!isEditing && defaultValues?.medicalRecordId
         ? { medicalRecordId: defaultValues.medicalRecordId }
         : {}),
+      ...(isEditing && currentInvoice?.version != null ? { version: currentInvoice.version } : {}),
     };
 
     if (isEditing) {
+      let payloadVersion = currentInvoice?.version;
+
       if (paidImmediately) {
         const paymentMethod = form.getFieldValue('paymentMethod') || 'CASH';
         try {
@@ -212,29 +180,55 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
             await paymentsApi.create({
               invoiceId: freshInvoice.id,
               amount: remaining,
-
               method: paymentMethod,
               paidAt: dayjs().toISOString(),
               referenceNumber: freshInvoice.invoiceNumber,
             });
             message.success('Plaćanje evidentirano!');
-            // Da se ne bi ponovilo plaćanje kod sledećeg otvaranja fakture.
             setPaidImmediately(false);
             queryClient.invalidateQueries({ queryKey: ['payments', currentInvoice!.id] });
             queryClient.invalidateQueries({ queryKey: ['invoices'] });
             queryClient.invalidateQueries({ queryKey: ['invoice-by-record'] });
+
+            // Plaćanje je promenilo version fakture na backend-u (status PAID + ++version).
+            // Refetch da bismo izbegli optimistic-lock konflikt pri update-u.
+            try {
+              const refreshed = await invoicesApi.getById(currentInvoice!.id);
+              payloadVersion = refreshed.data.version;
+            } catch {
+              // ignore — fallback na stari version, backend će vratiti 409 ako se desio konflikt
+            }
           }
         } catch (e) {
           message.warning('Plaćanje nije evidentirano. Dodajte ručno u tab Plaćanja.');
         }
       }
-      updateMutation.mutate(payload);
+
+      // Recompute payload sa svežim version-om
+      const finalPayload = {
+        ...payload,
+        ...(payloadVersion != null ? { version: payloadVersion } : {}),
+      };
+
+      updateMutation.mutate(finalPayload);
     } else {
-      createMutation.mutate(payload);
+      // Bira mutaciju u zavisnosti od konteksta
+      if (defaultValues?.medicalRecordId) {
+        createFromRecordMutation.mutate({
+          locationId: payload.locationId,
+          issuedAt: payload.issuedAt,
+          dueDate: payload.dueDate,
+          currency: payload.currency,
+          note: payload.note,
+        });
+      } else {
+        createMutation.mutate(payload);
+      }
     }
   };
 
-  const isLoading = createMutation.isPending || updateMutation.isPending;
+  const isLoading =
+    createMutation.isPending || createFromRecordMutation.isPending || updateMutation.isPending;
 
   const ownerOptions = (() => {
     const list =
