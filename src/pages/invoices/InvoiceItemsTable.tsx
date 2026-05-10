@@ -9,6 +9,7 @@ import {
   Select,
   Form,
   Typography,
+  Tooltip,
 } from 'antd';
 import {
   PlusOutlined,
@@ -26,9 +27,10 @@ import type { ColumnsType } from 'antd/es/table';
 interface Props {
   invoiceId: string;
   onItemsChanged?: (items: InvoiceItem[]) => void;
+  readOnly?: boolean; // ← DODAJ
 }
 
-export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) {
+export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly = false }: Props) {
   const [form] = Form.useForm();
   const [editingId, setEditingId] = useState<string | null>(null);
   const [adding, setAdding] = useState(false);
@@ -311,20 +313,28 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
           </Space>
         ) : (
           <Space>
-            <Button
-              icon={<EditOutlined />}
-              size='small'
-              onClick={() => startEditing(record)}
-              disabled={adding || !!editingId}
-            />
-            <Popconfirm title='Obrisati stavku?' onConfirm={() => deleteMutation.mutate(record.id)}>
+            <Tooltip title={readOnly ? 'Faktura je zaključena — stavke se ne mogu menjati' : ''}>
               <Button
-                icon={<DeleteOutlined />}
+                icon={<EditOutlined />}
                 size='small'
-                danger
-                disabled={adding || !!editingId}
+                onClick={() => startEditing(record)}
+                disabled={readOnly || adding || !!editingId}
               />
-            </Popconfirm>
+            </Tooltip>
+            <Tooltip title={readOnly ? 'Faktura je zaključena — stavke se ne mogu menjati' : ''}>
+              <Popconfirm
+                title='Obrisati stavku?'
+                onConfirm={() => deleteMutation.mutate(record.id)}
+                disabled={readOnly}
+              >
+                <Button
+                  icon={<DeleteOutlined />}
+                  size='small'
+                  danger
+                  disabled={readOnly || adding || !!editingId}
+                />
+              </Popconfirm>
+            </Tooltip>
           </Space>
         ),
     },
@@ -357,14 +367,16 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged }: Props) 
         }}
       >
         <Typography.Text strong>Stavke fakture</Typography.Text>
-        <Button
-          size='small'
-          icon={<PlusOutlined />}
-          onClick={startAdding}
-          disabled={adding || !!editingId}
-        >
-          Dodaj stavku
-        </Button>
+        {!readOnly && (
+          <Button
+            size='small'
+            icon={<PlusOutlined />}
+            onClick={startAdding}
+            disabled={adding || !!editingId}
+          >
+            Dodaj stavku
+          </Button>
+        )}
       </div>
 
       <Table

@@ -58,6 +58,8 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
 
   const isEditing = !!currentInvoice;
 
+  const itemsLocked = ['PAID', 'CANCELLED', 'REFUNDED'].includes(currentInvoice?.status ?? '');
+
   const { data: ownersData } = useQuery({
     queryKey: ['owners-search', debouncedOwnerSearch],
     queryFn: () => ownersApi.getAll(0, 20, debouncedOwnerSearch || undefined).then((r) => r.data),
@@ -396,6 +398,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                 children: (
                   <InvoiceItemsTable
                     invoiceId={currentInvoice!.id}
+                    readOnly={itemsLocked}
                     onItemsChanged={async () => {
                       // Backend automatski preračunava totals
                       // Refetch fakturu da dobijemo ažurirane iznose

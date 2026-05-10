@@ -416,7 +416,11 @@ export default function InventoryItemDetailPage() {
                 </Button>
                 <Popconfirm
                   title='Obrisati lot?'
-                  description='Lot mora biti prazan da bi se mogao obrisati.'
+                  description={
+                    record.quantityOnHand > 0
+                      ? `Lot ima količinu ${record.quantityOnHand} — prvo skinuti sa lagera.`
+                      : 'Lot je prazan. Da li ste sigurni da želite obrisati?'
+                  }
                   onConfirm={() => deleteBatchMutation.mutate(record.id)}
                   okText='Da'
                   cancelText='Ne'
