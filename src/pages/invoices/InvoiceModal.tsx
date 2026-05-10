@@ -400,8 +400,6 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                     invoiceId={currentInvoice!.id}
                     readOnly={itemsLocked}
                     onItemsChanged={async () => {
-                      // Backend automatski preračunava totals
-                      // Refetch fakturu da dobijemo ažurirane iznose
                       try {
                         const res = await invoicesApi.getById(currentInvoice!.id);
                         const inv = res.data;
@@ -411,6 +409,8 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                           discountAmount: inv.discountAmount,
                           total: inv.total,
                         });
+                        // Ažuriraj createdInvoice da svež version dođe u sledeći update payload
+                        setCreatedInvoice(inv);
                       } catch (e) {
                         // ignore
                       }
@@ -437,6 +437,8 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                           discountAmount: inv.discountAmount,
                           total: inv.total,
                         });
+                        // Ažuriraj createdInvoice da svež version dođe u sledeći update payload
+                        setCreatedInvoice(inv);
                       } catch (e) {
                         // ignore
                       }
