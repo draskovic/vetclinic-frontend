@@ -567,7 +567,7 @@ export interface CreateInventoryItemRequest {
   expiryDate?: string | null;
   active?: boolean;
   trackBatches?: boolean;
-  taxRateId: string; // ← NOVO obavezno
+  taxRateId?: string; // ← NOVO obavezno
   initialQuantity?: number;
 }
 
