@@ -185,15 +185,16 @@ export default function BreedPage() {
           }}
         />
       </Card>
-
-      <BreedModal
-        open={modalOpen}
-        breed={editingBreed}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingBreed(null);
-        }}
-      />
+      {modalOpen && (
+        <BreedModal
+          open={modalOpen}
+          breed={editingBreed}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingBreed(null);
+          }}
+        />
+      )}
     </div>
   );
 }

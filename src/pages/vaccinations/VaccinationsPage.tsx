@@ -187,14 +187,16 @@ export default function VaccinationsPage() {
         />
       </Card>
 
-      <VaccinationModal
-        open={modalOpen}
-        vaccination={editingVaccination}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingVaccination(null);
-        }}
-      />
+      {modalOpen && (
+        <VaccinationModal
+          open={modalOpen}
+          vaccination={editingVaccination}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingVaccination(null);
+          }}
+        />
+      )}
     </div>
   );
 }

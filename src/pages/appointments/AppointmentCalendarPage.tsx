@@ -344,12 +344,14 @@ const AppointmentCalendarPage = () => {
       </Card>
 
       {/* Reuse postojećeg AppointmentModal */}
-      <AppointmentModal
-        open={modalOpen}
-        appointment={editingAppointment}
-        onClose={handleModalClose}
-        initialDates={selectedDates}
-      />
+      {modalOpen && (
+        <AppointmentModal
+          open={modalOpen}
+          appointment={editingAppointment}
+          onClose={handleModalClose}
+          initialDates={selectedDates}
+        />
+      )}
     </div>
   );
 };

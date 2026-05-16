@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { useSearchParams } from 'react-router-dom';
+
 import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
 import {
   PlusOutlined,
@@ -16,6 +16,7 @@ import dayjs from 'dayjs';
 import MedicalRecordModal from './MedicalRecordModal';
 import MedicalRecordEditor from './MedicalRecordEditor';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useSearchFromUrl } from '@/hooks/useSearchFromUrl';
 import InvoiceModal from '../invoices/InvoiceModal';
 import { invoicesApi } from '@/api';
 import type { MedicalRecord, Invoice } from '@/types';
@@ -27,15 +28,7 @@ export default function MedicalRecordsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get('search') || '');
-
-  // Očisti URL parametar posle inicijalizacije
-  useEffect(() => {
-    if (searchParams.has('search')) {
-      setSearchParams({}, { replace: true });
-    }
-  }, []);
+  const [search, setSearch] = useSearchFromUrl();
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingRecord, setEditingRecord] = useState<MedicalRecord | null>(null);
@@ -308,25 +301,28 @@ export default function MedicalRecordsPage() {
           }}
         />
       </Card>
-
-      <MedicalRecordModal
-        open={modalOpen}
-        record={editingRecord}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingRecord(null);
-        }}
-      />
-      <InvoiceModal
-        open={invoiceModalOpen}
-        invoice={existingInvoice}
-        onClose={() => {
-          setInvoiceModalOpen(false);
-          setInvoiceDefaults(undefined);
-          setExistingInvoice(null);
-        }}
-        defaultValues={invoiceDefaults}
-      />
+      {modalOpen && (
+        <MedicalRecordModal
+          open={modalOpen}
+          record={editingRecord}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingRecord(null);
+          }}
+        />
+      )}
+      {invoiceModalOpen && (
+        <InvoiceModal
+          open={invoiceModalOpen}
+          invoice={existingInvoice}
+          onClose={() => {
+            setInvoiceModalOpen(false);
+            setInvoiceDefaults(undefined);
+            setExistingInvoice(null);
+          }}
+          defaultValues={invoiceDefaults}
+        />
+      )}
     </div>
   );
 }

@@ -169,17 +169,19 @@ export default function LabReportItemsTable({ medicalRecordId, petId }: LabRepor
           </Button>
         )}
       />
-      <LabReportModal
-        open={modalOpen}
-        labReport={editingReport}
-        medicalRecordId={medicalRecordId}
-        petId={petId}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingReport(null);
-          refetch();
-        }}
-      />
+      {modalOpen && (
+        <LabReportModal
+          open={modalOpen}
+          labReport={editingReport}
+          medicalRecordId={medicalRecordId}
+          petId={petId}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingReport(null);
+            refetch();
+          }}
+        />
+      )}
     </div>
   );
 }

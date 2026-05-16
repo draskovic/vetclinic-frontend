@@ -8,13 +8,14 @@ import type { Owner } from '@/types';
 import OwnerModal from './OwnerModal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useNavigate } from 'react-router-dom';
+import { useSearchFromUrl } from '@/hooks/useSearchFromUrl';
 
 const { Title } = Typography;
 
 export default function OwnersPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useSearchFromUrl();
   const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingOwner, setEditingOwner] = useState<Owner | null>(null);
@@ -173,7 +174,7 @@ export default function OwnersPage() {
         />
       </Card>
 
-      <OwnerModal open={modalOpen} owner={editingOwner} onClose={handleModalClose} />
+      {modalOpen && <OwnerModal open={modalOpen} owner={editingOwner} onClose={handleModalClose} />}
     </div>
   );
 }

@@ -241,14 +241,16 @@ export default function InventoryPage() {
           }}
         />
       </Card>
-      <InventoryItemModal
-        open={modalOpen}
-        item={editing}
-        onClose={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-      />
+      {modalOpen && (
+        <InventoryItemModal
+          open={modalOpen}
+          item={editing}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

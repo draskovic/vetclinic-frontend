@@ -730,18 +730,20 @@ export default function MedicalRecordEditor({
         </Form.Item>
       </Form>
 
-      <InvoiceModal
-        open={invoiceModalOpen}
-        invoice={linkedInvoice ?? null}
-        onClose={() => {
-          setInvoiceModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['invoice-by-record', currentRecord?.id] });
-        }}
-        defaultValues={{
-          ownerId: currentRecord?.ownerId,
-          medicalRecordId: currentRecord?.id,
-        }}
-      />
+      {invoiceModalOpen && (
+        <InvoiceModal
+          open={invoiceModalOpen}
+          invoice={linkedInvoice ?? null}
+          onClose={() => {
+            setInvoiceModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['invoice-by-record', currentRecord?.id] });
+          }}
+          defaultValues={{
+            ownerId: currentRecord?.ownerId,
+            medicalRecordId: currentRecord?.id,
+          }}
+        />
+      )}
     </>
   );
 }

@@ -190,6 +190,17 @@ export default function CommandPalette({ open: externalOpen, onOpenChange }: Com
                     {p.ownerName && <span className='cmd-meta'> — {p.ownerName}</span>}
                   </Command.Item>
                 ))}
+                {pets && pets.totalElements > pets.content.length && (
+                  <Command.Item
+                    value='see-all-pets'
+                    onSelect={() => {
+                      navigate(`/pets?search=${encodeURIComponent(debouncedSearch)}`);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className='cmd-meta'>Pokaži sve {pets.totalElements} pacijenata →</span>
+                  </Command.Item>
+                )}
               </Command.Group>
             )}
 
@@ -215,6 +226,17 @@ export default function CommandPalette({ open: externalOpen, onOpenChange }: Com
                     {o.phone && <span className='cmd-meta'> — {o.phone}</span>}
                   </Command.Item>
                 ))}
+                {owners && owners.totalElements > owners.content.length && (
+                  <Command.Item
+                    value='see-all-owners'
+                    onSelect={() => {
+                      navigate(`/owners?search=${encodeURIComponent(debouncedSearch)}`);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className='cmd-meta'>Pokaži sve {owners.totalElements} vlasnika →</span>
+                  </Command.Item>
+                )}
               </Command.Group>
             )}
 
@@ -246,6 +268,19 @@ export default function CommandPalette({ open: externalOpen, onOpenChange }: Com
                     )}
                   </Command.Item>
                 ))}
+                {records && records.totalElements > records.content.length && (
+                  <Command.Item
+                    value='see-all-records'
+                    onSelect={() => {
+                      navigate(`/medical-records?search=${encodeURIComponent(debouncedSearch)}`);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className='cmd-meta'>
+                      Pokaži sve {records.totalElements} intervencija →
+                    </span>
+                  </Command.Item>
+                )}
               </Command.Group>
             )}
 
@@ -274,6 +309,17 @@ export default function CommandPalette({ open: externalOpen, onOpenChange }: Com
                     </span>
                   </Command.Item>
                 ))}
+                {invoices && invoices.totalElements > invoices.content.length && (
+                  <Command.Item
+                    value='see-all-invoices'
+                    onSelect={() => {
+                      navigate(`/invoices?search=${encodeURIComponent(debouncedSearch)}`);
+                      setOpen(false);
+                    }}
+                  >
+                    <span className='cmd-meta'>Pokaži sve {invoices.totalElements} faktura →</span>
+                  </Command.Item>
+                )}
               </Command.Group>
             )}
 

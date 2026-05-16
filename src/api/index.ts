@@ -28,3 +28,4 @@ export { treatmentProtocolsApi, treatmentProtocolItemsApi } from './treatment-pr
 export { bookingSettingsApi } from './booking-settings';
 export { medicationAdministrationsApi } from './medication-administrations';
 export { taxRatesApi } from './tax-rates';
+export { quickSaleApi } from './quick-sale';

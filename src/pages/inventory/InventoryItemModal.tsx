@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { Modal, Form, Input, InputNumber, Select, DatePicker, Switch, message } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { inventoryItemsApi } from '../../api';
+import { inventoryItemsApi, taxRatesApi } from '../../api';
 import { clinicLocationsApi } from '../../api/clinic-locations';
 import type {
   InventoryItem,
@@ -25,6 +25,11 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
   const { data: locations } = useQuery({
     queryKey: ['clinic-locations'],
     queryFn: () => clinicLocationsApi.getActive().then((r) => r.data),
+  });
+
+  const { data: taxRates } = useQuery({
+    queryKey: ['tax-rates', 'RS'],
+    queryFn: () => taxRatesApi.getAll('RS'),
   });
 
   const createMutation = useMutation({
@@ -148,13 +153,28 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
           </Form.Item>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
           <Form.Item name='costPrice' label='Nabavna cena'>
             <InputNumber style={{ width: '100%' }} min={0} precision={2} />
           </Form.Item>
 
           <Form.Item name='sellPrice' label='Prodajna cena'>
             <InputNumber style={{ width: '100%' }} min={0} precision={2} />
+          </Form.Item>
+
+          <Form.Item
+            name='taxRateId'
+            label='PDV stopa'
+            rules={[{ required: true, message: 'Izaberite PDV stopu' }]}
+            tooltip='Stopa se koristi pri prodaji artikla (Quick Sale ili faktura). Za PDV obveznika default je Ђ (20%), za neobveznika А (0%).'
+          >
+            <Select
+              placeholder='Izaberi stopu'
+              options={(taxRates ?? []).map((tr) => ({
+                value: tr.id,
+                label: `${tr.label} — ${tr.percent}%`,
+              }))}
+            />
           </Form.Item>
         </div>
 

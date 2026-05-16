@@ -19,6 +19,7 @@ import UsersPage from '@/pages/admin/UsersPage';
 import RolesPage from '@/pages/admin/RolesPage';
 import PermissionGuard from '@/components/PermissionGuard';
 import InvoicesPage from '@/pages/invoices/InvoicesPage';
+import QuickSalePage from './pages/quick-sale/QuickSalePage';
 import InventoryPage from './pages/inventory/InventoryPage';
 import InventoryTransactionsPage from './pages/inventory/InventoryTransactionsPage';
 import ServicesPage from '@/pages/admin/ServicesPage';
@@ -189,6 +190,14 @@ export default function App() {
                       }
                     />
 
+                    <Route
+                      path='quick-sale'
+                      element={
+                        <PermissionGuard permission='manage_invoices'>
+                          <QuickSalePage />
+                        </PermissionGuard>
+                      }
+                    />
                     <Route
                       path='invoices'
                       element={

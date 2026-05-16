@@ -711,33 +711,39 @@ export default function PetProfilePage() {
           petName={pet.name}
         />
       )}
-      <MedicalRecordModal
-        open={recordModalOpen}
-        record={selectedRecord}
-        onClose={() => {
-          setRecordModalOpen(false);
-          setSelectedRecord(null);
-        }}
-        defaultValues={{ petId: petId, vetId: user?.id }}
-      />
-      <VaccinationModal
-        open={vaccinationModalOpen}
-        vaccination={null}
-        onClose={() => {
-          setVaccinationModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['vaccinations', 'by-pet', petId] });
-        }}
-        defaultValues={{ petId: petId, vetId: user?.id }}
-      />
-      <LabReportModal
-        open={labReportModalOpen}
-        labReport={null}
-        onClose={() => {
-          setLabReportModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['lab-reports', 'by-pet', petId] });
-        }}
-        petId={petId}
-      />
+      {recordModalOpen && (
+        <MedicalRecordModal
+          open={recordModalOpen}
+          record={selectedRecord}
+          onClose={() => {
+            setRecordModalOpen(false);
+            setSelectedRecord(null);
+          }}
+          defaultValues={{ petId: petId, vetId: user?.id }}
+        />
+      )}
+      {vaccinationModalOpen && (
+        <VaccinationModal
+          open={vaccinationModalOpen}
+          vaccination={null}
+          onClose={() => {
+            setVaccinationModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['vaccinations', 'by-pet', petId] });
+          }}
+          defaultValues={{ petId: petId, vetId: user?.id }}
+        />
+      )}
+      {labReportModalOpen && (
+        <LabReportModal
+          open={labReportModalOpen}
+          labReport={null}
+          onClose={() => {
+            setLabReportModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['lab-reports', 'by-pet', petId] });
+          }}
+          petId={petId}
+        />
+      )}
     </div>
   );
 }

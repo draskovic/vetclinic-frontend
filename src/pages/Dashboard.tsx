@@ -11,6 +11,7 @@ import {
   InboxOutlined,
   PlayCircleOutlined,
   FolderOpenOutlined,
+  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useAuthStore } from '@/store/authStore';
@@ -487,6 +488,15 @@ export default function Dashboard() {
 
       <Row style={{ marginBottom: 16 }}>
         <Space>
+          <Button
+            type='primary'
+            size='large'
+            icon={<ShoppingCartOutlined />}
+            style={{ backgroundColor: '#22c55e', borderColor: '#22c55e' }}
+            onClick={() => navigate('/quick-sale')}
+          >
+            Brza prodaja
+          </Button>
           <Button type='primary' icon={<CalendarOutlined />} onClick={() => navigate('/calendar')}>
             Novi termin
           </Button>
@@ -902,27 +912,27 @@ export default function Dashboard() {
           </Col>
         </Row>
       )}
-
-      <MedicalRecordModal
-        open={medicalRecordModalOpen}
-        record={startedRecord}
-        onClose={() => {
-          setMedicalRecordModalOpen(false);
-          setSelectedAppointment(null);
-          setStartedRecord(null);
-        }}
-        defaultValues={
-          selectedAppointment
-            ? {
-                petId: selectedAppointment.petId,
-                vetId: selectedAppointment.vetId,
-                appointmentId: selectedAppointment.id,
-                symptoms: selectedAppointment.reason || '',
-              }
-            : undefined
-        }
-      />
-
+      {medicalRecordModalOpen && (
+        <MedicalRecordModal
+          open={medicalRecordModalOpen}
+          record={startedRecord}
+          onClose={() => {
+            setMedicalRecordModalOpen(false);
+            setSelectedAppointment(null);
+            setStartedRecord(null);
+          }}
+          defaultValues={
+            selectedAppointment
+              ? {
+                  petId: selectedAppointment.petId,
+                  vetId: selectedAppointment.vetId,
+                  appointmentId: selectedAppointment.id,
+                  symptoms: selectedAppointment.reason || '',
+                }
+              : undefined
+          }
+        />
+      )}
       <NewPatientModal open={newPatientModalOpen} onClose={() => setNewPatientModalOpen(false)} />
     </div>
   );

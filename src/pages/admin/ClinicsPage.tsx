@@ -172,15 +172,16 @@ export default function ClinicsPage() {
           }}
         />
       </Card>
-
-      <ClinicModal
-        open={modalOpen}
-        clinic={editingClinic}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingClinic(null);
-        }}
-      />
+      {modalOpen && (
+        <ClinicModal
+          open={modalOpen}
+          clinic={editingClinic}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingClinic(null);
+          }}
+        />
+      )}
     </div>
   );
 }

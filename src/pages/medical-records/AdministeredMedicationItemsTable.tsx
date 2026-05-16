@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -14,7 +14,14 @@ import {
   AutoComplete,
   Select,
 } from 'antd';
-import { PlusOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  SaveOutlined,
+  CloseOutlined,
+  ThunderboltOutlined,
+  EditOutlined,
+} from '@ant-design/icons';
 import { medicationAdministrationsApi } from '@/api/medication-administrations';
 import { inventoryItemsApi } from '@/api/inventory';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -22,6 +29,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import type { MedicationAdministration, MedicationRoute, InventoryItem } from '@/types';
 import dayjs from 'dayjs';
 import { ROUTE_OPTIONS, ROUTE_LABEL } from '@/constants/medicationRoutes';
+import BulkAdministerMedicationsModal from './BulkAdministerMedicationsModal';
 
 interface AdministeredMedicationItemsTableProps {
   medicalRecordId: string | null;
@@ -36,6 +44,8 @@ export default function AdministeredMedicationItemsTable({
 }: AdministeredMedicationItemsTableProps) {
   const [items, setItems] = useState<MedicationAdministration[]>([]);
   const [adding, setAdding] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [bulkOpen, setBulkOpen] = useState(false);
   const [medicationName, setMedicationName] = useState('');
   const [dosage, setDosage] = useState('');
   const [route, setRoute] = useState<MedicationRoute | null>(null);
@@ -66,6 +76,18 @@ export default function AdministeredMedicationItemsTable({
     }
   }, [itemsData]);
 
+  const sortedItems = useMemo(
+    () =>
+      [...items].sort((a, b) => {
+        // Primarno: datum primene DESC (najnoviji prvo)
+        const dateCmp = b.administeredDate.localeCompare(a.administeredDate);
+        if (dateCmp !== 0) return dateCmp;
+        // Tie-breaker: createdAt ASC (hronološki redosled unosa)
+        return a.createdAt.localeCompare(b.createdAt);
+      }),
+    [items],
+  );
+
   const resetForm = () => {
     setMedicationName('');
     setDosage('');
@@ -74,28 +96,49 @@ export default function AdministeredMedicationItemsTable({
     setInstructions('');
     setMedicationSearch('');
     setInventoryItemId(null);
+    setEditingId(null);
     setAdding(false);
   };
 
-  const createMutation = useMutation({
-    mutationFn: () =>
-      medicationAdministrationsApi.create({
+  const handleStartEdit = (record: MedicationAdministration) => {
+    setMedicationName(record.medicationName);
+    setDosage(record.dosage ?? '');
+    setRoute(record.route);
+    setAdministeredDate(dayjs(record.administeredDate));
+    setInstructions(record.instructions ?? '');
+    setInventoryItemId(record.inventoryItemId);
+    setMedicationSearch(record.medicationName);
+    setEditingId(record.id);
+    setAdding(true);
+  };
+
+  const saveMutation = useMutation({
+    mutationFn: () => {
+      const payload = {
+        medicationName,
+        dosage: dosage.trim() || null,
+        route: route,
+        administeredDate: administeredDate.format('YYYY-MM-DD'),
+        instructions: instructions.trim() || null,
+        inventoryItemId: inventoryItemId,
+      };
+      console.log('[saveMutation] editingId:', editingId, 'payload:', payload); // ← privremeno
+      if (editingId) {
+        return medicationAdministrationsApi.update(editingId, payload);
+      }
+      return medicationAdministrationsApi.create({
         medicalRecordId: medicalRecordId!,
         petId,
         vetId,
-        medicationName,
-        dosage,
-        route: route ?? undefined,
-        administeredDate: administeredDate.format('YYYY-MM-DD'),
-        instructions: instructions || undefined,
-        inventoryItemId: inventoryItemId ?? undefined,
-      }),
+        ...payload,
+      });
+    },
     onSuccess: () => {
-      message.success('Lek evidentiran!');
+      message.success(editingId ? 'Izmene sačuvane!' : 'Lek evidentiran!');
       resetForm();
       refetch();
     },
-    onError: () => message.error('Greška pri evidentiranju leka!'),
+    onError: () => message.error('Greška pri snimanju!'),
   });
 
   const deleteMutation = useMutation({
@@ -114,7 +157,7 @@ export default function AdministeredMedicationItemsTable({
     setInventoryItemId(matched?.id ?? null);
   };
 
-  const isFormValid = medicationName.trim() && dosage.trim() && administeredDate;
+  const isFormValid = medicationName.trim() && administeredDate;
 
   if (!medicalRecordId) {
     return (
@@ -127,13 +170,18 @@ export default function AdministeredMedicationItemsTable({
   return (
     <div style={{ marginTop: 16 }}>
       <Table
-        dataSource={items}
+        dataSource={sortedItems}
         rowKey='id'
         pagination={false}
         size='small'
         columns={[
           { title: 'Lek', dataIndex: 'medicationName', key: 'medicationName' },
-          { title: 'Doza', dataIndex: 'dosage', key: 'dosage' },
+          {
+            title: 'Doza',
+            dataIndex: 'dosage',
+            key: 'dosage',
+            render: (v: string | null) => v || '-',
+          },
           {
             title: 'Način primene',
             dataIndex: 'route',
@@ -158,22 +206,37 @@ export default function AdministeredMedicationItemsTable({
           {
             title: '',
             key: 'actions',
-            width: 50,
+            width: 90,
             render: (_, rec) => (
-              <Tooltip title='Ukloni'>
-                <Popconfirm
-                  title='Ukloniti evidenciju?'
-                  onConfirm={() => deleteMutation.mutate(rec.id)}
-                >
-                  <Button type='text' danger icon={<DeleteOutlined />} size='small' />
-                </Popconfirm>
-              </Tooltip>
+              <Space size={2}>
+                <Tooltip title='Izmeni'>
+                  <Button
+                    type='text'
+                    icon={<EditOutlined />}
+                    size='small'
+                    onClick={() => handleStartEdit(rec)}
+                  />
+                </Tooltip>
+                <Tooltip title='Ukloni'>
+                  <Popconfirm
+                    title='Ukloniti evidenciju?'
+                    onConfirm={() => deleteMutation.mutate(rec.id)}
+                  >
+                    <Button type='text' danger icon={<DeleteOutlined />} size='small' />
+                  </Popconfirm>
+                </Tooltip>
+              </Space>
             ),
           },
         ]}
         title={() =>
           adding ? (
             <div>
+              {editingId && (
+                <Typography.Text strong style={{ display: 'block', marginBottom: 8 }}>
+                  Izmena unosa
+                </Typography.Text>
+              )}
               <Row gutter={8} style={{ marginBottom: 8 }}>
                 <Col span={8}>
                   <AutoComplete
@@ -202,7 +265,7 @@ export default function AdministeredMedicationItemsTable({
                 </Col>
                 <Col span={6}>
                   <Input
-                    placeholder='Doza * (npr. 0.5 ml)'
+                    placeholder='Doza (npr. 0.5 ml)'
                     value={dosage}
                     onChange={(e) => setDosage(e.target.value)}
                   />
@@ -241,10 +304,10 @@ export default function AdministeredMedicationItemsTable({
                   type='primary'
                   icon={<SaveOutlined />}
                   disabled={!isFormValid}
-                  loading={createMutation.isPending}
-                  onClick={() => createMutation.mutate()}
+                  loading={saveMutation.isPending}
+                  onClick={() => saveMutation.mutate()}
                 >
-                  Sačuvaj
+                  {editingId ? 'Sačuvaj izmene' : 'Sačuvaj'}
                 </Button>
                 <Button icon={<CloseOutlined />} onClick={resetForm}>
                   Otkaži
@@ -252,12 +315,31 @@ export default function AdministeredMedicationItemsTable({
               </Space>
             </div>
           ) : (
-            <Button type='dashed' icon={<PlusOutlined />} onClick={() => setAdding(true)}>
-              Evidentiraj aplikovan lek
-            </Button>
+            <Space>
+              <Button type='dashed' icon={<PlusOutlined />} onClick={() => setAdding(true)}>
+                Evidentiraj aplikovan lek
+              </Button>
+              <Button
+                type='primary'
+                icon={<ThunderboltOutlined />}
+                onClick={() => setBulkOpen(true)}
+              >
+                Brzi unos više lekova
+              </Button>
+            </Space>
           )
         }
       />
+      {bulkOpen && (
+        <BulkAdministerMedicationsModal
+          open={bulkOpen}
+          onClose={() => setBulkOpen(false)}
+          onSuccess={() => refetch()}
+          medicalRecordId={medicalRecordId}
+          petId={petId}
+          vetId={vetId}
+        />
+      )}
     </div>
   );
 }

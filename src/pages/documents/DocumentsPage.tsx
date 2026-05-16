@@ -266,14 +266,16 @@ export default function DocumentsPage() {
         />
       </Card>
 
-      <DocumentModal
-        open={modalOpen}
-        document={editingDocument}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingDocument(null);
-        }}
-      />
+      {modalOpen && (
+        <DocumentModal
+          open={modalOpen}
+          document={editingDocument}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingDocument(null);
+          }}
+        />
+      )}
     </div>
   );
 }

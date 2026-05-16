@@ -208,14 +208,16 @@ export default function InventoryTransactionsPage() {
         }}
       />
 
-      <InventoryTransactionModal
-        open={modalOpen}
-        transaction={editing}
-        onClose={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-      />
+      {modalOpen && (
+        <InventoryTransactionModal
+          open={modalOpen}
+          transaction={editing}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

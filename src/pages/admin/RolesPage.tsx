@@ -149,14 +149,16 @@ export default function RolesPage() {
         />
       </Card>
 
-      <RoleModal
-        open={modalOpen}
-        role={editingRole}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingRole(null);
-        }}
-      />
+      {modalOpen && (
+        <RoleModal
+          open={modalOpen}
+          role={editingRole}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingRole(null);
+          }}
+        />
+      )}
     </div>
   );
 }

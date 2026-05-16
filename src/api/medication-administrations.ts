@@ -3,6 +3,7 @@ import type {
   MedicationAdministration,
   CreateMedicationAdministrationRequest,
   UpdateMedicationAdministrationRequest,
+  MedicationQuickPicksResponse,
 } from '@/types';
 
 export const medicationAdministrationsApi = {
@@ -29,4 +30,12 @@ export const medicationAdministrationsApi = {
     apiClient.put<MedicationAdministration>(`/medication-administrations/${id}`, data),
 
   delete: (id: string) => apiClient.delete(`/medication-administrations/${id}`),
+
+  createBulk: (data: CreateMedicationAdministrationRequest[]) =>
+    apiClient.post<MedicationAdministration[]>('/medication-administrations/bulk', data),
+
+  getQuickPicks: (limit = 10) =>
+    apiClient.get<MedicationQuickPicksResponse>('/medication-administrations/quick-picks', {
+      params: { limit },
+    }),
 };

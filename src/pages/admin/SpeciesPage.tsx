@@ -115,14 +115,16 @@ export default function SpeciesPage() {
         />
       </Card>
 
-      <SpeciesModal
-        open={modalOpen}
-        species={editingSpecies}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingSpecies(null);
-        }}
-      />
+      {modalOpen && (
+        <SpeciesModal
+          open={modalOpen}
+          species={editingSpecies}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingSpecies(null);
+          }}
+        />
+      )}
     </div>
   );
 }

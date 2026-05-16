@@ -78,6 +78,12 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
 
   useEffect(() => {
     if (open) {
+      // KRITIČNO: reset uvek (i pri editu i pri novom), inače createdInvoice
+      // iz prethodne session-e modala pregazi novi invoice prop preko
+      // currentInvoice = createdInvoice ?? invoice.
+      setCreatedInvoice(null);
+      setPaidImmediately(false);
+
       if (invoice) {
         form.setFieldsValue({
           ...invoice,
@@ -86,8 +92,6 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
         });
       } else {
         form.resetFields();
-        setCreatedInvoice(null);
-        setPaidImmediately(false);
         form.setFieldsValue({
           status: 'DRAFT',
           currency: 'RSD',

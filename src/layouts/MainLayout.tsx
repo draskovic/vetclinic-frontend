@@ -21,6 +21,7 @@ import {
   SolutionOutlined,
   SunOutlined,
   MoonOutlined,
+  ShoppingCartOutlined,
 } from '@ant-design/icons';
 import { useAuthStore } from '@/store/authStore';
 import { authApi } from '@/api/auth';
@@ -109,6 +110,11 @@ const allMenuItems = [
     label: 'Finansije',
     permission: 'manage_invoices',
     children: [
+      {
+        key: '/quick-sale',
+        icon: <ShoppingCartOutlined style={{ color: '#52c41a' }} />,
+        label: 'Brza prodaja',
+      },
       {
         key: '/invoices',
         icon: <DollarOutlined style={{ color: '#faad14' }} />,

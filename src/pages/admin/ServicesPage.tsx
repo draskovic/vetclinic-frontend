@@ -204,14 +204,16 @@ export default function ServicesPage() {
         }}
       />
 
-      <ServiceModal
-        open={modalOpen}
-        service={editing}
-        onClose={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-      />
+      {modalOpen && (
+        <ServiceModal
+          open={modalOpen}
+          service={editing}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

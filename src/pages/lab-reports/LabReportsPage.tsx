@@ -244,15 +244,16 @@ export default function LabReportsPage() {
           }}
         />
       </Card>
-
-      <LabReportModal
-        open={modalOpen}
-        labReport={editingReport}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingReport(null);
-        }}
-      />
+      {modalOpen && (
+        <LabReportModal
+          open={modalOpen}
+          labReport={editingReport}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingReport(null);
+          }}
+        />
+      )}
     </div>
   );
 }

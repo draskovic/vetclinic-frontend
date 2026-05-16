@@ -136,14 +136,16 @@ export default function ProtocolsPage() {
         }}
       />
 
-      <ProtocolModal
-        open={modalOpen}
-        protocol={editing}
-        onClose={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-      />
+      {modalOpen && (
+        <ProtocolModal
+          open={modalOpen}
+          protocol={editing}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

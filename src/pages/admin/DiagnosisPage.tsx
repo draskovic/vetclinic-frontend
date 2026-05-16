@@ -142,15 +142,16 @@ export default function DiagnosisPage() {
           showTotal: (total) => `Ukupno: ${total}`,
         }}
       />
-
-      <DiagnosisModal
-        open={modalOpen}
-        diagnosis={editing}
-        onClose={() => {
-          setModalOpen(false);
-          setEditing(null);
-        }}
-      />
+      {modalOpen && (
+        <DiagnosisModal
+          open={modalOpen}
+          diagnosis={editing}
+          onClose={() => {
+            setModalOpen(false);
+            setEditing(null);
+          }}
+        />
+      )}
     </div>
   );
 }

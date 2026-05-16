@@ -364,33 +364,37 @@ export default function AppointmentsPage() {
         />
       </Card>
 
-      <AppointmentModal
-        open={modalOpen}
-        appointment={editingAppointment}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingAppointment(null);
-        }}
-      />
-      <MedicalRecordModal
-        open={medRecordModalOpen}
-        record={startedRecord}
-        onClose={() => {
-          setMedRecordModalOpen(false);
-          setSelectedAppointment(null);
-          setStartedRecord(null);
-        }}
-        defaultValues={
-          selectedAppointment
-            ? {
-                petId: selectedAppointment.petId,
-                vetId: selectedAppointment.vetId,
-                appointmentId: selectedAppointment.id,
-                symptoms: selectedAppointment.reason || '',
-              }
-            : undefined
-        }
-      />
+      {modalOpen && (
+        <AppointmentModal
+          open={modalOpen}
+          appointment={editingAppointment}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingAppointment(null);
+          }}
+        />
+      )}
+      {medRecordModalOpen && (
+        <MedicalRecordModal
+          open={medRecordModalOpen}
+          record={startedRecord}
+          onClose={() => {
+            setMedRecordModalOpen(false);
+            setSelectedAppointment(null);
+            setStartedRecord(null);
+          }}
+          defaultValues={
+            selectedAppointment
+              ? {
+                  petId: selectedAppointment.petId,
+                  vetId: selectedAppointment.vetId,
+                  appointmentId: selectedAppointment.id,
+                  symptoms: selectedAppointment.reason || '',
+                }
+              : undefined
+          }
+        />
+      )}
     </div>
   );
 }

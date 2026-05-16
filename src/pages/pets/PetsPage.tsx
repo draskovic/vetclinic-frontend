@@ -8,6 +8,7 @@ import { petsApi } from '@/api/pets';
 import type { Pet } from '@/types';
 import PetModal from './PetModal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useSearchFromUrl } from '@/hooks/useSearchFromUrl';
 
 const { Title } = Typography;
 
@@ -21,7 +22,7 @@ export default function PetsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
-  const [search, setSearch] = useState('');
+  const [search, setSearch] = useSearchFromUrl();
   const debouncedSearch = useDebouncedValue(search);
 
   const [modalOpen, setModalOpen] = useState(false);
@@ -193,15 +194,16 @@ export default function PetsPage() {
           }}
         />
       </Card>
-
-      <PetModal
-        open={modalOpen}
-        pet={editingPet}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingPet(null);
-        }}
-      />
+      {modalOpen && (
+        <PetModal
+          open={modalOpen}
+          pet={editingPet}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingPet(null);
+          }}
+        />
+      )}
     </div>
   );
 }

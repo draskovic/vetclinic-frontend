@@ -320,24 +320,28 @@ const OwnerProfilePage: React.FC = () => {
           },
         ]}
       />
-      <MedicalRecordModal
-        open={modalOpen}
-        record={selectedRecord}
-        onClose={() => {
-          setModalOpen(false);
-          setSelectedRecord(null);
-        }}
-      />
-      <PetModal
-        open={petModalOpen}
-        pet={selectedPet}
-        onClose={() => {
-          setPetModalOpen(false);
-          setSelectedPet(null);
-          queryClient.invalidateQueries({ queryKey: ['ownerPets', ownerId] });
-        }}
-        defaultValues={{ ownerId: ownerId! }}
-      />
+      {modalOpen && (
+        <MedicalRecordModal
+          open={modalOpen}
+          record={selectedRecord}
+          onClose={() => {
+            setModalOpen(false);
+            setSelectedRecord(null);
+          }}
+        />
+      )}
+      {petModalOpen && (
+        <PetModal
+          open={petModalOpen}
+          pet={selectedPet}
+          onClose={() => {
+            setPetModalOpen(false);
+            setSelectedPet(null);
+            queryClient.invalidateQueries({ queryKey: ['ownerPets', ownerId] });
+          }}
+          defaultValues={{ ownerId: ownerId! }}
+        />
+      )}
     </div>
   );
 };

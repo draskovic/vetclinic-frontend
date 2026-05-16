@@ -170,14 +170,16 @@ export default function UsersPage() {
         />
       </Card>
 
-      <UserModal
-        open={modalOpen}
-        user={editingUser}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingUser(null);
-        }}
-      />
+      {modalOpen && (
+        <UserModal
+          open={modalOpen}
+          user={editingUser}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingUser(null);
+          }}
+        />
+      )}
     </div>
   );
 }

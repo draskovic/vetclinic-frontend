@@ -406,8 +406,9 @@ export interface Invoice {
   id: string;
   appointmentId: string | null;
   medicalRecordId?: string | null;
-  ownerId: string;
-  ownerName: string;
+  ownerId: string | null; // ← bio string, sad nullable (walk-in)
+  ownerName: string | null; // ← bio string, sad nullable
+  walkInCustomerName?: string | null; // ← NOVO
   locationId: string | null;
   locationName: string | null;
   invoiceNumber: string;
@@ -427,7 +428,8 @@ export interface Invoice {
 
 export interface CreateInvoiceRequest {
   appointmentId?: string;
-  ownerId: string;
+  ownerId?: string;
+  walkInCustomerName?: string;
   medicalRecordId?: string;
   locationId?: string;
   status?: InvoiceStatus;
@@ -452,6 +454,7 @@ export interface CreateInvoiceFromMedicalRecordRequest {
 export interface UpdateInvoiceRequest {
   appointmentId?: string | null;
   ownerId?: string;
+  walkInCustomerName?: string;
   locationId?: string | null;
   status?: InvoiceStatus;
   issuedAt?: string;
@@ -474,6 +477,9 @@ export interface InvoiceItem {
   invoiceId: string;
   serviceId: string | null;
   serviceName: string | null;
+  inventoryItemId: string | null; // ← NOVO
+  inventoryItemName: string | null; // ← NOVO
+  treatmentId: string | null; // ← NOVO
   description: string;
   quantity: number;
   unitPrice: number;
@@ -490,18 +496,20 @@ export interface InvoiceItem {
 export interface CreateInvoiceItemRequest {
   invoiceId: string;
   serviceId?: string | null;
+  inventoryItemId?: string | null; // ← NOVO
+  treatmentId?: string | null; // ← NOVO
   description: string;
   quantity?: number;
   unitPrice: number;
   taxRateId?: string;
   discountPercent?: number;
-  lineTotal: number;
-  sortOrder?: number;
 }
 
 export interface UpdateInvoiceItemRequest {
   serviceId?: string | null;
   description?: string;
+  inventoryItemId?: string | null;
+  treatmentId?: string | null;
   quantity?: number;
   unitPrice?: number;
   taxRateId?: string;
@@ -539,6 +547,9 @@ export interface InventoryItem {
   expiryDate: string | null;
   active: boolean;
   trackBatches: boolean;
+  taxRateId: string;
+  taxRateLabel: string | null;
+  taxRatePercent: number | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -556,6 +567,7 @@ export interface CreateInventoryItemRequest {
   expiryDate?: string | null;
   active?: boolean;
   trackBatches?: boolean;
+  taxRateId: string; // ← NOVO obavezno
   initialQuantity?: number;
 }
 
@@ -569,6 +581,7 @@ export interface UpdateInventoryItemRequest {
   reorderLevel?: number;
   costPrice?: number;
   sellPrice?: number;
+  taxRateId?: string;
   expiryDate?: string | null;
   active?: boolean;
 }
@@ -1001,7 +1014,7 @@ export interface MedicationAdministration {
   inventoryItemId: string | null;
   inventoryItemName: string | null;
   medicationName: string;
-  dosage: string;
+  dosage: string | null;
   route: MedicationRoute | null;
   administeredDate: string;
   instructions: string | null;
@@ -1013,21 +1026,33 @@ export interface CreateMedicationAdministrationRequest {
   medicalRecordId: string;
   petId: string;
   vetId: string;
-  inventoryItemId?: string;
+  inventoryItemId?: string | null;
   medicationName: string;
-  dosage: string;
-  route?: MedicationRoute;
+  dosage?: string | null;
+  route?: MedicationRoute | null;
   administeredDate: string;
-  instructions?: string;
+  instructions?: string | null;
 }
 
 export interface UpdateMedicationAdministrationRequest {
-  inventoryItemId?: string;
+  inventoryItemId?: string | null;
   medicationName?: string;
-  dosage?: string;
-  route?: MedicationRoute;
+  dosage?: string | null;
+  route?: MedicationRoute | null;
   administeredDate?: string;
-  instructions?: string;
+  instructions?: string | null;
+}
+
+export interface MedicationQuickPickItem {
+  inventoryItemId: string;
+  name: string;
+  quantityOnHand: number;
+  unit: string | null;
+}
+
+export interface MedicationQuickPicksResponse {
+  recent: MedicationQuickPickItem[];
+  frequent: MedicationQuickPickItem[];
 }
 
 // ===== Documents =====
@@ -1269,4 +1294,39 @@ export interface ApplyProtocolRequest {
   protocolId: string;
   medicalRecordId: string;
   vetId: string;
+}
+
+// ===================== Quick Sale (POS) =====================
+
+export interface QuickSaleLineRequest {
+  serviceId?: string | null;
+  inventoryItemId?: string | null;
+  description?: string | null;
+  quantity: number;
+  unitPrice?: number | null;
+  taxRateId?: string | null;
+  discountPercent?: number | null;
+}
+
+export interface QuickSaleRequest {
+  ownerId?: string | null;
+  walkInCustomerName?: string | null;
+  locationId?: string | null;
+  vetId?: string | null;
+  issuedAt?: string | null;
+  currency?: string | null;
+  note?: string | null;
+  lines: QuickSaleLineRequest[];
+  paymentMethod: PaymentMethod;
+  tenderedAmount: number;
+  paidAt?: string | null;
+  paymentReferenceNumber?: string | null;
+  paymentNote?: string | null;
+}
+
+export interface QuickSaleResponse {
+  invoice: Invoice;
+  items: InvoiceItem[];
+  payment: Payment;
+  changeAmount: number;
 }

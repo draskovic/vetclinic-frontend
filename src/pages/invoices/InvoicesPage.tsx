@@ -26,6 +26,7 @@ import type { Invoice, InvoiceStatus } from '@/types';
 import dayjs from 'dayjs';
 import InvoiceModal from './InvoiceModal';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { useSearchFromUrl } from '@/hooks/useSearchFromUrl';
 
 const { Title } = Typography;
 
@@ -47,25 +48,22 @@ export default function InvoicesPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get('search') || '');
+  const [search, setSearch] = useSearchFromUrl();
+
+  // Status filter takođe može da dođe iz URL-a (preko CommandPalette ili drugih navigacija)
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(
+    searchParams.get('status') || undefined,
+  );
 
   useEffect(() => {
-    const searchFromUrl = searchParams.get('search');
     const statusFromUrl = searchParams.get('status');
-    if (searchFromUrl) {
-      setSearch(searchFromUrl);
-    }
     if (statusFromUrl) {
       setStatusFilter(statusFromUrl);
-    }
-    // Ukloni iz URL-a posle čitanja (da refresh ne "zamrzne" filter)
-    if (searchFromUrl || statusFromUrl) {
       setSearchParams({}, { replace: true });
     }
-  }, []);
+  }, [searchParams, setSearchParams]);
 
   const debouncedSearch = useDebouncedValue(search);
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingInvoice, setEditingInvoice] = useState<Invoice | null>(null);
   const queryClient = useQueryClient();
@@ -112,6 +110,17 @@ export default function InvoicesPage() {
       title: 'Vlasnik',
       dataIndex: 'ownerName',
       key: 'ownerName',
+      render: (ownerName: string | null, record) => {
+        if (ownerName) return ownerName;
+        if (record.walkInCustomerName) {
+          return (
+            <span style={{ fontStyle: 'italic', color: '#8c8c8c' }}>
+              {record.walkInCustomerName}
+            </span>
+          );
+        }
+        return <span style={{ fontStyle: 'italic', color: '#bfbfbf' }}>Anonimni kupac</span>;
+      },
     },
     {
       title: 'Datum izdavanja',
@@ -256,14 +265,16 @@ export default function InvoicesPage() {
         />
       </Card>
 
-      <InvoiceModal
-        open={modalOpen}
-        invoice={editingInvoice}
-        onClose={() => {
-          setModalOpen(false);
-          setEditingInvoice(null);
-        }}
-      />
+      {modalOpen && (
+        <InvoiceModal
+          open={modalOpen}
+          invoice={editingInvoice}
+          onClose={() => {
+            setModalOpen(false);
+            setEditingInvoice(null);
+          }}
+        />
+      )}
     </div>
   );
 }

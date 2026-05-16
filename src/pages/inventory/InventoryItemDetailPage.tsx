@@ -484,26 +484,28 @@ export default function InventoryItemDetailPage() {
             : []),
         ]}
       />
-
-      <InventoryItemModal
-        open={editModalOpen}
-        item={item}
-        onClose={() => {
-          setEditModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['inventory-item', id] });
-        }}
-      />
-
-      <InventoryTransactionModal
-        open={txModalOpen}
-        transaction={null}
-        onClose={() => {
-          setTxModalOpen(false);
-          queryClient.invalidateQueries({ queryKey: ['inventory-transactions-by-item', id] });
-          queryClient.invalidateQueries({ queryKey: ['inventory-item', id] });
-        }}
-        defaultItemId={id}
-      />
+      {editModalOpen && (
+        <InventoryItemModal
+          open={editModalOpen}
+          item={item}
+          onClose={() => {
+            setEditModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['inventory-item', id] });
+          }}
+        />
+      )}
+      {txModalOpen && (
+        <InventoryTransactionModal
+          open={txModalOpen}
+          transaction={null}
+          onClose={() => {
+            setTxModalOpen(false);
+            queryClient.invalidateQueries({ queryKey: ['inventory-transactions-by-item', id] });
+            queryClient.invalidateQueries({ queryKey: ['inventory-item', id] });
+          }}
+          defaultItemId={id}
+        />
+      )}
 
       {item.trackBatches && (
         <InventoryBatchModal
