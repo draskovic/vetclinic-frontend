@@ -1,6 +1,17 @@
 import { useState, useEffect, useMemo } from 'react';
 
-import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
+import {
+  Table,
+  Button,
+  Space,
+  Input,
+  Select,
+  Card,
+  Typography,
+  Popconfirm,
+  message,
+  Tooltip,
+} from 'antd';
 import {
   PlusOutlined,
   SearchOutlined,
@@ -19,6 +30,7 @@ import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchFromUrl } from '@/hooks/useSearchFromUrl';
 import InvoiceModal from '../invoices/InvoiceModal';
 import { invoicesApi } from '@/api';
+import { ownersApi } from '@/api/owners';
 import type { MedicalRecord, Invoice } from '@/types';
 import { useAuthStore } from '@/store/authStore';
 
@@ -35,6 +47,9 @@ export default function MedicalRecordsPage() {
   const [expandedRowKeys, setExpandedRowKeys] = useState<string[]>([]);
   const [activeFilter, setActiveFilter] = useState<string>('all');
   const { user } = useAuthStore();
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string | undefined>(undefined);
+  const [ownerSearch, setOwnerSearch] = useState('');
+  const debouncedOwnerSearch = useDebouncedValue(ownerSearch, 300);
 
   const [invoiceModalOpen, setInvoiceModalOpen] = useState(false);
   const [invoiceDefaults, setInvoiceDefaults] = useState<
@@ -44,34 +59,39 @@ export default function MedicalRecordsPage() {
 
   const queryClient = useQueryClient();
   const debouncedSearch = useDebouncedValue(search, 300);
+  const { data: ownersData } = useQuery({
+    queryKey: ['owners-search', debouncedOwnerSearch],
+    queryFn: () => ownersApi.getAll(0, 20, debouncedOwnerSearch || undefined).then((r) => r.data),
+  });
   const filterParams = useMemo(() => {
+    const ownerPart = selectedOwnerId ? { ownerId: selectedOwnerId } : {};
     const now = dayjs();
     switch (activeFilter) {
       case 'today':
         return {
+          ...ownerPart,
           dateFrom: now.startOf('day').toISOString(),
           dateTo: now.endOf('day').toISOString(),
         };
-
       case 'week':
         return {
+          ...ownerPart,
           dateFrom: now.startOf('week').toISOString(),
           dateTo: now.endOf('week').toISOString(),
         };
-
       case 'mine':
-        return { vetId: user?.id };
+        return { ...ownerPart, vetId: user?.id };
       default:
-        return {};
+        return ownerPart;
     }
-  }, [activeFilter, user?.id]);
+  }, [activeFilter, user?.id, selectedOwnerId]);
 
   useEffect(() => {
     setPage(1);
-  }, [debouncedSearch, activeFilter]);
+  }, [debouncedSearch, activeFilter, selectedOwnerId]);
 
   const { data, isLoading } = useQuery({
-    queryKey: ['medical-records', page, pageSize, debouncedSearch, activeFilter],
+    queryKey: ['medical-records', page, pageSize, debouncedSearch, activeFilter, selectedOwnerId],
     queryFn: () =>
       medicalRecordsApi
         .getAll(page - 1, pageSize, debouncedSearch, filterParams)
@@ -117,6 +137,12 @@ export default function MedicalRecordsPage() {
       title: 'Ljubimac',
       dataIndex: 'petName',
       key: 'petName',
+    },
+    {
+      title: 'Vlasnik',
+      dataIndex: 'ownerName',
+      key: 'ownerName',
+      render: (val: string) => val || '—',
     },
     {
       title: 'Veterinar',
@@ -231,17 +257,42 @@ export default function MedicalRecordsPage() {
       </div>
 
       <Card>
-        <Input
-          prefix={<SearchOutlined />}
-          placeholder='Pretraži po ljubimcu, veterinaru, dijagnozi, simptomu...'
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            setPage(1);
-          }}
-          style={{ marginBottom: 16, maxWidth: 400 }}
-          allowClear
-        />
+        <div style={{ display: 'flex', gap: 12, marginBottom: 16, flexWrap: 'wrap' }}>
+          <Input
+            prefix={<SearchOutlined />}
+            placeholder='Pretraži po ljubimcu, veterinaru, dijagnozi, simptomu...'
+            value={search}
+            onChange={(e) => {
+              setSearch(e.target.value);
+              setPage(1);
+            }}
+            style={{ maxWidth: 400, flex: 1 }}
+            allowClear
+          />
+          <Select
+            showSearch
+            allowClear
+            placeholder='Filtriraj po vlasniku'
+            value={selectedOwnerId}
+            onChange={(val) => setSelectedOwnerId(val)}
+            onSearch={setOwnerSearch}
+            onInputKeyDown={(e) => {
+              if (e.key === ' ') e.stopPropagation();
+            }}
+            filterOption={false}
+            style={{ minWidth: 280 }}
+            options={ownersData?.content?.map((o) => ({
+              value: o.id,
+              label: (
+                <span>
+                  {o.firstName} {o.lastName}
+                  <span style={{ color: '#8c8c8c', marginLeft: 8 }}>· {o.phone}</span>
+                </span>
+              ),
+            }))}
+            notFoundContent={debouncedOwnerSearch ? 'Nema rezultata' : 'Počni kucanje...'}
+          />
+        </div>
 
         <div style={{ marginBottom: 16, display: 'flex', gap: 8, flexWrap: 'wrap' }}>
           {[

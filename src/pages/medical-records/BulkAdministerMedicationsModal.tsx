@@ -427,7 +427,7 @@ export default function BulkAdministerMedicationsModal({
           onChange={(val) => val && setAdministeredDate(val)}
           format='DD.MM.YYYY'
           allowClear={false}
-          style={{ width: 130 }}
+          style={{ width: 160 }}
         />
         <Select
           placeholder='Način primene'

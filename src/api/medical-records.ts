@@ -11,7 +11,7 @@ export const medicalRecordsApi = {
     page = 0,
     size = 10,
     search?: string,
-    filters?: { dateFrom?: string; dateTo?: string; vetId?: string },
+    filters?: { dateFrom?: string; dateTo?: string; vetId?: string; ownerId?: string },
   ) =>
     apiClient.get<PageResponse<MedicalRecord>>('/medical-records', {
       params: {
@@ -21,6 +21,7 @@ export const medicalRecordsApi = {
         dateFrom: filters?.dateFrom || undefined,
         dateTo: filters?.dateTo || undefined,
         vetId: filters?.vetId || undefined,
+        ownerId: filters?.ownerId || undefined,
       },
     }),
 
