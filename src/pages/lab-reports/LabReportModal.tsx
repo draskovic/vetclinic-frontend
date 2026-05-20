@@ -18,6 +18,7 @@ import {
 import {
   DeleteOutlined,
   FilePdfOutlined,
+  FileWordOutlined,
   DownloadOutlined,
   CloudUploadOutlined,
 } from '@ant-design/icons';
@@ -165,10 +166,10 @@ export default function LabReportModal({
     onError: (error) => message.error(getErrorMessage(error, 'Greška pri izmeni!')),
   });
 
-  const handleParsePdf = async (file: File) => {
+  const handleParseLabReport = async (file: File) => {
     setIsParsing(true);
     try {
-      const response = await labReportsApi.parsePdf(file);
+      const response = await labReportsApi.parseLabReport(file);
       const result = response.data;
 
       const fieldsToSet: Record<string, unknown> = {};
@@ -181,6 +182,7 @@ export default function LabReportModal({
         fieldsToSet.status = 'COMPLETED';
       }
       if (result.petId) fieldsToSet.petId = result.petId;
+      if (result.ownerId) fieldsToSet.ownerId = result.ownerId;
       if (result.vetId) fieldsToSet.vetId = result.vetId;
 
       if (petId) fieldsToSet.petId = petId;
@@ -189,7 +191,11 @@ export default function LabReportModal({
 
       const messages: string[] = [];
       if (result.petName && !result.petId) {
-        messages.push(`Ljubimac "${result.petName}" nije pronađen u bazi`);
+        const microchipInfo = result.microchipNumber ? ` (mikročip ${result.microchipNumber})` : '';
+        messages.push(`Ljubimac "${result.petName}"${microchipInfo} nije pronađen u bazi`);
+      }
+      if (result.ownerName && !result.ownerId) {
+        messages.push(`Vlasnik "${result.ownerName}" nije pronađen u bazi`);
       }
       if (result.vetName && !result.vetId) {
         messages.push(`Veterinar "${result.vetName}" nije pronađen u bazi`);
@@ -198,10 +204,10 @@ export default function LabReportModal({
       if (messages.length > 0) {
         message.info(messages.join('. ') + '. Izaberite ručno iz liste.');
       } else {
-        message.success('Podaci su uspešno učitani iz PDF-a!');
+        message.success('Podaci su uspešno učitani iz fajla!');
       }
     } catch {
-      message.error('Greška pri čitanju PDF-a!');
+      message.error('Greška pri čitanju fajla!');
     } finally {
       setIsParsing(false);
     }
@@ -248,6 +254,14 @@ export default function LabReportModal({
       value: u.id,
     })) ?? [];
 
+  const renderFileIcon = (fileName?: string | null) => {
+    const lower = (fileName || '').toLowerCase();
+    if (lower.endsWith('.docx')) {
+      return <FileWordOutlined style={{ fontSize: 20, color: '#2b579a' }} />;
+    }
+    return <FilePdfOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />;
+  };
+
   return (
     <Modal
       title={isEditing ? 'Izmeni lab izveštaj' : 'Novi lab izveštaj'}
@@ -264,9 +278,9 @@ export default function LabReportModal({
         initialValues={{ status: 'PENDING', isAbnormal: false, testCategory: 'LABORATORY' }}
         style={{ marginTop: 16 }}
       >
-        {/* === PDF Upload sekcija — NA VRHU === */}
-        <Form.Item label='PDF fajl'>
-          <Spin spinning={isParsing} tip='Čitanje podataka iz PDF-a...'>
+        {/* === Lab izveštaj Upload sekcija — NA VRHU === */}
+        <Form.Item label='Lab izveštaj (PDF ili DOCX)'>
+          <Spin spinning={isParsing} tip='Čitanje podataka iz fajla...'>
             <div
               style={{
                 display: 'flex',
@@ -280,7 +294,7 @@ export default function LabReportModal({
             >
               {isEditing && labReport?.fileName && !fileToUpload ? (
                 <>
-                  <FilePdfOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />
+                  {renderFileIcon(labReport.fileName)}
                   <div style={{ flex: 1 }}>
                     <Text strong>{labReport.fileName}</Text>
                     <Text type='secondary' style={{ fontSize: 12, marginLeft: 8 }}>
@@ -304,7 +318,7 @@ export default function LabReportModal({
                 </>
               ) : fileToUpload ? (
                 <>
-                  <FilePdfOutlined style={{ fontSize: 20, color: '#ff4d4f' }} />
+                  {renderFileIcon(fileToUpload.name)}
                   <div style={{ flex: 1 }}>
                     <Text strong>{fileToUpload.name}</Text>
                     <Text type='secondary' style={{ fontSize: 12, marginLeft: 8 }}>
@@ -342,20 +356,26 @@ export default function LabReportModal({
                   <div style={{ flex: 1 }}>
                     <Text type='secondary'>
                       {isEditing
-                        ? 'Maks. 10MB, samo PDF'
-                        : 'Podaci će biti automatski učitani iz PDF-a'}
+                        ? 'Maks. 10MB, PDF ili DOCX'
+                        : 'Podaci će biti automatski učitani iz fajla'}
                     </Text>
                   </div>
                 </>
               )}
               <Upload
-                accept='.pdf'
+                accept='.pdf,.docx'
                 maxCount={1}
                 fileList={fileList}
                 showUploadList={false}
                 beforeUpload={(file) => {
-                  if (file.type !== 'application/pdf') {
-                    message.error('Samo PDF fajlovi su dozvoljeni!');
+                  const isPdf =
+                    file.type === 'application/pdf' || file.name.toLowerCase().endsWith('.pdf');
+                  const isDocx =
+                    file.type ===
+                      'application/vnd.openxmlformats-officedocument.wordprocessingml.document' ||
+                    file.name.toLowerCase().endsWith('.docx');
+                  if (!isPdf && !isDocx) {
+                    message.error('Dozvoljeni formati: PDF ili DOCX!');
                     return Upload.LIST_IGNORE;
                   }
                   if (file.size > 10 * 1024 * 1024) {
@@ -365,13 +385,13 @@ export default function LabReportModal({
                   setFileToUpload(file);
                   setFileList([{ uid: '-1', name: file.name, status: 'done', size: file.size }]);
                   if (!isEditing) {
-                    handleParsePdf(file);
+                    handleParseLabReport(file);
                   }
                   return false;
                 }}
               >
                 <Button size='small' icon={<CloudUploadOutlined />}>
-                  {fileToUpload || (isEditing && labReport?.fileName) ? 'Zameni' : 'Izaberi PDF'}
+                  {fileToUpload || (isEditing && labReport?.fileName) ? 'Zameni' : 'Izaberi fajl'}
                 </Button>
               </Upload>
             </div>

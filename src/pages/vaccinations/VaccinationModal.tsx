@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState, useMemo } from 'react';
 import { Modal, Form, Select, Button, message, Input, DatePicker, Row, Col } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { vaccinationsApi } from '@/api/vaccinations';
@@ -6,6 +6,7 @@ import { petsApi } from '@/api/pets';
 import { usersApi } from '@/api/users';
 import type { Vaccination, CreateVaccinationRequest, UpdateVaccinationRequest } from '@/types';
 import dayjs from 'dayjs';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
 interface VaccinationModalProps {
   open: boolean;
@@ -23,12 +24,20 @@ export default function VaccinationModal({
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!vaccination;
+  const [petSearch, setPetSearch] = useState('');
+  const debouncedPetSearch = useDebouncedValue(petSearch, 300);
 
   const { data: petsData } = useQuery({
-    queryKey: ['pets-all'],
-    queryFn: () => petsApi.getAll(0, 100).then((r) => r.data),
+    queryKey: ['pets-search', debouncedPetSearch],
+    queryFn: () => petsApi.getAll(0, 20, debouncedPetSearch || undefined).then((r) => r.data),
   });
 
+  const petIdToFetch = defaultValues?.petId || vaccination?.petId;
+  const { data: selectedPet } = useQuery({
+    queryKey: ['pet', petIdToFetch],
+    queryFn: () => petsApi.getById(petIdToFetch!).then((r) => r.data),
+    enabled: !!petIdToFetch,
+  });
   const { data: usersData } = useQuery({
     queryKey: ['users-all'],
     queryFn: () => usersApi.getAll(0, 100).then((r) => r.data),
@@ -95,11 +104,19 @@ export default function VaccinationModal({
 
   const isLoading = createMutation.isPending || updateMutation.isPending;
 
-  const petOptions =
-    petsData?.content.map((p) => ({
-      label: p.name,
-      value: p.id,
-    })) ?? [];
+  const petOptions = useMemo(() => {
+    const options =
+      petsData?.content.map((p) => ({
+        label: p.name,
+        value: p.id,
+      })) ?? [];
+
+    if (selectedPet && !options.find((o) => o.value === selectedPet.id)) {
+      options.unshift({ label: selectedPet.name, value: selectedPet.id });
+    }
+
+    return options;
+  }, [petsData, selectedPet]);
 
   const vetOptions =
     usersData?.content.map((u) => ({
@@ -128,9 +145,11 @@ export default function VaccinationModal({
                 placeholder='Izaberite ljubimca...'
                 options={petOptions}
                 showSearch
-                filterOption={(input, option) =>
-                  (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-                }
+                filterOption={false}
+                onSearch={setPetSearch}
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') e.stopPropagation();
+                }}
               />
             </Form.Item>
           </Col>
@@ -147,6 +166,9 @@ export default function VaccinationModal({
                 filterOption={(input, option) =>
                   (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
                 }
+                onInputKeyDown={(e) => {
+                  if (e.key === ' ') e.stopPropagation();
+                }}
               />
             </Form.Item>
           </Col>

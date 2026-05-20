@@ -5,7 +5,7 @@ import type {
   UpdateLabReportRequest,
   PageResponse,
   LabReportStatus,
-  PdfParseResult,
+  LabReportParseResult,
 } from '@/types';
 
 export const labReportsApi = {
@@ -48,10 +48,10 @@ export const labReportsApi = {
 
   deleteFile: (id: string) => apiClient.delete<LabReport>(`/lab-reports/${id}/file`),
 
-  parsePdf: (file: File) => {
+  parseLabReport: (file: File) => {
     const formData = new FormData();
     formData.append('file', file);
-    return apiClient.post<PdfParseResult>('/lab-reports/parse-pdf', formData, {
+    return apiClient.post<LabReportParseResult>('/lab-reports/parse', formData, {
       headers: { 'Content-Type': 'multipart/form-data' },
     });
   },

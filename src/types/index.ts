@@ -910,13 +910,17 @@ export interface UpdateLabReportRequest {
   notes?: string;
 }
 
-// ==================== PDF PARSE ====================
-export interface PdfParseResult {
+// ==================== LAB report PARSE ====================
+export interface LabReportParseResult {
   reportNumber: string | null;
   petName: string | null;
   petId: string | null;
   vetName: string | null;
   vetId: string | null;
+  ownerName: string | null;
+  ownerId: string | null;
+  microchipNumber: string | null;
+  species: string | null;
   laboratoryName: string | null;
   analysisType: string | null;
   requestedAt: string | null;

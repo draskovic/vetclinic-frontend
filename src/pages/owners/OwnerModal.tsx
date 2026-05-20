@@ -16,6 +16,13 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
   const queryClient = useQueryClient();
   const isEditing = !!owner;
 
+  const trimOnBlur = (fieldName: string) => () => {
+    const val = form.getFieldValue(fieldName);
+    if (typeof val === 'string' && val !== val.trim()) {
+      form.setFieldValue(fieldName, val.trim());
+    }
+  };
+
   useEffect(() => {
     if (open) {
       if (owner) {
@@ -47,10 +54,14 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
   });
 
   const handleSubmit = (values: CreateOwnerRequest) => {
+    const trimmed = Object.fromEntries(
+      Object.entries(values).map(([key, val]) => [key, typeof val === 'string' ? val.trim() : val]),
+    ) as CreateOwnerRequest;
+
     if (isEditing) {
-      updateMutation.mutate(values);
+      updateMutation.mutate(trimmed);
     } else {
-      createMutation.mutate(values);
+      createMutation.mutate(trimmed);
     }
   };
 
@@ -73,7 +84,7 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
               label='Ime'
               rules={[{ required: true, message: 'Unesite ime!' }]}
             >
-              <Input placeholder='Ime' />
+              <Input placeholder='Ime' onBlur={trimOnBlur('firstName')} />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -82,7 +93,7 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
               label='Prezime'
               rules={[{ required: true, message: 'Unesite prezime!' }]}
             >
-              <Input placeholder='Prezime' />
+              <Input placeholder='Prezime' onBlur={trimOnBlur('lastName')} />
             </Form.Item>
           </Col>
           <Col span={8}>
@@ -91,7 +102,7 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
               label='Telefon'
               rules={[{ required: true, message: 'Unesite telefon!' }]}
             >
-              <Input placeholder='+381...' />
+              <Input placeholder='+381...' onBlur={trimOnBlur('phone')} />
             </Form.Item>
           </Col>
         </Row>
@@ -104,17 +115,17 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
               label='Email'
               rules={[{ type: 'email', message: 'Unesite ispravnu email adresu!' }]}
             >
-              <Input placeholder='email@example.com' />
+              <Input placeholder='email@example.com' onBlur={trimOnBlur('email')} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name='city' label='Grad'>
-              <Input placeholder='Grad' />
+              <Input placeholder='Grad' onBlur={trimOnBlur('city')} />
             </Form.Item>
           </Col>
           <Col span={8}>
             <Form.Item name='address' label='Adresa'>
-              <Input placeholder='Adresa' />
+              <Input placeholder='Adresa' onBlur={trimOnBlur('address')} />
             </Form.Item>
           </Col>
         </Row>
@@ -123,17 +134,20 @@ export default function OwnerModal({ open, owner, onClose }: OwnerModalProps) {
         <Row gutter={12}>
           <Col span={6}>
             <Form.Item name='personalId' label='JMBG'>
-              <Input placeholder='JMBG' />
+              <Input placeholder='JMBG' onBlur={trimOnBlur('personalId')} />
             </Form.Item>
           </Col>
           <Col span={6}>
             <Form.Item name='clientCode' label='Broj kartona'>
-              <Input placeholder={isEditing ? '' : 'Auto (KC-0001)'} />
+              <Input
+                placeholder={isEditing ? '' : 'Auto (KC-0001)'}
+                onBlur={trimOnBlur('clientCode')}
+              />
             </Form.Item>
           </Col>
           <Col span={12}>
             <Form.Item name='note' label='Napomena'>
-              <Input.TextArea placeholder='Napomena...' rows={3} />
+              <Input.TextArea placeholder='Napomena...' rows={3} onBlur={trimOnBlur('note')} />
             </Form.Item>
           </Col>
         </Row>

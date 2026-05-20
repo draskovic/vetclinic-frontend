@@ -1,6 +1,12 @@
 import { useState, useEffect } from 'react';
-import { Table, Button, Popconfirm, message, Typography, Tag, Space } from 'antd';
-import { PlusOutlined, DeleteOutlined, EditOutlined, FilePdfOutlined } from '@ant-design/icons';
+import { Table, Button, Popconfirm, message, Typography, Tag, Space, Tooltip } from 'antd';
+import {
+  PlusOutlined,
+  DeleteOutlined,
+  EditOutlined,
+  FilePdfOutlined,
+  FileWordOutlined,
+} from '@ant-design/icons';
 import { labReportsApi } from '@/api/lab-reports';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import type { LabReport, LabReportStatus } from '@/types';
@@ -51,6 +57,14 @@ export default function LabReportItemsTable({ medicalRecordId, petId }: LabRepor
       </Typography.Text>
     );
   }
+
+  const renderFileIcon = (fileName?: string | null) => {
+    const lower = (fileName || '').toLowerCase();
+    if (lower.endsWith('.docx')) {
+      return <FileWordOutlined style={{ color: '#2b579a' }} />;
+    }
+    return <FilePdfOutlined style={{ color: '#ff4d4f' }} />;
+  };
 
   return (
     <div style={{ marginTop: 16 }}>
@@ -115,24 +129,32 @@ export default function LabReportItemsTable({ medicalRecordId, petId }: LabRepor
             render: (_, record) => (
               <Space>
                 {record.fileName && (
-                  <Button
-                    type='text'
-                    icon={<FilePdfOutlined style={{ color: '#ff4d4f' }} />}
-                    size='small'
-                    onClick={async () => {
-                      try {
-                        const res = await labReportsApi.downloadFile(record.id);
-                        const blob = new Blob([res.data], {
-                          type: record.mimeType ?? 'application/pdf',
-                        });
-                        const url = window.URL.createObjectURL(blob);
-                        window.open(url, '_blank');
-                        setTimeout(() => window.URL.revokeObjectURL(url), 10000);
-                      } catch {
-                        message.error('Greška pri preuzimanju fajla!');
-                      }
-                    }}
-                  />
+                  <Tooltip
+                    title={
+                      (record.fileName || '').toLowerCase().endsWith('.docx')
+                        ? 'Preuzmi DOCX (otvori u Word-u)'
+                        : 'Otvori PDF'
+                    }
+                  >
+                    <Button
+                      type='text'
+                      icon={renderFileIcon(record.fileName)}
+                      size='small'
+                      onClick={async () => {
+                        try {
+                          const res = await labReportsApi.downloadFile(record.id);
+                          const blob = new Blob([res.data], {
+                            type: record.mimeType ?? 'application/pdf',
+                          });
+                          const url = window.URL.createObjectURL(blob);
+                          window.open(url, '_blank');
+                          setTimeout(() => window.URL.revokeObjectURL(url), 10000);
+                        } catch {
+                          message.error('Greška pri preuzimanju fajla!');
+                        }
+                      }}
+                    />
+                  </Tooltip>
                 )}
                 <Button
                   type='text'
