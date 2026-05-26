@@ -40,6 +40,7 @@ import { invoicesApi } from '@/api/invoices';
 import InvoiceModal from '@/pages/invoices/InvoiceModal';
 import { useAuthStore } from '@/store/authStore';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import PermissionGuard from '@/components/PermissionGuard';
 
 export interface MedicalRecordEditorProps {
   record: MedicalRecord | null;
@@ -59,6 +60,14 @@ export default function MedicalRecordEditor({
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
 
+  // KRITIČNO: parent komponente NE smeju da menjaju `record` prop nakon što
+  // createMutation uspe i postavi `createdRecord`. Tranzicija create→edit se
+  // odvija interno (`currentRecord = record ?? createdRecord`). Ako parent
+  // prosledi novi record u onSaved callback-u (npr. setActiveRecord(...)),
+  // kombinacija sa `key={record.id}` na expandedRow parent-ima bi okinula
+  // full remount → izgubljen createdRecord + reset svih tabova. Modal koristi
+  // conditional render `{open && ...}` (unmount samo između sessija), zato je tu
+  // bezbedno. Ako uvodiš nov parent ili refactor postojećeg — uvaži ovo pravilo.
   const [createdRecord, setCreatedRecord] = useState<MedicalRecord | null>(null);
   const currentRecord = record ?? createdRecord;
   const [petSearch, setPetSearch] = useState('');
@@ -77,8 +86,6 @@ export default function MedicalRecordEditor({
 
   const [protocolSearch, setProtocolSearch] = useState('');
   const debouncedProtocolSearch = useDebouncedValue(protocolSearch, 300);
-
-  const [finishing, setFinishing] = useState(false);
 
   const { data: diagnosisSuggestions } = useQuery({
     queryKey: ['diagnoses-autocomplete', debouncedDiagnosisSearch],
@@ -180,7 +187,12 @@ export default function MedicalRecordEditor({
         form.setFieldsValue({ vetId: currentUser.id });
       }
     }
-  }, [record, form]);
+    // Trigger samo na promenu IDENTITETA record-a (UUID), ne na promenu reference.
+    // React Query refetch vraća novi objekt sa istim id-jem — bez ovog ograničenja,
+    // korisnikov dirty unos u formi bi bio pregažen sa svežim sadržajem record-a.
+    // Form, defaultValues, currentUser su stabilan kontekst — namerno isključeno iz deps.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [record?.id]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateMedicalRecordRequest) => medicalRecordsApi.create(data),
@@ -236,6 +248,26 @@ export default function MedicalRecordEditor({
     onError: () => message.error('Greška pri primeni protokola'),
   });
 
+  const finishMutation = useMutation({
+    mutationFn: (payload: UpdateMedicalRecordRequest) =>
+      medicalRecordsApi.finish(currentRecord!.id, payload),
+    onSuccess: () => {
+      message.success('Pregled završen!');
+      queryClient.invalidateQueries({ queryKey: ['medical-records'] });
+      queryClient.invalidateQueries({ queryKey: ['appointments'] });
+      queryClient.invalidateQueries({ queryKey: ['dashboard-appointments'] });
+      onSaved?.();
+    },
+    onError: (error: any) => {
+      if (error?.response?.status === 403) {
+        message.error('Nemate dozvolu da završite pregled.');
+      } else {
+        const msg = error?.response?.data?.message || 'Greška pri završavanju pregleda!';
+        message.error(msg);
+      }
+    },
+  });
+
   const createDiagnosisMutation = useMutation({
     mutationFn: (name: string) => diagnosesApi.create({ name, active: true }),
     onSuccess: (newDiag) => {
@@ -281,38 +313,18 @@ export default function MedicalRecordEditor({
   };
 
   const handleFinish = async () => {
+    if (!currentRecord) return;
     try {
       const values = await form.validateFields();
-      setFinishing(true);
       const payload = {
         ...values,
         appointmentId: values.appointmentId ?? null,
         followUpRecommended: values.followUpRecommended ?? false,
         followUpDate: values.followUpDate ? values.followUpDate.format('YYYY-MM-DD') : null,
       };
-
-      // Sačuvaj intervenciju
-      if (isEditMode) {
-        await medicalRecordsApi.update(currentRecord!.id, payload);
-      }
-
-      // Promeni status termina na COMPLETED
-      if (currentRecord?.appointmentId) {
-        try {
-          await appointmentsApi.update(currentRecord.appointmentId, { status: 'COMPLETED' } as any);
-        } catch {
-          // Ne blokiraj ako ažuriranje termina ne uspe
-        }
-      }
-
-      message.success('Pregled završen!');
-      queryClient.invalidateQueries({ queryKey: ['medical-records'] });
-      queryClient.invalidateQueries({ queryKey: ['appointments'] });
-      queryClient.invalidateQueries({ queryKey: ['dashboard-appointments'] });
-      setFinishing(false);
-      onSaved?.();
+      finishMutation.mutate(payload);
     } catch {
-      setFinishing(false);
+      // Form validation error — Antd automatski prikazuje field-level greške
     }
   };
 
@@ -710,19 +722,21 @@ export default function MedicalRecordEditor({
             </Button>
           )}
           {isEditMode && currentRecord?.appointmentId && (
-            <Button
-              icon={<CheckCircleOutlined />}
-              style={{
-                marginRight: 8,
-                backgroundColor: '#22c55e',
-                borderColor: '#22c55e',
-                color: '#fff',
-              }}
-              loading={finishing}
-              onClick={handleFinish}
-            >
-              Završi pregled
-            </Button>
+            <PermissionGuard permission='manage_medical_records'>
+              <Button
+                icon={<CheckCircleOutlined />}
+                style={{
+                  marginRight: 8,
+                  backgroundColor: '#22c55e',
+                  borderColor: '#22c55e',
+                  color: '#fff',
+                }}
+                loading={finishMutation.isPending}
+                onClick={handleFinish}
+              >
+                Završi pregled
+              </Button>
+            </PermissionGuard>
           )}
           <Button type='primary' htmlType='submit' loading={isLoading}>
             {isEditMode ? 'Sačuvaj izmene' : 'Kreiraj intervenciju'}

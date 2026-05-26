@@ -496,6 +496,7 @@ export default function PetProfilePage() {
               onExpandedRowsChange: (keys) => setExpandedMrKeys(keys as string[]),
               expandedRowRender: (record) => (
                 <MedicalRecordEditor
+                  key={record.id}
                   record={record}
                   compact
                   onSaved={() => {

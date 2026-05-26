@@ -41,6 +41,9 @@ export const medicalRecordsApi = {
   update: (id: string, data: UpdateMedicalRecordRequest) =>
     apiClient.put<MedicalRecord>(`/medical-records/${id}`, data),
 
+  finish: (id: string, data: UpdateMedicalRecordRequest) =>
+    apiClient.post<MedicalRecord>(`/medical-records/${id}/finish`, data),
+
   delete: (id: string) => apiClient.delete(`/medical-records/${id}`),
 
   downloadPdf: (id: string) =>

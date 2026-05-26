@@ -323,6 +323,7 @@ export default function MedicalRecordsPage() {
             onExpandedRowsChange: (keys) => setExpandedRowKeys(keys as string[]),
             expandedRowRender: (record) => (
               <MedicalRecordEditor
+                key={record.id}
                 record={record}
                 compact
                 onSaved={() => {

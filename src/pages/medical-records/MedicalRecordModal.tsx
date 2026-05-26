@@ -29,12 +29,14 @@ export default function MedicalRecordModal({
       width={1000}
       style={{ top: 20 }}
     >
-      <MedicalRecordEditor
-        record={record}
-        onSaved={onClose}
-        onClose={onClose}
-        defaultValues={defaultValues}
-      />
+      {open && (
+        <MedicalRecordEditor
+          record={record}
+          onSaved={onClose}
+          onClose={onClose}
+          defaultValues={defaultValues}
+        />
+      )}
     </Modal>
   );
 }
