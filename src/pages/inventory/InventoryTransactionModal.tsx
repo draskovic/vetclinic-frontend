@@ -9,6 +9,7 @@ import type {
   AdjustmentReason,
 } from '../../types';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import { INVENTORY_FULL_KEYS } from '@/lib/queryKeySets';
 import dayjs from 'dayjs';
 
 interface Props {
@@ -64,15 +65,7 @@ export default function InventoryTransactionModal({
     mutationFn: (data: CreateInventoryTransactionRequest) => inventoryTransactionsApi.create(data),
     onSuccess: () => {
       message.success('Transakcija kreirana');
-      invalidateAndBroadcast(queryClient, [
-        ['inventory-transactions'],
-        ['inventory-transactions-by-item'],
-        ['inventory-items'],
-        ['inventory-item'],
-        ['inventory-batches'],
-        ['inventory-batches-expiring'],
-        ['dashboard-low-stock'],
-      ]);
+      invalidateAndBroadcast(queryClient, [...INVENTORY_FULL_KEYS]);
       onClose();
     },
   });
@@ -82,15 +75,7 @@ export default function InventoryTransactionModal({
       inventoryTransactionsApi.update(transaction!.id, data),
     onSuccess: () => {
       message.success('Transakcija ažurirana');
-      invalidateAndBroadcast(queryClient, [
-        ['inventory-transactions'],
-        ['inventory-transactions-by-item'],
-        ['inventory-items'],
-        ['inventory-item'],
-        ['inventory-batches'],
-        ['inventory-batches-expiring'],
-        ['dashboard-low-stock'],
-      ]);
+      invalidateAndBroadcast(queryClient, [...INVENTORY_FULL_KEYS]);
       onClose();
     },
   });

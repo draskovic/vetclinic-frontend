@@ -34,6 +34,7 @@ import InventoryTransactionModal from './InventoryTransactionModal';
 import dayjs from 'dayjs';
 import InventoryBatchModal from './InventoryBatchModal';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import { INVENTORY_FULL_KEYS } from '@/lib/queryKeySets';
 
 const categoryLabels: Record<string, string> = {
   MEDICATION: 'Lekovi',
@@ -96,16 +97,7 @@ export default function InventoryItemDetailPage() {
     mutationFn: (txId: string) => inventoryTransactionsApi.reverse(txId),
     onSuccess: () => {
       message.success('Transakcija stornirana');
-      invalidateAndBroadcast(queryClient, [
-        ['inventory-transactions-by-item', id],
-        ['inventory-transactions'],
-        ['inventory-item', id],
-        ['inventory-item'],
-        ['inventory-items'],
-        ['inventory-batches', id],
-        ['inventory-batches'],
-        ['dashboard-low-stock'],
-      ]);
+      invalidateAndBroadcast(queryClient, [...INVENTORY_FULL_KEYS]);
     },
     onError: (err: any) => {
       message.error(err?.response?.data?.message ?? 'Greška pri storniranju');
@@ -116,15 +108,7 @@ export default function InventoryItemDetailPage() {
     mutationFn: (batchId: string) => inventoryBatchesApi.delete(batchId),
     onSuccess: async () => {
       message.success('Lot obrisan');
-      invalidateAndBroadcast(queryClient, [
-        ['inventory-batches', id],
-        ['inventory-batches'],
-        ['inventory-item', id],
-        ['inventory-item'],
-        ['inventory-items'],
-        ['inventory-batches-expiring'],
-        ['dashboard-low-stock'],
-      ]);
+      invalidateAndBroadcast(queryClient, [...INVENTORY_FULL_KEYS]);
     },
 
     onError: (err: any) => {

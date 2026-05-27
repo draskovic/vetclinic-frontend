@@ -6,6 +6,7 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Treatment } from '@/types';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import { INVENTORY_FULL_KEYS, INVOICE_KEYS } from '@/lib/queryKeySets';
 
 interface TreatmentItemsTableProps {
   medicalRecordId: string | null; // null = nova intervencija, još nije kreirana
@@ -82,17 +83,9 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
       message.success('Usluga dodata!');
       refetch();
       invalidateAndBroadcast(queryClient, [
-        ['invoice-by-record'],
-        ['invoices'],
-        ['invoice-items'],
         ['service-inventory-mappings'],
-        // Inventar — sva mesta koja prikazuju stanje
-        ['inventory-items'],
-        ['inventory-item'],
-        ['inventory-batches'],
-        ['inventory-transactions-by-item'],
-        ['inventory-batches-expiring'],
-        ['dashboard-low-stock'],
+        ...INVOICE_KEYS,
+        ...INVENTORY_FULL_KEYS,
       ]);
     },
 
@@ -105,17 +98,9 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
       message.success('Usluga uklonjena!');
       refetch();
       invalidateAndBroadcast(queryClient, [
-        ['invoice-by-record'],
-        ['invoices'],
-        ['invoice-items'],
         ['service-inventory-mappings'],
-        // Inventar — reverzija FIFO dedukcije
-        ['inventory-items'],
-        ['inventory-item'],
-        ['inventory-batches'],
-        ['inventory-transactions-by-item'],
-        ['inventory-batches-expiring'],
-        ['dashboard-low-stock'],
+        ...INVOICE_KEYS,
+        ...INVENTORY_FULL_KEYS,
       ]);
     },
 

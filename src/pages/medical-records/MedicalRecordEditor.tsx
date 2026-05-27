@@ -40,6 +40,7 @@ import { invoicesApi } from '@/api/invoices';
 import InvoiceModal from '@/pages/invoices/InvoiceModal';
 import { useAuthStore } from '@/store/authStore';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import { INVENTORY_FULL_KEYS, INVOICE_KEYS } from '@/lib/queryKeySets';
 import PermissionGuard from '@/components/PermissionGuard';
 
 export interface MedicalRecordEditorProps {
@@ -234,15 +235,8 @@ export default function MedicalRecordEditor({
       setAppliedProtocolIds((prev) => new Set(prev).add(req.protocolId));
       invalidateAndBroadcast(queryClient, [
         ['treatments', currentRecord?.id],
-        ['invoice-by-record', currentRecord?.id],
-        ['invoices'],
-        ['invoice-items'],
-        ['inventory-items'],
-        ['inventory-item'],
-        ['inventory-batches'],
-        ['inventory-transactions-by-item'],
-        ['inventory-batches-expiring'],
-        ['dashboard-low-stock'],
+        ...INVOICE_KEYS,
+        ...INVENTORY_FULL_KEYS,
       ]);
     },
     onError: () => message.error('Greška pri primeni protokola'),
@@ -252,7 +246,7 @@ export default function MedicalRecordEditor({
     mutationFn: (payload: UpdateMedicalRecordRequest) =>
       medicalRecordsApi.finish(currentRecord!.id, payload),
     onSuccess: () => {
-      message.success('Pregled završen!');
+      message.success('Termin označen kao završen!');
       queryClient.invalidateQueries({ queryKey: ['medical-records'] });
       queryClient.invalidateQueries({ queryKey: ['appointments'] });
       queryClient.invalidateQueries({ queryKey: ['dashboard-appointments'] });
@@ -734,7 +728,7 @@ export default function MedicalRecordEditor({
                 loading={finishMutation.isPending}
                 onClick={handleFinish}
               >
-                Završi pregled
+                Završi termin
               </Button>
             </PermissionGuard>
           )}

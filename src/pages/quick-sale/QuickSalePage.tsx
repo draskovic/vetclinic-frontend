@@ -38,6 +38,7 @@ import type {
   QuickSaleResponse,
   Service,
 } from '@/types';
+import { INVENTORY_FULL_KEYS, INVOICE_KEYS } from '@/lib/queryKeySets';
 
 const { Title, Text } = Typography;
 
@@ -204,12 +205,9 @@ export default function QuickSalePage() {
 
       // Prodaja je promenila stanje na lageru, kreirala fakturu i OUT tx-e — invalidiraj sve relevantne keševe (cross-tab sync)
       invalidateAndBroadcast(queryClient, [
-        ['quick-sale-items'], // POS dropdown — najbitnije za bug iz screenshot-a
-        ['inventory-items'], // glavna lista inventara (drugi tabovi)
-        ['inventory-item'], // detalji pojedinačnih artikala (prefix match → svi ID-evi)
-        ['inventory-transactions'], // istorija OUT transakcija
-        ['inventory-batches'], // lotovi (za track_batches artikle)
-        ['invoices'], // lista faktura
+        ['quick-sale-items'], // POS dropdown — specifičan za Quick Sale
+        ...INVOICE_KEYS,
+        ...INVENTORY_FULL_KEYS,
       ]);
     },
     onError: (err: unknown) => {

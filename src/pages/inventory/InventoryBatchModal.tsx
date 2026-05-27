@@ -10,6 +10,7 @@ import type {
 } from '../../types';
 
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import { INVENTORY_FULL_KEYS, BATCH_ONLY_KEYS } from '@/lib/queryKeySets';
 
 interface Props {
   open: boolean;
@@ -27,15 +28,7 @@ export default function InventoryBatchModal({ open, inventoryItemId, batch, onCl
     mutationFn: (data: CreateInventoryBatchRequest) => inventoryBatchesApi.create(data),
     onSuccess: async () => {
       message.success('Lot kreiran');
-      invalidateAndBroadcast(queryClient, [
-        ['inventory-batches', inventoryItemId],
-        ['inventory-batches'],
-        ['inventory-items'],
-        ['inventory-item', inventoryItemId],
-        ['inventory-item'],
-        ['inventory-batches-expiring'],
-        ['dashboard-low-stock'],
-      ]);
+      invalidateAndBroadcast(queryClient, [...INVENTORY_FULL_KEYS]);
       onClose();
     },
 
@@ -48,11 +41,7 @@ export default function InventoryBatchModal({ open, inventoryItemId, batch, onCl
     mutationFn: (data: UpdateInventoryBatchRequest) => inventoryBatchesApi.update(batch!.id, data),
     onSuccess: async () => {
       message.success('Lot ažuriran');
-      invalidateAndBroadcast(queryClient, [
-        ['inventory-batches', inventoryItemId],
-        ['inventory-batches'],
-        ['inventory-batches-expiring'],
-      ]);
+      invalidateAndBroadcast(queryClient, [...BATCH_ONLY_KEYS]);
       onClose();
     },
 
