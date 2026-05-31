@@ -11,6 +11,7 @@ import {
   InputNumber,
   Row,
   Col,
+  Alert,
 } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { petsApi } from '@/api/pets';
@@ -303,18 +304,19 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
           </Col>
         </Row>
 
-        <Row gutter={16}>
-          <Col span={12}>
-            <Form.Item name='allergies' label='Alergije'>
-              <Input.TextArea placeholder='Poznate alergije...' rows={2} />
-            </Form.Item>
-          </Col>
-          <Col span={12}>
-            <Form.Item name='note' label='Napomena'>
-              <Input.TextArea placeholder='Napomena...' rows={2} />
-            </Form.Item>
-          </Col>
-        </Row>
+        <Form.Item name='note' label='Napomena'>
+          <Input.TextArea
+            placeholder='Beleška za osoblje (ponašanje, posebni zahtevi vlasnika...)'
+            rows={2}
+          />
+        </Form.Item>
+
+        <Alert
+          type='info'
+          showIcon
+          style={{ marginBottom: 16 }}
+          message='Alergije i zdravstvena upozorenja (hronične bolesti, posebno postupanje) se unose preko dugmeta „Upozorenja" na profilu ljubimca.'
+        />
 
         <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
           <Button onClick={onClose} style={{ marginRight: 8 }}>

@@ -10,6 +10,7 @@ import type { Appointment, CreateAppointmentRequest, UpdateAppointmentRequest } 
 import dayjs from 'dayjs';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useAuthStore } from '@/store/authStore';
+import PetHealthAlertsBanner from '@/components/PetHealthAlertsBanner';
 
 interface AppointmentModalProps {
   open: boolean;
@@ -71,6 +72,9 @@ export default function AppointmentModal({
   });
 
   const currentUser = useAuthStore((s) => s.user);
+
+  const watchedPetId = Form.useWatch('petId', form);
+  const selectedPetNote = petsData?.find((p) => p.id === watchedPetId)?.note ?? null;
 
   useEffect(() => {
     if (open) {
@@ -146,11 +150,30 @@ export default function AppointmentModal({
       value: o.id,
     })) ?? [];
 
+  // Edit mod: ako izabrani vlasnik nije u trenutnoj listi pretrage, dodaj ga
+  // (inače Select prikazuje raw ID umesto imena)
+  if (
+    appointment?.ownerId &&
+    appointment?.ownerName &&
+    !ownerOptions.find((o) => o.value === appointment.ownerId)
+  ) {
+    ownerOptions.unshift({ label: appointment.ownerName, value: appointment.ownerId });
+  }
+
   const petOptions =
     petsData?.map((p) => ({
       label: p.name,
       value: p.id,
     })) ?? [];
+
+  // Edit mod: isti fallback za ljubimca (petsData se učita tek po selectedOwnerId)
+  if (
+    appointment?.petId &&
+    appointment?.petName &&
+    !petOptions.find((p) => p.value === appointment.petId)
+  ) {
+    petOptions.unshift({ label: appointment.petName, value: appointment.petId });
+  }
 
   const vetOptions =
     usersData?.content.map((u) => ({
@@ -180,6 +203,7 @@ export default function AppointmentModal({
         style={{ marginTop: 16 }}
         initialValues={{ status: 'SCHEDULED' }}
       >
+        <PetHealthAlertsBanner petId={watchedPetId} petNote={selectedPetNote} compact />
         <Row gutter={16}>
           <Col span={12}>
             <Form.Item

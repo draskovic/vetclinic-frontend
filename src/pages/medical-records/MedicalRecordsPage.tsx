@@ -1,4 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
+import { useNavigate } from 'react-router-dom';
 
 import {
   Table,
@@ -19,6 +20,7 @@ import {
   DeleteOutlined,
   FilePdfOutlined,
   DollarOutlined,
+  ExclamationCircleFilled,
 } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
@@ -37,6 +39,7 @@ import { useAuthStore } from '@/store/authStore';
 const { Title } = Typography;
 
 export default function MedicalRecordsPage() {
+  const navigate = useNavigate();
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
 
@@ -137,6 +140,16 @@ export default function MedicalRecordsPage() {
       title: 'Ljubimac',
       dataIndex: 'petName',
       key: 'petName',
+      render: (val: string, record) => (
+        <Space size={4}>
+          {record.hasActiveAlerts && (
+            <Tooltip title='Ovaj ljubimac ima aktivna zdravstvena upozorenja (alergije, hronične bolesti…)'>
+              <ExclamationCircleFilled style={{ color: '#ff4d4f' }} />
+            </Tooltip>
+          )}
+          <a onClick={() => navigate(`/pets/${record.petId}`)}>{val}</a>
+        </Space>
+      ),
     },
     {
       title: 'Vlasnik',

@@ -64,3 +64,16 @@ export const BATCH_ONLY_KEYS: readonly QueryKey[] = [
   ['inventory-batches'],
   ['inventory-batches-expiring'],
 ] as const;
+
+/**
+ * Pet health alerts (alergije, hronike, posebne napomene).
+ * - `pet-health-alerts` → banner data u 4 UI lokacije (editor, profil, appointment, grid)
+ * - `medical-records` → hasActiveAlerts flag u listing-u (MedicalRecordsPage ikonica upozorenja)
+ *
+ * Koristi se kad CRUD mutacija u PetHealthAlertsEditorModal kreira/menja/briše alert.
+ */
+export const PET_HEALTH_ALERTS_KEYS: readonly QueryKey[] = [
+  ['pet-health-alerts'], // banner data u svim lokacijama
+  ['medical-records'], // hasActiveAlerts u MedicalRecordsPage grid-u
+  ['pets'], // hasActiveAlerts u PetsPage grid-u
+] as const;

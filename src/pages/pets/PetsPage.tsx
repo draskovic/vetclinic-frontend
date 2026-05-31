@@ -1,7 +1,13 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Table, Button, Space, Input, Card, Typography, Popconfirm, message } from 'antd';
-import { PlusOutlined, SearchOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { Table, Button, Space, Input, Card, Typography, Popconfirm, message, Tooltip } from 'antd';
+import {
+  PlusOutlined,
+  SearchOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  ExclamationCircleFilled,
+} from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { ColumnsType } from 'antd/es/table';
 import { petsApi } from '@/api/pets';
@@ -61,7 +67,14 @@ export default function PetsPage() {
       key: 'name',
       sorter: (a, b) => a.name.localeCompare(b.name),
       render: (name: string, record: Pet) => (
-        <a onClick={() => navigate(`/pets/${record.id}`)}>{name}</a>
+        <Space size={4}>
+          {record.hasActiveAlerts && (
+            <Tooltip title='Ovaj ljubimac ima aktivna zdravstvena upozorenja (alergije, hronične bolesti…)'>
+              <ExclamationCircleFilled style={{ color: '#ff4d4f' }} />
+            </Tooltip>
+          )}
+          <a onClick={() => navigate(`/pets/${record.id}`)}>{name}</a>
+        </Space>
       ),
     },
     {

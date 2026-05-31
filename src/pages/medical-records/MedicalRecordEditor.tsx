@@ -42,6 +42,7 @@ import { useAuthStore } from '@/store/authStore';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 import { INVENTORY_FULL_KEYS, INVOICE_KEYS } from '@/lib/queryKeySets';
 import PermissionGuard from '@/components/PermissionGuard';
+import PetHealthAlertsBanner from '@/components/PetHealthAlertsBanner';
 
 export interface MedicalRecordEditorProps {
   record: MedicalRecord | null;
@@ -115,6 +116,7 @@ export default function MedicalRecordEditor({
   });
 
   const followUpRecommended = Form.useWatch('followUpRecommended', form);
+  const watchedPetId = Form.useWatch('petId', form);
 
   const currentUser = useAuthStore((s) => s.user);
 
@@ -388,6 +390,11 @@ export default function MedicalRecordEditor({
 
   return (
     <>
+      <PetHealthAlertsBanner
+        petId={watchedPetId ?? petIdToFetch}
+        petNote={selectedPet?.id === (watchedPetId ?? petIdToFetch) ? selectedPet?.note : undefined}
+        compact={compact}
+      />
       <Form
         form={form}
         layout='vertical'
@@ -455,7 +462,6 @@ export default function MedicalRecordEditor({
             </Form.Item>
           </Col>
         </Row>
-
         <Row gutter={12}>
           <Col span={12}>
             <Form.Item name='diagnosisIds' label='Dijagnoze'>
@@ -495,7 +501,6 @@ export default function MedicalRecordEditor({
             </Form.Item>
           </Col>
         </Row>
-
         {suggestedProtocols && suggestedProtocols.length > 0 && isEditMode && diagnosisChanged && (
           <Alert
             type='info'
@@ -532,7 +537,6 @@ export default function MedicalRecordEditor({
             }
           />
         )}
-
         <Row gutter={12}>
           <Col span={4}>
             <Form.Item name='weightKg' label='Težina (kg)'>
@@ -575,13 +579,42 @@ export default function MedicalRecordEditor({
           </Col>
         </Row>
 
+        <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
+          {onClose && (
+            <Button onClick={onClose} style={{ marginRight: 8 }}>
+              Otkaži
+            </Button>
+          )}
+          {isEditMode && currentRecord?.appointmentId && (
+            <PermissionGuard permission='manage_medical_records'>
+              <Button
+                icon={<CheckCircleOutlined />}
+                style={{
+                  marginRight: 8,
+                  backgroundColor: '#22c55e',
+                  borderColor: '#22c55e',
+                  color: '#fff',
+                }}
+                loading={finishMutation.isPending}
+                onClick={handleFinish}
+              >
+                Završi termin
+              </Button>
+            </PermissionGuard>
+          )}
+          <Button type='primary' htmlType='submit' loading={isLoading}>
+            {isEditMode ? 'Sačuvaj izmene' : 'Kreiraj intervenciju'}
+          </Button>
+        </Form.Item>
+
         {isEditMode && (
           <>
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-start',
                 alignItems: 'center',
+                gap: 12,
                 marginTop: 8,
                 marginBottom: 8,
               }}
@@ -616,8 +649,9 @@ export default function MedicalRecordEditor({
             <div
               style={{
                 display: 'flex',
-                justifyContent: 'space-between',
+                justifyContent: 'flex-start',
                 alignItems: 'center',
+                gap: 12,
                 marginBottom: 8,
               }}
             >
@@ -708,34 +742,6 @@ export default function MedicalRecordEditor({
             />
           </>
         )}
-
-        <Form.Item style={{ marginBottom: 0, textAlign: 'right' }}>
-          {onClose && (
-            <Button onClick={onClose} style={{ marginRight: 8 }}>
-              Otkaži
-            </Button>
-          )}
-          {isEditMode && currentRecord?.appointmentId && (
-            <PermissionGuard permission='manage_medical_records'>
-              <Button
-                icon={<CheckCircleOutlined />}
-                style={{
-                  marginRight: 8,
-                  backgroundColor: '#22c55e',
-                  borderColor: '#22c55e',
-                  color: '#fff',
-                }}
-                loading={finishMutation.isPending}
-                onClick={handleFinish}
-              >
-                Završi termin
-              </Button>
-            </PermissionGuard>
-          )}
-          <Button type='primary' htmlType='submit' loading={isLoading}>
-            {isEditMode ? 'Sačuvaj izmene' : 'Kreiraj intervenciju'}
-          </Button>
-        </Form.Item>
       </Form>
 
       {invoiceModalOpen && (

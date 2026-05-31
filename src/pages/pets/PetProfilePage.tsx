@@ -28,6 +28,7 @@ import {
   PictureOutlined,
   ExperimentOutlined,
   MedicineBoxOutlined,
+  WarningOutlined,
 } from '@ant-design/icons';
 import type { ColumnsType } from 'antd/es/table';
 import dayjs from 'dayjs';
@@ -54,6 +55,8 @@ import MedicalRecordModal from '../medical-records/MedicalRecordModal';
 import MedicalRecordEditor from '../medical-records/MedicalRecordEditor';
 import { useAuthStore } from '@/store/authStore';
 import QuickVaccinationForm from './QuickVaccinationForm';
+import PetHealthAlertsBanner from '@/components/PetHealthAlertsBanner';
+import PetHealthAlertsEditorModal from './PetHealthAlertsEditorModal';
 
 const { Title } = Typography;
 
@@ -115,6 +118,7 @@ export default function PetProfilePage() {
   const [recordModalOpen, setRecordModalOpen] = useState(false);
   const [vaccinationModalOpen, setVaccinationModalOpen] = useState(false);
   const [labReportModalOpen, setLabReportModalOpen] = useState(false);
+  const [alertsModalOpen, setAlertsModalOpen] = useState(false);
 
   const { data: pet, isLoading: petLoading } = useQuery({
     queryKey: ['pet', petId],
@@ -605,6 +609,13 @@ export default function PetProfilePage() {
         </Space>
         <Space>
           <Button
+            icon={<WarningOutlined />}
+            onClick={() => setAlertsModalOpen(true)}
+            disabled={!pet}
+          >
+            Upozorenja
+          </Button>
+          <Button
             type='primary'
             icon={<PlusOutlined />}
             onClick={() => {
@@ -622,6 +633,8 @@ export default function PetProfilePage() {
           </Button>
         </Space>
       </div>
+
+      <PetHealthAlertsBanner petId={pet.id} petNote={pet.note} />
 
       <Card style={{ marginBottom: 16 }}>
         <div style={{ display: 'flex', gap: 20, alignItems: 'flex-start' }}>
@@ -685,11 +698,7 @@ export default function PetProfilePage() {
               <Descriptions.Item label='Kastriran/a'>
                 {pet.isNeutered === null ? '-' : pet.isNeutered ? 'Da' : 'Ne'}
               </Descriptions.Item>
-              {pet.allergies && (
-                <Descriptions.Item label='Alergije' span={3}>
-                  {pet.allergies}
-                </Descriptions.Item>
-              )}
+
               {pet.note && (
                 <Descriptions.Item label='Napomena' span={3}>
                   {pet.note}
@@ -710,6 +719,14 @@ export default function PetProfilePage() {
           onClose={() => setQrModalOpen(false)}
           petId={pet.id}
           petName={pet.name}
+        />
+      )}
+      {pet && (
+        <PetHealthAlertsEditorModal
+          open={alertsModalOpen}
+          petId={pet.id}
+          petName={pet.name}
+          onClose={() => setAlertsModalOpen(false)}
         />
       )}
       {recordModalOpen && (

@@ -139,6 +139,7 @@ export interface Pet {
   photoUrl: string | null;
   createdAt: string;
   updatedAt: string;
+  hasActiveAlerts?: boolean;
 }
 
 export interface CreatePetRequest {
@@ -216,6 +217,39 @@ export interface CreateBreedRequest {
 export interface UpdateBreedRequest {
   speciesId?: string;
   name?: string;
+}
+
+// ==================== PET HEALTH ALERT ====================
+export type HealthAlertType = 'ALLERGY' | 'CHRONIC_CONDITION' | 'SPECIAL_HANDLING' | 'OTHER';
+
+export interface PetHealthAlert {
+  id: string;
+  petId: string;
+  petName: string | null;
+  alertType: HealthAlertType;
+
+  label: string;
+  description: string | null;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreatePetHealthAlertRequest {
+  petId: string;
+  alertType: HealthAlertType;
+
+  label: string;
+  description?: string | null;
+  active?: boolean;
+}
+
+export interface UpdatePetHealthAlertRequest {
+  alertType?: HealthAlertType;
+
+  label?: string;
+  description?: string | null;
+  active?: boolean;
 }
 
 // ==================== APPOINTMENT ====================
@@ -320,6 +354,7 @@ export interface MedicalRecord {
   followUpDate: string | null;
   createdAt: string;
   updatedAt: string;
+  hasActiveAlerts?: boolean;
 }
 
 export interface CreateMedicalRecordRequest {
