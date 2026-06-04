@@ -6,53 +6,39 @@ import {
   Popconfirm,
   message,
   InputNumber,
-  Select,
   Form,
   Typography,
   Tooltip,
+  Tag,
 } from 'antd';
-import {
-  PlusOutlined,
-  DeleteOutlined,
-  SaveOutlined,
-  CloseOutlined,
-  EditOutlined,
-} from '@ant-design/icons';
+import { DeleteOutlined, SaveOutlined, CloseOutlined, EditOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { invoiceItemsApi } from '@/api/invoices';
-import { servicesApi } from '@/api';
-import type { InvoiceItem, CreateInvoiceItemRequest, UpdateInvoiceItemRequest } from '@/types';
+import type {
+  InvoiceItem,
+  CreateInvoiceItemRequest,
+  UpdateInvoiceItemRequest,
+  BillableItem,
+} from '@/types';
 import type { ColumnsType } from 'antd/es/table';
+import { INVENTORY_FULL_KEYS } from '@/lib/queryKeySets';
+import BillableItemPicker from '../../components/BillableItemPicker';
 
 interface Props {
   invoiceId: string;
   onItemsChanged?: (items: InvoiceItem[]) => void;
-  readOnly?: boolean; // ← DODAJ
+  readOnly?: boolean;
 }
 
 export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly = false }: Props) {
   const [form] = Form.useForm();
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [adding, setAdding] = useState(false);
   const queryClient = useQueryClient();
 
   const { data: items, isLoading } = useQuery({
     queryKey: ['invoice-items', invoiceId],
     queryFn: () => invoiceItemsApi.getByInvoice(invoiceId).then((r) => r.data),
   });
-
-  const { data: servicesData } = useQuery({
-    queryKey: ['services-all'],
-    queryFn: () => servicesApi.getAll(0, 100),
-  });
-
-  const serviceOptions =
-    servicesData?.content
-      ?.filter((s) => s.active)
-      .map((s) => ({
-        label: `${s.name} — ${s.price.toFixed(2)} RSD`,
-        value: s.id,
-      })) ?? [];
 
   useEffect(() => {
     if (items && onItemsChanged) {
@@ -62,21 +48,27 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
 
   const createMutation = useMutation({
     mutationFn: (data: CreateInvoiceItemRequest) => invoiceItemsApi.create(data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       message.success('Stavka dodata');
       queryClient.invalidateQueries({ queryKey: ['invoice-items', invoiceId] });
-      setAdding(false);
-      form.resetFields();
+      if (variables.inventoryItemId) {
+        // dodat artikal → lager se promenio (auto-OUT)
+        INVENTORY_FULL_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
+      }
     },
     onError: () => message.error('Greška pri dodavanju stavke'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: ({ id, data }: { id: string; data: UpdateInvoiceItemRequest }) =>
+    mutationFn: ({ id, data }: { id: string; data: UpdateInvoiceItemRequest; isItem?: boolean }) =>
       invoiceItemsApi.update(id, data),
-    onSuccess: () => {
+    onSuccess: (_data, variables) => {
       message.success('Stavka izmenjena');
       queryClient.invalidateQueries({ queryKey: ['invoice-items', invoiceId] });
+      if (variables.isItem) {
+        // izmena qty artikla → lager se koriguje (R3a)
+        INVENTORY_FULL_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
+      }
       setEditingId(null);
     },
     onError: () => message.error('Greška pri izmeni stavke'),
@@ -84,9 +76,12 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => invoiceItemsApi.delete(id),
-    onSuccess: () => {
+    onSuccess: (_data, id) => {
       message.success('Stavka obrisana');
       queryClient.invalidateQueries({ queryKey: ['invoice-items', invoiceId] });
+      // ako je obrisan artikal → lager se vratio; jeftino je invalidirati uvek
+      INVENTORY_FULL_KEYS.forEach((k) => queryClient.invalidateQueries({ queryKey: k }));
+      void id;
     },
   });
 
@@ -103,26 +98,27 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
     form.setFieldValue('lineTotal', lineTotal);
   };
 
-  const handleServiceSelect = (serviceId: string) => {
-    const service = servicesData?.content?.find((s) => s.id === serviceId);
-    if (service) {
-      form.setFieldsValue({
-        description: service.name,
-        unitPrice: service.price,
-        taxRateId: service.taxRateId,
-        taxRateLabel: service.taxRateLabel,
-        taxRatePercent: service.taxRatePercent ?? 0,
-      });
-      calculateLineTotal();
-      setTimeout(() => handleSave(), 0);
-    }
+  const handleAddBillable = (item: BillableItem) => {
+    const unitPrice = item.unitPrice ?? 0;
+    const taxPercent = item.taxRatePercent ?? 0;
+    const lineTotal = +(unitPrice * (1 + taxPercent / 100)).toFixed(2); // qty=1, popust=0; backend ionako rekomputira
+    createMutation.mutate({
+      invoiceId,
+      serviceId: item.type === 'SERVICE' ? item.id : null,
+      inventoryItemId: item.type === 'ITEM' ? item.id : null,
+      description: item.name,
+      quantity: 1,
+      unitPrice,
+      taxRateId: item.taxRateId,
+      discountPercent: 0,
+      lineTotal,
+      sortOrder: (items?.length ?? 0) + 1,
+    });
   };
 
   const startEditing = (record: InvoiceItem) => {
     setEditingId(record.id);
-    setAdding(false);
     form.setFieldsValue({
-      serviceId: record.serviceId,
       description: record.description,
       quantity: record.quantity,
       unitPrice: record.unitPrice,
@@ -134,74 +130,37 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
     });
   };
 
-  const startAdding = () => {
-    setAdding(true);
-    setEditingId(null);
-    form.setFieldsValue({
-      serviceId: null,
-      description: '',
-      quantity: 1,
-      unitPrice: 0,
-      taxRateId: undefined,
-      taxRateLabel: '',
-      taxRatePercent: 0,
-      discountPercent: 0,
-      lineTotal: 0,
-    });
-  };
-
   const handleSave = () => {
+    if (!editingId) return;
+    const isItem = !!items?.find((i) => i.id === editingId)?.inventoryItemId;
     form.validateFields().then((values) => {
-      if (editingId) {
-        updateMutation.mutate({
-          id: editingId,
-          data: {
-            ...values,
-            serviceId: values.serviceId ?? null,
-          },
-        });
-      } else {
-        createMutation.mutate({
-          ...values,
-          invoiceId,
-          serviceId: values.serviceId ?? null,
-          sortOrder: (items?.length ?? 0) + 1,
-        });
-      }
+      updateMutation.mutate({ id: editingId, data: values, isItem });
     });
   };
 
   const handleCancel = () => {
     setEditingId(null);
-    setAdding(false);
     form.resetFields();
   };
 
-  const isRowEditing = (record: InvoiceItem) =>
-    record.id === editingId || (adding && record.id === 'new');
+  const isRowEditing = (record: InvoiceItem) => record.id === editingId;
+
+  const rowLockReason = (record: InvoiceItem): string => {
+    if (readOnly) return 'Faktura je zaključena — stavke se ne mogu menjati';
+    if (record.treatmentId) return 'Stavka iz kartona — izmena ide kroz intervenciju (karton)';
+    return '';
+  };
 
   const columns: ColumnsType<InvoiceItem> = [
     {
-      title: 'Usluga',
+      title: 'Stavka',
       dataIndex: 'description',
       render: (val: string, record) =>
-        isRowEditing(record) ? (
-          <Form.Item
-            name='serviceId'
-            style={{ margin: 0 }}
-            rules={[{ required: true, message: 'Izaberite uslugu' }]}
-          >
-            <Select
-              placeholder='Izaberite uslugu...'
-              options={serviceOptions}
-              showSearch
-              filterOption={(input, option) =>
-                (option?.label ?? '').toLowerCase().includes(input.toLowerCase())
-              }
-              onChange={handleServiceSelect}
-              style={{ minWidth: 250 }}
-            />
-          </Form.Item>
+        record.treatmentId ? (
+          <Space size={4}>
+            <Tag color='blue'>Iz kartona</Tag>
+            <span>{val}</span>
+          </Space>
         ) : (
           val
         ),
@@ -255,7 +214,6 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
       width: 110,
       align: 'right',
       render: (_label: string | null, record) => {
-        // U edit modu prikazujemo vrednost iz forme (može biti tek popunjeno iz handleServiceSelect)
         if (isRowEditing(record)) {
           const formLabel = form.getFieldValue('taxRateLabel') as string | undefined;
           const formPercent = form.getFieldValue('taxRatePercent') as number | undefined;
@@ -305,42 +263,44 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
     {
       title: '',
       width: 80,
-      render: (_: unknown, record) =>
-        isRowEditing(record) ? (
+      render: (_: unknown, record) => {
+        const lockReason = rowLockReason(record);
+        const locked = !!lockReason;
+        return isRowEditing(record) ? (
           <Space>
             <Button icon={<SaveOutlined />} size='small' type='primary' onClick={handleSave} />
             <Button icon={<CloseOutlined />} size='small' onClick={handleCancel} />
           </Space>
         ) : (
           <Space>
-            <Tooltip title={readOnly ? 'Faktura je zaključena — stavke se ne mogu menjati' : ''}>
+            <Tooltip title={lockReason}>
               <Button
                 icon={<EditOutlined />}
                 size='small'
                 onClick={() => startEditing(record)}
-                disabled={readOnly || adding || !!editingId}
+                disabled={locked || !!editingId}
               />
             </Tooltip>
-            <Tooltip title={readOnly ? 'Faktura je zaključena — stavke se ne mogu menjati' : ''}>
+            <Tooltip title={lockReason}>
               <Popconfirm
                 title='Obrisati stavku?'
                 onConfirm={() => deleteMutation.mutate(record.id)}
-                disabled={readOnly}
+                disabled={locked}
               >
                 <Button
                   icon={<DeleteOutlined />}
                   size='small'
                   danger
-                  disabled={readOnly || adding || !!editingId}
+                  disabled={locked || !!editingId}
                 />
               </Popconfirm>
             </Tooltip>
           </Space>
-        ),
+        );
+      },
     },
   ];
 
-  // Hidden form field za description (popunjava se automatski iz usluge)
   const grandTotal = items?.reduce((sum, item) => sum + (item.lineTotal ?? 0), 0) ?? 0;
 
   return (
@@ -364,48 +324,21 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
           justifyContent: 'space-between',
           alignItems: 'center',
           marginBottom: 8,
+          gap: 12,
         }}
       >
         <Typography.Text strong>Stavke fakture</Typography.Text>
         {!readOnly && (
-          <Button
-            size='small'
-            icon={<PlusOutlined />}
-            onClick={startAdding}
-            disabled={adding || !!editingId}
-          >
-            Dodaj stavku
-          </Button>
+          <div style={{ minWidth: 340, maxWidth: 420 }}>
+            <BillableItemPicker onSelect={handleAddBillable} disabled={!!editingId} />
+          </div>
         )}
       </div>
 
       <Table
         rowKey='id'
         columns={columns}
-        dataSource={[
-          ...(adding
-            ? [
-                {
-                  id: 'new',
-                  invoiceId,
-                  serviceId: null,
-                  serviceName: null,
-                  description: '',
-                  quantity: 1,
-                  unitPrice: 0,
-                  taxRateId: '',
-                  taxRateLabel: '',
-                  taxRatePercent: 0,
-                  discountPercent: 0,
-                  lineTotal: 0,
-                  sortOrder: 0,
-                  createdAt: '',
-                  updatedAt: '',
-                } as InvoiceItem,
-              ]
-            : []),
-          ...(items ?? []),
-        ]}
+        dataSource={items ?? []}
         loading={isLoading}
         pagination={false}
         size='small'

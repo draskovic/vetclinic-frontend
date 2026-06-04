@@ -427,6 +427,22 @@ export interface UpdateVaccinationRequest {
   nextDueDate?: string;
 }
 
+export type BillableItemType = 'SERVICE' | 'ITEM';
+
+export interface BillableItem {
+  type: BillableItemType;
+  id: string;
+  name: string;
+  sku: string | null;
+  unit: string | null;
+  unitPrice: number | null; // sellPrice artikla može biti null
+  taxRateId: string;
+  taxRateLabel: string | null;
+  taxRatePercent: number | null;
+  quantityOnHand: number | null; // null za SERVICE
+  trackBatches: boolean | null; // null za SERVICE
+}
+
 // ==================== INVOICE ====================
 export type InvoiceStatus =
   | 'DRAFT'
@@ -538,6 +554,8 @@ export interface CreateInvoiceItemRequest {
   unitPrice: number;
   taxRateId?: string;
   discountPercent?: number;
+  lineTotal?: number; // backend @NotNull (preracunava se server-side, ali mora biti poslat)
+  sortOrder?: number;
 }
 
 export interface UpdateInvoiceItemRequest {
@@ -973,6 +991,9 @@ export interface Treatment {
   name: string;
   description: string | null;
   result: string | null;
+  quantity: number;
+  unitPrice: number | null;
+  discountPercent: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -984,6 +1005,9 @@ export interface CreateTreatmentRequest {
   name: string;
   description?: string;
   result?: string;
+  quantity?: number;
+  unitPrice?: number | null;
+  discountPercent?: number;
 }
 
 export interface UpdateTreatmentRequest {
@@ -992,6 +1016,9 @@ export interface UpdateTreatmentRequest {
   name?: string;
   description?: string;
   result?: string;
+  quantity?: number;
+  unitPrice?: number | null;
+  discountPercent?: number;
 }
 
 // ==================== PRESCRIPTION ====================

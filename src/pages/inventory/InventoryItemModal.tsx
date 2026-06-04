@@ -1,5 +1,15 @@
 import { useEffect } from 'react';
-import { Modal, Form, Input, InputNumber, Select, DatePicker, Switch, message } from 'antd';
+import {
+  Modal,
+  Form,
+  Input,
+  InputNumber,
+  Select,
+  DatePicker,
+  Switch,
+  message,
+  Tooltip,
+} from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { inventoryItemsApi, taxRatesApi } from '../../api';
 import { clinicLocationsApi } from '../../api/clinic-locations';
@@ -36,7 +46,11 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
     mutationFn: (data: CreateInventoryItemRequest) => inventoryItemsApi.create(data),
     onSuccess: () => {
       message.success('Artikal kreiran');
-      invalidateAndBroadcast(queryClient, [['inventory-items'], ['dashboard-low-stock']]);
+      invalidateAndBroadcast(queryClient, [
+        ['inventory-items'],
+        ['billable-items'],
+        ['dashboard-low-stock'],
+      ]);
       onClose();
     },
   });
@@ -47,8 +61,8 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
       message.success('Artikal ažuriran');
       invalidateAndBroadcast(queryClient, [
         ['inventory-items'],
-        ['inventory-item', item!.id],
         ['inventory-item'],
+        ['billable-items'],
         ['dashboard-low-stock'],
       ]);
       onClose();
@@ -203,9 +217,21 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
             name='trackBatches'
             label='Prati po lotovima (FIFO)'
             valuePropName='checked'
-            tooltip='Lotovi se troše po roku trajanja — najpre ističu, najpre se troše'
+            tooltip={
+              isEditing
+                ? undefined
+                : 'Lotovi se troše po roku trajanja — prvo se troše oni koji najpre ističu.'
+            }
           >
-            <Switch />
+            {isEditing ? (
+              <Tooltip title='Način praćenja se ne može menjati posle kreiranja artikla'>
+                <span style={{ display: 'inline-block', cursor: 'not-allowed' }}>
+                  <Switch disabled />
+                </span>
+              </Tooltip>
+            ) : (
+              <Switch />
+            )}
           </Form.Item>
         </div>
 

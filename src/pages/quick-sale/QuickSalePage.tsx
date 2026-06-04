@@ -16,6 +16,7 @@ import {
   Table,
   Tag,
   Typography,
+  Modal,
 } from 'antd';
 import {
   CheckCircleTwoTone,
@@ -26,17 +27,17 @@ import {
 } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
-import { inventoryItemsApi, ownersApi, quickSaleApi, servicesApi, invoicesApi } from '@/api';
+import { inventoryItemsApi, ownersApi, quickSaleApi, invoicesApi } from '@/api';
 import { useAuthStore } from '@/store/authStore';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import BillableItemPicker from '@/components/BillableItemPicker';
 import type {
-  InventoryItem,
+  BillableItem,
   Owner,
   PaymentMethod,
   QuickSaleLineRequest,
   QuickSaleRequest,
   QuickSaleResponse,
-  Service,
 } from '@/types';
 import { INVENTORY_FULL_KEYS, INVOICE_KEYS } from '@/lib/queryKeySets';
 
@@ -53,6 +54,7 @@ interface LocalLine {
   unitPrice: number;
   taxRatePercent: number;
   discountPercent: number;
+  catalogUnitPrice: number | null; // cena iz šifarnika pri dodavanju — za detekciju izmene
   // Lokalni preview totala (server je single source of truth — ovo je samo UI prikaz)
   lineNet: number;
   lineTax: number;
@@ -104,60 +106,18 @@ export default function QuickSalePage() {
   // ===================== Lines =====================
   const [lines, setLines] = useState<LocalLine[]>([]);
 
-  // Service picker
-  const [serviceSearch, setServiceSearch] = useState('');
-  const debouncedServiceSearch = useDebouncedValue(serviceSearch, 300);
-  const { data: servicesData } = useQuery({
-    queryKey: ['quick-sale-services', debouncedServiceSearch],
-    queryFn: () => servicesApi.getAll(0, 50, debouncedServiceSearch),
-  });
-  const services: Service[] = servicesData?.content ?? [];
-
-  // Inventory picker
-  const [itemSearch, setItemSearch] = useState('');
-  const debouncedItemSearch = useDebouncedValue(itemSearch, 300);
-  const { data: itemsData } = useQuery({
-    queryKey: ['quick-sale-items', debouncedItemSearch],
-    queryFn: () => inventoryItemsApi.getAll(0, 50, debouncedItemSearch),
-  });
-  const items: InventoryItem[] = itemsData?.data?.content ?? [];
-
-  const addService = (serviceId: string) => {
-    const s = services.find((x) => x.id === serviceId);
-    if (!s) return;
-    const taxRatePercent = Number(s.taxRatePercent ?? 0);
+  const addBillable = (it: BillableItem) => {
     const partial = {
-      serviceId: s.id,
-      inventoryItemId: null,
-      name: s.name,
-      quantity: 1,
-      unitPrice: Number(s.price),
-      taxRatePercent,
-      discountPercent: 0,
-    };
-    setLines((prev) => [...prev, { key: genKey(), ...partial, ...computeLine(partial) }]);
-    setServiceSearch('');
-  };
-
-  const addItem = (itemId: string) => {
-    const it = items.find((x) => x.id === itemId);
-    if (!it) return;
-    if (!it.sellPrice) {
-      message.warning(`Artikal "${it.name}" nema definisanu prodajnu cenu.`);
-      return;
-    }
-    const taxRatePercent = Number(it.taxRatePercent ?? 0);
-    const partial = {
-      serviceId: null,
-      inventoryItemId: it.id,
+      serviceId: it.type === 'SERVICE' ? it.id : null,
+      inventoryItemId: it.type === 'ITEM' ? it.id : null,
       name: it.name,
       quantity: 1,
-      unitPrice: Number(it.sellPrice),
-      taxRatePercent,
+      unitPrice: Number(it.unitPrice ?? 0),
+      taxRatePercent: Number(it.taxRatePercent ?? 0),
       discountPercent: 0,
+      catalogUnitPrice: it.unitPrice == null ? null : Number(it.unitPrice),
     };
     setLines((prev) => [...prev, { key: genKey(), ...partial, ...computeLine(partial) }]);
-    setItemSearch('');
   };
 
   const updateLine = (key: string, patch: Partial<LocalLine>) => {
@@ -190,9 +150,10 @@ export default function QuickSalePage() {
     [tenderedAmount, total],
   );
   const predictedStatus = useMemo<'PAID' | 'PARTIALLY_PAID' | null>(() => {
+    if (lines.length > 0 && total === 0) return 'PAID';
     if (tenderedAmount <= 0) return null;
     return tenderedAmount + 0.01 >= total ? 'PAID' : 'PARTIALLY_PAID';
-  }, [tenderedAmount, total]);
+  }, [tenderedAmount, total, lines.length]);
 
   // ===================== Submit =====================
   const [lastResult, setLastResult] = useState<QuickSaleResponse | null>(null);
@@ -203,12 +164,52 @@ export default function QuickSalePage() {
       setLastResult(resp.data);
       message.success(`Prodaja uspešna — faktura ${resp.data.invoice.invoiceNumber}`);
 
-      // Prodaja je promenila stanje na lageru, kreirala fakturu i OUT tx-e — invalidiraj sve relevantne keševe (cross-tab sync)
       invalidateAndBroadcast(queryClient, [
-        ['quick-sale-items'], // POS dropdown — specifičan za Quick Sale
+        ['billable-items'],
         ...INVOICE_KEYS,
         ...INVENTORY_FULL_KEYS,
       ]);
+
+      // Ponudi čuvanje izmenjene/nove cene artikla u šifarnik
+      const changed = lines.filter(
+        (l) => l.inventoryItemId && l.unitPrice > 0 && l.unitPrice !== l.catalogUnitPrice,
+      );
+      if (changed.length > 0) {
+        Modal.confirm({
+          title: 'Sačuvati nove cene u šifarnik?',
+          content: (
+            <div>
+              <p>Sledeći artikli su prodati po ceni različitoj od šifarnika:</p>
+              <ul style={{ paddingLeft: 18, margin: 0 }}>
+                {changed.map((l) => (
+                  <li key={l.key}>
+                    {l.name}:{' '}
+                    {l.catalogUnitPrice == null
+                      ? 'bez cene'
+                      : `${l.catalogUnitPrice.toLocaleString('sr-RS')} RSD`}{' '}
+                    → <strong>{l.unitPrice.toLocaleString('sr-RS')} RSD</strong>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ),
+          okText: 'Sačuvaj cene',
+          cancelText: 'Ne, samo ova prodaja',
+          onOk: async () => {
+            try {
+              await Promise.all(
+                changed.map((l) =>
+                  inventoryItemsApi.update(l.inventoryItemId!, { sellPrice: l.unitPrice }),
+                ),
+              );
+              message.success('Cene artikala ažurirane u šifarniku.');
+              invalidateAndBroadcast(queryClient, [['billable-items'], ...INVENTORY_FULL_KEYS]);
+            } catch {
+              message.error('Greška pri čuvanju cena.');
+            }
+          },
+        });
+      }
     },
     onError: (err: unknown) => {
       const msg =
@@ -218,10 +219,18 @@ export default function QuickSalePage() {
     },
   });
 
-  const canSubmit = lines.length > 0 && tenderedAmount > 0 && !mutation.isPending;
+  const canSubmit = lines.length > 0 && (tenderedAmount > 0 || total === 0) && !mutation.isPending;
 
   const handleSubmit = () => {
     if (!canSubmit) return;
+
+    const zeroPrice = lines.find((l) => l.unitPrice <= 0);
+    if (zeroPrice) {
+      message.warning(
+        `Stavka "${zeroPrice.name}" ima cenu 0. Unesite redovnu cenu; za besplatnu stavku stavite popust 100%.`,
+      );
+      return;
+    }
 
     const payload: QuickSaleRequest = {
       ownerId: customerMode === 'owner' ? ownerId : null,
@@ -369,40 +378,9 @@ export default function QuickSalePage() {
             title={`Stavke (${lines.length})`}
             size='small'
             extra={
-              <Space>
-                <Select
-                  showSearch
-                  placeholder='+ Usluga'
-                  value={null}
-                  onSearch={setServiceSearch}
-                  onChange={addService}
-                  filterOption={false}
-                  style={{ width: 220 }}
-                  onInputKeyDown={(e) => {
-                    if (e.key === ' ') e.stopPropagation();
-                  }}
-                  options={services.map((s) => ({
-                    value: s.id,
-                    label: `${s.name} — ${Number(s.price).toLocaleString('sr-RS')} RSD`,
-                  }))}
-                />
-                <Select
-                  showSearch
-                  placeholder='+ Artikal'
-                  value={null}
-                  onSearch={setItemSearch}
-                  onChange={addItem}
-                  filterOption={false}
-                  style={{ width: 220 }}
-                  onInputKeyDown={(e) => {
-                    if (e.key === ' ') e.stopPropagation();
-                  }}
-                  options={items.map((it) => ({
-                    value: it.id,
-                    label: `${it.name} (${it.quantityOnHand} ${it.unit ?? ''})`,
-                  }))}
-                />
-              </Space>
+              <div style={{ width: 300 }}>
+                <BillableItemPicker onSelect={addBillable} placeholder='+ Usluga ili artikal' />
+              </div>
             }
           >
             {lines.length === 0 ? (
@@ -439,6 +417,7 @@ export default function QuickSalePage() {
                       <InputNumber
                         min={0}
                         value={l.unitPrice}
+                        status={l.unitPrice <= 0 ? 'error' : undefined}
                         onChange={(v) => updateLine(l.key, { unitPrice: Number(v) || 0 })}
                         style={{ width: '100%' }}
                       />
