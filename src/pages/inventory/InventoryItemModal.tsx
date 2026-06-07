@@ -1,24 +1,21 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import {
   Modal,
   Form,
   Input,
   InputNumber,
   Select,
-  DatePicker,
   Switch,
   message,
   Tooltip,
+  AutoComplete,
+  Divider,
 } from 'antd';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { inventoryItemsApi, taxRatesApi } from '../../api';
+import { inventoryItemsApi, taxRatesApi, productsApi } from '../../api';
 import { clinicLocationsApi } from '../../api/clinic-locations';
-import type {
-  InventoryItem,
-  CreateInventoryItemRequest,
-  UpdateInventoryItemRequest,
-} from '../../types';
-import dayjs from 'dayjs';
+import type { InventoryItem, Product } from '../../types';
+import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 
 interface Props {
@@ -32,6 +29,12 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
   const queryClient = useQueryClient();
   const isEditing = !!item;
 
+  // --- Product picker (samo u create modu) ---
+  const [productInput, setProductInput] = useState('');
+  const [productSearch, setProductSearch] = useState('');
+  const debouncedProductSearch = useDebouncedValue(productSearch, 300);
+  const [pickedProduct, setPickedProduct] = useState<Product | null>(null);
+
   const { data: locations } = useQuery({
     queryKey: ['clinic-locations'],
     queryFn: () => clinicLocationsApi.getActive().then((r) => r.data),
@@ -42,21 +45,109 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
     queryFn: () => taxRatesApi.getAll('RS'),
   });
 
+  const { data: productSearchData } = useQuery({
+    queryKey: ['products-search', debouncedProductSearch],
+    queryFn: () =>
+      productsApi.getAll(0, 20, debouncedProductSearch || undefined).then((r) => r.data),
+    enabled: !isEditing && open,
+  });
+
+  const productOptions = (productSearchData?.content ?? []).map((p) => ({
+    key: p.id,
+    value: p.name,
+    label: `${p.sku ? p.sku + ' — ' : ''}${p.name}${p.unit ? ' (' + p.unit + ')' : ''}`,
+    product: p,
+  }));
+
+  // Korisnik kuca → tretira se kao NOV proizvod (skida izabrani)
+  const handleProductSearch = (text: string) => {
+    setProductSearch(text);
+    if (pickedProduct) {
+      setPickedProduct(null);
+      form.setFieldsValue({
+        sku: undefined,
+        category: 'MEDICATION',
+        unit: undefined,
+        trackBatches: false,
+      });
+    }
+  };
+
+  // Korisnik izabrao postojeći proizvod → popuni i zaključaj gornju sekciju
+  const handleProductSelect = (_value: string, option: { product?: Product }) => {
+    const p = option.product;
+    if (!p) return;
+    setPickedProduct(p);
+    setProductInput(p.name);
+    form.setFieldsValue({
+      sku: p.sku,
+      category: p.category,
+      unit: p.unit,
+      trackBatches: p.trackBatches,
+    });
+  };
+
   const createMutation = useMutation({
-    mutationFn: (data: CreateInventoryItemRequest) => inventoryItemsApi.create(data),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: async (values: any) => {
+      let productId = pickedProduct?.id ?? null;
+      if (!productId) {
+        // Scenario B: nov proizvod → prvo Product, pa InventoryItem
+        const created = await productsApi.create({
+          name: (productInput ?? '').trim(),
+          sku: values.sku || undefined,
+          category: values.category,
+          unit: values.unit || undefined,
+          trackBatches: values.trackBatches ?? false,
+          active: true,
+        });
+        productId = created.data.id;
+      }
+      const tracks = pickedProduct ? pickedProduct.trackBatches : !!values.trackBatches;
+      return inventoryItemsApi.create({
+        productId,
+        locationId: values.locationId ?? null,
+        reorderLevel: values.reorderLevel,
+        sellPrice: values.sellPrice,
+        active: values.active ?? true,
+        initialQuantity: tracks ? undefined : values.initialQuantity,
+        taxRateId: values.taxRateId,
+      });
+    },
     onSuccess: () => {
       message.success('Artikal kreiran');
       invalidateAndBroadcast(queryClient, [
         ['inventory-items'],
         ['billable-items'],
         ['dashboard-low-stock'],
+        ['products-search'],
       ]);
       onClose();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) =>
+      message.error(err?.response?.data?.message ?? 'Greška pri kreiranju artikla'),
   });
 
   const updateMutation = useMutation({
-    mutationFn: (data: UpdateInventoryItemRequest) => inventoryItemsApi.update(item!.id, data),
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    mutationFn: async (values: any) => {
+      // Gornja sekcija → Product; donja → InventoryItem (per-lokacija)
+      await productsApi.update(item!.productId, {
+        name: values.name,
+        sku: values.sku || undefined,
+        category: values.category,
+        unit: values.unit || undefined,
+        trackBatches: values.trackBatches,
+      });
+      return inventoryItemsApi.update(item!.id, {
+        locationId: values.locationId ?? null,
+        reorderLevel: values.reorderLevel,
+        sellPrice: values.sellPrice,
+        active: values.active,
+        taxRateId: values.taxRateId,
+      });
+    },
     onSuccess: () => {
       message.success('Artikal ažuriran');
       invalidateAndBroadcast(queryClient, [
@@ -64,39 +155,55 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
         ['inventory-item'],
         ['billable-items'],
         ['dashboard-low-stock'],
+        ['products-search'],
       ]);
       onClose();
     },
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    onError: (err: any) =>
+      message.error(err?.response?.data?.message ?? 'Greška pri izmeni artikla'),
   });
 
   useEffect(() => {
-    if (open) {
-      if (item) {
-        form.setFieldsValue({
-          ...item,
-          expiryDate: item.expiryDate ? dayjs(item.expiryDate) : null,
-        });
-      } else {
-        form.resetFields();
-      }
+    if (!open) return;
+    setPickedProduct(null);
+    if (item) {
+      setProductInput(item.name);
+      form.setFieldsValue({
+        name: item.name,
+        sku: item.sku,
+        category: item.category,
+        unit: item.unit,
+        trackBatches: item.trackBatches,
+        reorderLevel: item.reorderLevel,
+        sellPrice: item.sellPrice,
+        taxRateId: item.taxRateId,
+        locationId: item.locationId,
+        active: item.active,
+      });
+    } else {
+      setProductInput('');
+      setProductSearch('');
+      form.resetFields();
     }
   }, [open, item, form]);
 
   const handleSubmit = () => {
     form.validateFields().then((values) => {
-      const payload = {
-        ...values,
-        expiryDate: values.expiryDate ? values.expiryDate.format('YYYY-MM-DD') : null,
-        locationId: values.locationId ?? null,
-      };
-
       if (isEditing) {
-        updateMutation.mutate(payload);
+        updateMutation.mutate(values);
       } else {
-        createMutation.mutate(payload);
+        if (!pickedProduct && !(productInput ?? '').trim()) {
+          message.error('Unesite ili izaberite proizvod');
+          return;
+        }
+        createMutation.mutate(values);
       }
     });
   };
+
+  // gornja (product) polja zaključana samo u create modu kad je izabran postojeći proizvod
+  const lockProductFields = !isEditing && !!pickedProduct;
 
   return (
     <Modal
@@ -119,13 +226,43 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
           trackBatches: false,
         }}
       >
-        <Form.Item name='name' label='Naziv' rules={[{ required: true, message: 'Unesite naziv' }]}>
-          <Input />
-        </Form.Item>
+        <Divider titlePlacement='left' style={{ marginTop: 0 }}>
+          Proizvod (šifarnik)
+        </Divider>
+
+        {isEditing ? (
+          <Form.Item
+            name='name'
+            label='Naziv'
+            rules={[{ required: true, message: 'Unesite naziv' }]}
+          >
+            <Input />
+          </Form.Item>
+        ) : (
+          <Form.Item
+            label='Naziv proizvoda'
+            required
+            tooltip='Ukucajte za pretragu postojećih ili unesite nov proizvod.'
+          >
+            <AutoComplete
+              value={productInput}
+              options={productOptions}
+              onSearch={handleProductSearch}
+              onSelect={handleProductSelect}
+              onChange={(val) => setProductInput(val)}
+              filterOption={false}
+              placeholder='Naziv proizvoda (pretraga ili nov)'
+              notFoundContent={
+                productSearch.trim() ? 'Nema rezultata — biće kreiran nov proizvod' : null
+              }
+              allowClear
+            />
+          </Form.Item>
+        )}
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Form.Item name='sku' label='SKU'>
-            <Input />
+            <Input disabled={lockProductFields} />
           </Form.Item>
 
           <Form.Item
@@ -133,7 +270,7 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
             label='Kategorija'
             rules={[{ required: true, message: 'Izaberite kategoriju' }]}
           >
-            <Select>
+            <Select disabled={lockProductFields}>
               <Select.Option value='MEDICATION'>Lek</Select.Option>
               <Select.Option value='SUPPLY'>Potrošni materijal</Select.Option>
               <Select.Option value='EQUIPMENT'>Oprema</Select.Option>
@@ -141,37 +278,42 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
           </Form.Item>
         </div>
 
-        <div
-          style={{
-            display: 'grid',
-            gridTemplateColumns: isEditing ? '1fr 1fr' : '1fr 1fr 1fr',
-            gap: 16,
-          }}
-        >
-          {!isEditing && (
-            <Form.Item
-              name='initialQuantity'
-              label='Početno stanje'
-              tooltip='Kreira IN transakciju sa razlogom "Otvaranje kartice". Za artikle sa lotovima, stanje se unosi kroz tab Lotovi.'
-            >
-              <InputNumber style={{ width: '100%' }} min={0} />
-            </Form.Item>
-          )}
-
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Form.Item name='unit' label='Jedinica mere'>
-            <Input placeholder='kom, ml, g...' />
+            <Input placeholder='kom, ml, g...' disabled={lockProductFields} />
           </Form.Item>
 
-          <Form.Item name='reorderLevel' label='Min. nivo za narudžbu'>
-            <InputNumber style={{ width: '100%' }} min={0} />
+          <Form.Item
+            name='trackBatches'
+            label='Prati po lotovima (FIFO)'
+            valuePropName='checked'
+            tooltip={
+              isEditing || lockProductFields
+                ? undefined
+                : 'Lotovi se troše po roku trajanja — prvo se troše oni koji najpre ističu.'
+            }
+          >
+            {isEditing || lockProductFields ? (
+              <Tooltip
+                title={
+                  isEditing
+                    ? 'Način praćenja se ne može menjati posle kreiranja proizvoda'
+                    : 'Način praćenja je definisan na proizvodu'
+                }
+              >
+                <span style={{ display: 'inline-block', cursor: 'not-allowed' }}>
+                  <Switch disabled />
+                </span>
+              </Tooltip>
+            ) : (
+              <Switch />
+            )}
           </Form.Item>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 16 }}>
-          <Form.Item name='costPrice' label='Nabavna cena'>
-            <InputNumber style={{ width: '100%' }} min={0} precision={2} />
-          </Form.Item>
+        <Divider titlePlacement='left'>Konfiguracija za lokaciju</Divider>
 
+        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
           <Form.Item name='sellPrice' label='Prodajna cena'>
             <InputNumber style={{ width: '100%' }} min={0} precision={2} />
           </Form.Item>
@@ -193,8 +335,8 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
         </div>
 
         <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Form.Item name='expiryDate' label='Rok trajanja'>
-            <DatePicker style={{ width: '100%' }} format='DD.MM.YYYY' />
+          <Form.Item name='reorderLevel' label='Min. nivo za narudžbu'>
+            <InputNumber style={{ width: '100%' }} min={0} />
           </Form.Item>
 
           <Form.Item name='locationId' label='Lokacija'>
@@ -208,52 +350,44 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
           </Form.Item>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16 }}>
-          <Form.Item name='active' label='Aktivan' valuePropName='checked'>
-            <Switch />
-          </Form.Item>
+        <Form.Item name='active' label='Aktivan' valuePropName='checked'>
+          <Switch />
+        </Form.Item>
 
-          <Form.Item
-            name='trackBatches'
-            label='Prati po lotovima (FIFO)'
-            valuePropName='checked'
-            tooltip={
-              isEditing
-                ? undefined
-                : 'Lotovi se troše po roku trajanja — prvo se troše oni koji najpre ističu.'
-            }
-          >
-            {isEditing ? (
-              <Tooltip title='Način praćenja se ne može menjati posle kreiranja artikla'>
-                <span style={{ display: 'inline-block', cursor: 'not-allowed' }}>
-                  <Switch disabled />
-                </span>
-              </Tooltip>
-            ) : (
-              <Switch />
-            )}
-          </Form.Item>
-        </div>
-
+        {/* Početno stanje samo na kreiranju i za ne-batch artikle */}
         <Form.Item shouldUpdate={(prev, curr) => prev.trackBatches !== curr.trackBatches} noStyle>
-          {({ getFieldValue }) =>
-            getFieldValue('trackBatches') ? (
-              <div
-                style={{
-                  background: '#fffbe6',
-                  border: '1px solid #ffe58f',
-                  padding: 8,
-                  borderRadius: 4,
-                  marginBottom: 16,
-                  fontSize: 12,
-                  color: '#874d00',
-                }}
+          {({ getFieldValue }) => {
+            if (isEditing) return null;
+            const tracks = pickedProduct
+              ? pickedProduct.trackBatches
+              : getFieldValue('trackBatches');
+            if (tracks) {
+              return (
+                <div
+                  style={{
+                    background: '#fffbe6',
+                    border: '1px solid #ffe58f',
+                    padding: 8,
+                    borderRadius: 4,
+                    fontSize: 12,
+                    color: '#874d00',
+                  }}
+                >
+                  Količina na stanju se računa kao zbir svih lotova. Početno stanje se unosi kroz
+                  tab „Lotovi" na detaljnoj stranici artikla.
+                </div>
+              );
+            }
+            return (
+              <Form.Item
+                name='initialQuantity'
+                label='Početno stanje'
+                tooltip='Kreira IN transakciju sa razlogom „Otvaranje kartice".'
               >
-                Količina na stanju se računa kao zbir količina svih lotova. Početno stanje se unosi
-                kroz tab "Lotovi" na detaljnoj stranici artikla.
-              </div>
-            ) : null
-          }
+                <InputNumber style={{ width: '100%' }} min={0} />
+              </Form.Item>
+            );
+          }}
         </Form.Item>
       </Form>
     </Modal>

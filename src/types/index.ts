@@ -585,8 +585,39 @@ export type AdjustmentReason =
   | 'OPENING_BALANCE'
   | 'OTHER';
 
+export interface Product {
+  id: string;
+  name: string;
+  sku: string;
+  category: InventoryCategory;
+  unit: string;
+  trackBatches: boolean;
+  active: boolean;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface CreateProductRequest {
+  name: string;
+  sku?: string;
+  category: InventoryCategory;
+  unit?: string;
+  trackBatches?: boolean;
+  active?: boolean;
+}
+
+export interface UpdateProductRequest {
+  name?: string;
+  sku?: string;
+  category?: InventoryCategory;
+  unit?: string;
+  trackBatches?: boolean;
+  active?: boolean;
+}
+
 export interface InventoryItem {
   id: string;
+  productId: string;
   locationId: string;
   locationName: string;
   name: string;
@@ -595,9 +626,7 @@ export interface InventoryItem {
   quantityOnHand: number;
   unit: string;
   reorderLevel: number;
-  costPrice: number;
   sellPrice: number;
-  expiryDate: string | null;
   active: boolean;
   trackBatches: boolean;
   taxRateId: string;
@@ -608,35 +637,21 @@ export interface InventoryItem {
 }
 
 export interface CreateInventoryItemRequest {
-  locationId?: string;
-  name: string;
-  sku?: string;
-  category: InventoryCategory;
-  quantityOnHand?: number;
-  unit?: string;
+  productId: string;
+  locationId?: string | null;
   reorderLevel?: number;
-  costPrice?: number;
   sellPrice?: number;
-  expiryDate?: string | null;
   active?: boolean;
-  trackBatches?: boolean;
-  taxRateId: string; // ← NOVO obavezno
   initialQuantity?: number;
+  taxRateId: string;
 }
 
 export interface UpdateInventoryItemRequest {
   locationId?: string | null;
-  name?: string;
-  sku?: string;
-  category?: InventoryCategory;
-  quantityOnHand?: number;
-  unit?: string;
   reorderLevel?: number;
-  costPrice?: number;
   sellPrice?: number;
-  taxRateId?: string;
-  expiryDate?: string | null;
   active?: boolean;
+  taxRateId?: string;
 }
 
 export interface InventoryTransaction {
@@ -690,8 +705,8 @@ export interface ServiceInventoryItem {
   id: string;
   serviceId: string;
   serviceName: string;
-  inventoryItemId: string;
-  inventoryItemName: string;
+  productId: string;
+  productName: string;
   quantityPerUse: number;
   unit: string;
   createdAt: string;
@@ -700,7 +715,7 @@ export interface ServiceInventoryItem {
 
 export interface CreateServiceInventoryItemRequest {
   serviceId: string;
-  inventoryItemId: string;
+  productId: string;
   quantityPerUse?: number;
 }
 

@@ -17,7 +17,7 @@ import {
 } from 'antd';
 import { DeleteOutlined } from '@ant-design/icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { servicesApi, serviceInventoryItemsApi, inventoryItemsApi, taxRatesApi } from '@/api';
+import { servicesApi, serviceInventoryItemsApi, productsApi, taxRatesApi } from '@/api';
 import type {
   Service,
   CreateServiceRequest,
@@ -67,9 +67,9 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
     enabled: !!service?.id,
   });
 
-  const { data: inventoryData } = useQuery({
-    queryKey: ['inventory-items-search', debouncedItemSearch],
-    queryFn: () => inventoryItemsApi.getAll(0, 20, debouncedItemSearch || undefined),
+  const { data: productData } = useQuery({
+    queryKey: ['products-search', debouncedItemSearch],
+    queryFn: () => productsApi.getAll(0, 20, debouncedItemSearch || undefined),
   });
 
   const { data: taxRates } = useQuery({
@@ -77,20 +77,20 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
     queryFn: () => taxRatesApi.getAll('RS'),
   });
 
-  const inventoryOptions = useMemo(
+  const productOptions = useMemo(
     () =>
-      inventoryData?.data?.content.map((i) => ({
-        label: `${i.sku ? i.sku + ' — ' : ''}${i.name}${i.unit ? ' (' + i.unit + ')' : ''}`,
-        value: i.id,
+      productData?.data?.content.map((p) => ({
+        label: `${p.sku ? p.sku + ' — ' : ''}${p.name}${p.unit ? ' (' + p.unit + ')' : ''}`,
+        value: p.id,
       })) ?? [],
-    [inventoryData],
+    [productData],
   );
 
   const createLinkMutation = useMutation({
     mutationFn: () =>
       serviceInventoryItemsApi.create({
         serviceId: service!.id,
-        inventoryItemId: selectedItemId!,
+        productId: selectedItemId!,
         quantityPerUse: qtyPerUse,
       }),
     onSuccess: () => {
@@ -259,8 +259,8 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
             <Row gutter={8} style={{ marginBottom: 8 }}>
               <Col flex='auto'>
                 <Select
-                  placeholder='Izaberi artikal inventara...'
-                  options={inventoryOptions}
+                  placeholder='Izaberi proizvod...'
+                  options={productOptions}
                   showSearch
                   filterOption={false}
                   onSearch={(value) => setItemSearch(value)}
@@ -301,8 +301,8 @@ export default function ServiceModal({ open, service, onClose }: ServiceModalPro
               size='small'
               columns={[
                 {
-                  title: 'Artikal',
-                  dataIndex: 'inventoryItemName',
+                  title: 'Proizvod',
+                  dataIndex: 'productName',
                 },
                 {
                   title: 'Količina',

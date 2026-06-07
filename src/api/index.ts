@@ -30,3 +30,4 @@ export { medicationAdministrationsApi } from './medication-administrations';
 export { taxRatesApi } from './tax-rates';
 export { quickSaleApi } from './quick-sale';
 export { billableItemsApi } from './billable-items';
+export { productsApi } from './products';

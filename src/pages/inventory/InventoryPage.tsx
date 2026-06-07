@@ -15,8 +15,6 @@ import InventoryItemModal from './InventoryItemModal';
 import { useNavigate, Link } from 'react-router-dom';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 
-import dayjs from 'dayjs';
-
 const { Title } = Typography;
 const categoryConfig: Record<InventoryCategory, { color: string; label: string }> = {
   MEDICATION: { color: '#1890ff', label: 'Lek' },
@@ -109,13 +107,7 @@ export default function InventoryPage() {
       width: 130,
       render: (_: unknown, record) => getStockStatus(record),
     },
-    {
-      title: 'Nabavna cena',
-      dataIndex: 'costPrice',
-      width: 120,
-      align: 'right',
-      render: (val: number) => (val != null ? `${val.toFixed(2)} RSD` : '-'),
-    },
+
     {
       title: 'Prodajna cena',
       dataIndex: 'sellPrice',
@@ -123,19 +115,7 @@ export default function InventoryPage() {
       align: 'right',
       render: (val: number) => (val != null ? `${val.toFixed(2)} RSD` : '-'),
     },
-    {
-      title: 'Rok trajanja',
-      dataIndex: 'expiryDate',
-      width: 120,
-      render: (val: string | null) => {
-        if (!val) return '-';
-        const d = dayjs(val);
-        const isExpired = d.isBefore(dayjs());
-        return (
-          <span style={{ color: isExpired ? 'red' : undefined }}>{d.format('DD.MM.YYYY')}</span>
-        );
-      },
-    },
+
     {
       title: 'Lokacija',
       dataIndex: 'locationName',

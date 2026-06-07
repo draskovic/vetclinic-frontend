@@ -62,7 +62,10 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     queryFn: () => inventoryItemsApi.getLowStock().then((r) => r.data),
   });
 
-  const lowStockIds = useMemo(() => new Set(lowStockData?.map((i) => i.id) ?? []), [lowStockData]);
+  const lowStockProductIds = useMemo(
+    () => new Set(lowStockData?.map((i) => i.productId) ?? []),
+    [lowStockData],
+  );
 
   // Mapiranja usluga → inventar artikli (za tooltip upozorenja)
   const { data: allMappings } = useQuery({
@@ -73,8 +76,8 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
       for (const sid of sids) {
         const res = await serviceInventoryItemsApi.getByService(sid);
         map[sid] = (res.data ?? []).map((item) => ({
-          name: item.inventoryItemName,
-          isLow: lowStockIds.has(item.inventoryItemId),
+          name: item.productName,
+          isLow: lowStockProductIds.has(item.productId),
         }));
       }
       return map;

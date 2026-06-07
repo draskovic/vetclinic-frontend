@@ -168,7 +168,7 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
     {
       title: 'Količina',
       dataIndex: 'quantity',
-      width: 100,
+      width: 70,
       align: 'right',
       render: (val: number, record) =>
         isRowEditing(record) ? (
@@ -185,9 +185,9 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
         ),
     },
     {
-      title: 'Jed. cena',
+      title: 'Jed.cena',
       dataIndex: 'unitPrice',
-      width: 120,
+      width: 110,
       align: 'right',
       render: (val: number, record) =>
         isRowEditing(record) ? (
@@ -211,7 +211,7 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
     {
       title: 'PDV',
       dataIndex: 'taxRateLabel',
-      width: 110,
+      width: 85,
       align: 'right',
       render: (_label: string | null, record) => {
         if (isRowEditing(record)) {
@@ -229,7 +229,7 @@ export default function InvoiceItemsTable({ invoiceId, onItemsChanged, readOnly 
     {
       title: 'Popust %',
       dataIndex: 'discountPercent',
-      width: 100,
+      width: 80,
       align: 'right',
       render: (val: number, record) =>
         isRowEditing(record) ? (

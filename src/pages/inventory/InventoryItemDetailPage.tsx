@@ -118,9 +118,9 @@ export default function InventoryItemDetailPage() {
 
   // Dohvati povezane usluge
   const { data: linkedServicesData } = useQuery({
-    queryKey: ['service-inventory-items-by-item', id],
-    queryFn: () => serviceInventoryItemsApi.getByInventoryItem(id!),
-    enabled: !!id,
+    queryKey: ['service-inventory-items-by-product', item?.productId],
+    queryFn: () => serviceInventoryItemsApi.getByProduct(item!.productId),
+    enabled: !!item?.productId,
   });
 
   if (isLoading) return <Spin size='large' style={{ display: 'block', margin: '100px auto' }} />;
@@ -146,15 +146,11 @@ export default function InventoryItemDetailPage() {
         <Descriptions.Item label='Min. nivo za naručivanje'>
           {item.reorderLevel != null ? item.reorderLevel : '—'}
         </Descriptions.Item>
-        <Descriptions.Item label='Nabavna cena'>
-          {item.costPrice != null ? `${Number(item.costPrice).toFixed(2)} RSD` : '—'}
-        </Descriptions.Item>
+
         <Descriptions.Item label='Prodajna cena'>
           {item.sellPrice != null ? `${Number(item.sellPrice).toFixed(2)} RSD` : '—'}
         </Descriptions.Item>
-        <Descriptions.Item label='Rok trajanja'>
-          {item.expiryDate ? dayjs(item.expiryDate).format('DD.MM.YYYY') : '—'}
-        </Descriptions.Item>
+
         <Descriptions.Item label='Lokacija'>{item.locationName || '—'}</Descriptions.Item>
         <Descriptions.Item label='Status'>
           <Tag color={item.active ? 'green' : 'default'}>

@@ -15,7 +15,7 @@ import {
 } from 'antd';
 import { UploadOutlined, ImportOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useQuery } from '@tanstack/react-query';
-import { inventoryItemsApi, taxRatesApi } from '@/api';
+import { inventoryItemsApi, productsApi, taxRatesApi } from '@/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import type { InventoryItem, TaxRate } from '@/types';
@@ -195,13 +195,16 @@ const ImportMedicationsPage: React.FC = () => {
       const item = toImport[i];
       const sku = `MED-${String(counter).padStart(3, '0')}`;
       try {
-        await inventoryItemsApi.create({
+        const product = await productsApi.create({
           name: item.name,
           sku,
           category: 'MEDICATION',
-          quantityOnHand: 0,
-          initialQuantity: 0,
           trackBatches: false,
+          active: true,
+        });
+        await inventoryItemsApi.create({
+          productId: product.data.id,
+          initialQuantity: 0,
           active: true,
           taxRateId: item.taxRateId!,
         });

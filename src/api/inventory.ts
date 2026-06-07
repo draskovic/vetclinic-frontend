@@ -70,10 +70,8 @@ export const serviceInventoryItemsApi = {
   getByService: (serviceId: string) =>
     apiClient.get<ServiceInventoryItem[]>(`/service-inventory-items/by-service/${serviceId}`),
 
-  getByInventoryItem: (inventoryItemId: string) =>
-    apiClient.get<ServiceInventoryItem[]>(
-      `/service-inventory-items/by-inventory-item/${inventoryItemId}`,
-    ),
+  getByProduct: (productId: string) =>
+    apiClient.get<ServiceInventoryItem[]>(`/service-inventory-items/by-product/${productId}`),
 
   create: (data: CreateServiceInventoryItemRequest) =>
     apiClient.post<ServiceInventoryItem>('/service-inventory-items', data),
