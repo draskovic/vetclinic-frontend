@@ -216,7 +216,7 @@ export default function MedicalRecordsPage() {
     {
       title: 'Faktura',
       key: 'invoice',
-      width: 170,
+      width: 180,
       fixed: 'right',
       render: (_, record) =>
         record.invoiceStatus ? (
