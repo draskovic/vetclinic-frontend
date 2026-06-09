@@ -31,6 +31,7 @@ import MedicalRecordEditor from './MedicalRecordEditor';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useSearchFromUrl } from '@/hooks/useSearchFromUrl';
 import InvoiceModal from '../invoices/InvoiceModal';
+import { invoiceStatusConfig } from '@/constants/invoiceStatus';
 import { invoicesApi } from '@/api';
 import { ownersApi } from '@/api/owners';
 import type { MedicalRecord, Invoice } from '@/types';
@@ -126,6 +127,7 @@ export default function MedicalRecordsPage() {
       title: 'Šifra',
       dataIndex: 'recordCode',
       key: 'recordCode',
+      width: 100,
       render: (val: string | null) => val || '—',
     },
 
@@ -133,6 +135,7 @@ export default function MedicalRecordsPage() {
       title: 'Datum',
       dataIndex: 'createdAt',
       key: 'createdAt',
+      width: 110,
       render: (val) => dayjs(val).format('DD.MM.YYYY'),
       defaultSortOrder: 'descend',
     },
@@ -140,6 +143,7 @@ export default function MedicalRecordsPage() {
       title: 'Ljubimac',
       dataIndex: 'petName',
       key: 'petName',
+      width: 100,
       render: (val: string, record) => (
         <Space size={4}>
           {record.hasActiveAlerts && (
@@ -155,31 +159,45 @@ export default function MedicalRecordsPage() {
       title: 'Vlasnik',
       dataIndex: 'ownerName',
       key: 'ownerName',
+      width: 180,
       render: (val: string) => val || '—',
     },
-    {
-      title: 'Veterinar',
-      dataIndex: 'vetName',
-      key: 'vetName',
-    },
+
     {
       title: 'Dijagnoza',
       dataIndex: 'diagnoses',
       key: 'diagnoses',
-      render: (_val, record) => record.diagnoses?.map((d) => d.name).join(', ') || '-',
-      ellipsis: true,
+      width: 100,
+      ellipsis: { showTitle: false },
+      render: (_val, record) => {
+        const text = record.diagnoses?.map((d) => d.name).join(', ') || '-';
+        return (
+          <Tooltip title={text} placement='topLeft'>
+            <span>{text}</span>
+          </Tooltip>
+        );
+      },
     },
 
     {
       title: 'Simptomi',
       dataIndex: 'symptoms',
       key: 'symptoms',
-      render: (val) => val ?? '-',
-      ellipsis: true,
+      width: 170,
+      ellipsis: { showTitle: false },
+      render: (val: string | null) => {
+        const text = val ?? '-';
+        return (
+          <Tooltip title={text} placement='topLeft'>
+            <span>{text}</span>
+          </Tooltip>
+        );
+      },
     },
     {
       title: 'Kontrola',
       key: 'followUp',
+      width: 95,
       render: (_, record) =>
         record.followUpRecommended ? (
           <span style={{ color: '#fa8c16', fontWeight: 600 }}>
@@ -190,11 +208,44 @@ export default function MedicalRecordsPage() {
         ),
     },
     {
+      title: 'Veterinar',
+      dataIndex: 'vetName',
+      key: 'vetName',
+      width: 150,
+    },
+    {
+      title: 'Faktura',
+      key: 'invoice',
+      width: 170,
+      fixed: 'right',
+      render: (_, record) =>
+        record.invoiceStatus ? (
+          <Space size={6}>
+            <span>
+              {record.invoiceTotal != null
+                ? `${Number(record.invoiceTotal).toLocaleString('sr-RS', {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })} RSD`
+                : '—'}
+            </span>
+            <span
+              style={{ color: invoiceStatusConfig[record.invoiceStatus].color, fontWeight: 600 }}
+            >
+              {invoiceStatusConfig[record.invoiceStatus].label}
+            </span>
+          </Space>
+        ) : (
+          <span style={{ color: '#bfbfbf' }}>—</span>
+        ),
+    },
+    {
       title: 'Akcije',
       key: 'actions',
-      width: 160,
+      width: 150,
+      fixed: 'right',
       render: (_, record) => (
-        <Space>
+        <Space size={3}>
           <Tooltip title='Preuzmi PDF'>
             <Button
               type='text'
@@ -327,6 +378,7 @@ export default function MedicalRecordsPage() {
         </div>
 
         <Table
+          scroll={{ x: 1320 }}
           rowClassName={(_, index) => (index % 2 === 1 ? 'zebra-even' : '')}
           columns={columns}
           dataSource={data?.content}

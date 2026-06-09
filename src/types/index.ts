@@ -355,6 +355,8 @@ export interface MedicalRecord {
   createdAt: string;
   updatedAt: string;
   hasActiveAlerts?: boolean;
+  invoiceTotal?: number | null;
+  invoiceStatus?: InvoiceStatus | null;
 }
 
 export interface CreateMedicalRecordRequest {
