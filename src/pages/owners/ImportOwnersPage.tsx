@@ -55,7 +55,9 @@ const ImportOwnersPage: React.FC = () => {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            const mapped: ImportOwnerRequest[] = results.data.map((row: any) => ({
+            const mapped: ImportOwnerRequest[] = (
+              results.data as Record<string, string | undefined>[]
+            ).map((row) => ({
               clientCode: row.clientCode || row.broj || undefined,
               firstName: row.firstName || row.ime || '',
               lastName: row.lastName || row.prezime || '',
@@ -102,7 +104,7 @@ const ImportOwnersPage: React.FC = () => {
     { title: 'Br.', dataIndex: 'clientCode', width: 80, render: (v: string) => v || '—' },
     {
       title: 'Vlasnik',
-      render: (_: any, r: ImportOwnerRequest) => `${r.firstName} ${r.lastName}`,
+      render: (_: unknown, r: ImportOwnerRequest) => `${r.firstName} ${r.lastName}`,
     },
     { title: 'Telefon', dataIndex: 'phone', render: (v: string) => v || '—' },
     { title: 'Adresa', dataIndex: 'address', render: (v: string) => v || '—' },

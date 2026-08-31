@@ -41,6 +41,7 @@ import InvoiceModal from '@/pages/invoices/InvoiceModal';
 import { useAuthStore } from '@/store/authStore';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 import { INVENTORY_FULL_KEYS, INVOICE_KEYS } from '@/lib/queryKeySets';
+import { getApiErrorMessage, getApiErrorStatus } from '@/lib/apiError';
 import PermissionGuard from '@/components/PermissionGuard';
 import PetHealthAlertsBanner from '@/components/PetHealthAlertsBanner';
 
@@ -209,8 +210,8 @@ export default function MedicalRecordEditor({
 
       setCreatedRecord(response.data);
     },
-    onError: (error: any) => {
-      const msg = error?.response?.data?.message || '';
+    onError: (error) => {
+      const msg = getApiErrorMessage(error, '');
       if (msg.includes('medical_record_appointment_id_key')) {
         message.warning('Za ovaj termin već postoji intervencija!');
       } else {
@@ -254,12 +255,11 @@ export default function MedicalRecordEditor({
       queryClient.invalidateQueries({ queryKey: ['dashboard-appointments'] });
       onSaved?.();
     },
-    onError: (error: any) => {
-      if (error?.response?.status === 403) {
+    onError: (error) => {
+      if (getApiErrorStatus(error) === 403) {
         message.error('Nemate dozvolu da završite pregled.');
       } else {
-        const msg = error?.response?.data?.message || 'Greška pri završavanju pregleda!';
-        message.error(msg);
+        message.error(getApiErrorMessage(error, 'Greška pri završavanju pregleda!'));
       }
     },
   });

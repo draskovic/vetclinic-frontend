@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Table, Button, Space, Input, Popconfirm, message, Select, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -36,9 +36,14 @@ export default function ServicesPage() {
   const [categoryFilter, setCategoryFilter] = useState<ServiceCategory | ''>('');
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<Service | null>(null);
-  useEffect(() => {
+  // Reset na 1. stranu kad se filter promeni — "adjust state during render"
+  // (react.dev preporuka umesto setState u effect-u → nema cascading-render warning-a)
+  const filterKey = `${debouncedSearch}|${categoryFilter}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setPage(1);
-  }, [debouncedSearch, categoryFilter]);
+  }
 
   const queryClient = useQueryClient();
 

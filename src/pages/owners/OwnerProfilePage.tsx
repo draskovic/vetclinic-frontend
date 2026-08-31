@@ -90,7 +90,7 @@ const OwnerProfilePage: React.FC = () => {
     {
       title: 'Akcije',
       key: 'actions',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: MedicalRecord) => (
         <Button
           type='link'
           onClick={() => {
@@ -131,7 +131,7 @@ const OwnerProfilePage: React.FC = () => {
     {
       title: 'Akcije',
       key: 'actions',
-      render: (_: any, record: Pet) => (
+      render: (_: unknown, record: Pet) => (
         <Button
           type='link'
           icon={<EditOutlined />}
@@ -184,7 +184,7 @@ const OwnerProfilePage: React.FC = () => {
       title: 'Iznos',
       dataIndex: 'total',
       key: 'total',
-      render: (amount: number, record: any) =>
+      render: (amount: number, record: { currency?: string | null }) =>
         `${amount?.toLocaleString('sr-RS')} ${record.currency || 'RSD'}`,
     },
     {

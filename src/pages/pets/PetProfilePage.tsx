@@ -129,22 +129,34 @@ export default function PetProfilePage() {
   const user = useAuthStore((s) => s.user);
 
   const queryClient = useQueryClient();
-  const [avatarSrc, setAvatarSrc] = useState<string | null>(null);
+  // Blob URL se čuva u state-u, ali PRIKAZANA vrednost se izvodi — bez setState-a u effect-u.
+  const [fetchedAvatar, setFetchedAvatar] = useState<string | null>(null);
+  const avatarSrc = pet?.photoUrl ? fetchedAvatar : null;
 
   useEffect(() => {
-    if (!pet?.photoUrl) {
-      setAvatarSrc(null);
-      return;
-    }
+    if (!pet?.photoUrl) return;
     const baseUrl = import.meta.env.VITE_API_BASE_URL || '/api';
     const accessToken = localStorage.getItem('accessToken');
     const clinicId = localStorage.getItem('clinicId');
+    let cancelled = false;
+    let objectUrl: string | null = null;
     fetch(`${baseUrl}/documents/${pet.photoUrl}/download`, {
       headers: { Authorization: `Bearer ${accessToken}`, 'X-Clinic-Id': clinicId || '' },
     })
       .then((res) => res.blob())
-      .then((blob) => setAvatarSrc(URL.createObjectURL(blob)))
-      .catch(() => setAvatarSrc(null));
+      .then((blob) => {
+        if (cancelled) return;
+        objectUrl = URL.createObjectURL(blob);
+        setFetchedAvatar(objectUrl);
+      })
+      .catch(() => {
+        if (!cancelled) setFetchedAvatar(null);
+      });
+    // cleanup: oslobodi blob URL (ranije je curio pri svakoj promeni slike)
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
   }, [pet?.photoUrl]);
 
   const handleAvatarUpload = async (file: File) => {

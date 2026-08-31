@@ -11,6 +11,7 @@ import type {
 
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 import { INVENTORY_FULL_KEYS, BATCH_ONLY_KEYS } from '@/lib/queryKeySets';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 interface Props {
   open: boolean;
@@ -32,8 +33,8 @@ export default function InventoryBatchModal({ open, inventoryItemId, batch, onCl
       onClose();
     },
 
-    onError: (err: any) => {
-      message.error(err?.response?.data?.message ?? 'Greška pri kreiranju lota');
+    onError: (err) => {
+      message.error(getApiErrorMessage(err, 'Greška pri kreiranju lota'));
     },
   });
 
@@ -45,8 +46,8 @@ export default function InventoryBatchModal({ open, inventoryItemId, batch, onCl
       onClose();
     },
 
-    onError: (err: any) => {
-      message.error(err?.response?.data?.message ?? 'Greška pri izmeni lota');
+    onError: (err) => {
+      message.error(getApiErrorMessage(err, 'Greška pri izmeni lota'));
     },
   });
 

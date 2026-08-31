@@ -14,12 +14,13 @@ import {
 import { UploadOutlined, ImportOutlined, DeleteOutlined } from '@ant-design/icons';
 import { useMutation } from '@tanstack/react-query';
 import { servicesApi } from '@/api';
+import type { ImportError, ImportResultResponse } from '@/types';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 
 const { Title, Text } = Typography;
 
-const parsePrice = (val: any): number => {
+const parsePrice = (val: unknown): number => {
   if (!val) return 0;
   const str = String(val).replace(/\s/g, '');
   const match = str.match(/[\d]+([.,]\d+)?/);
@@ -72,6 +73,9 @@ const getCategoryEnum = (category: string): string => {
   return 'OTHER';
 };
 
+/** Red iz CSV-a: Papaparse sa `header: true` vraća mapu kolona → vrednost (sve stringovi). */
+type CsvRow = Record<string, string | undefined>;
+
 interface ImportServiceRow {
   sku: string;
   name: string;
@@ -82,7 +86,7 @@ interface ImportServiceRow {
 
 const ImportServicesPage: React.FC = () => {
   const [data, setData] = useState<ImportServiceRow[]>([]);
-  const [result, setResult] = useState<any | null>(null);
+  const [result, setResult] = useState<ImportResultResponse | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
 
   const importMutation = useMutation({
@@ -115,7 +119,7 @@ const ImportServicesPage: React.FC = () => {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            const mapped: ImportServiceRow[] = results.data.map((row: any) => ({
+            const mapped: ImportServiceRow[] = (results.data as CsvRow[]).map((row) => ({
               sku: row.sku || row.sifra || row.šifra || '',
               name: row.name || row.naziv || '',
               price: parseFloat(row.price || row.cena || '0') || 0,
@@ -132,7 +136,7 @@ const ImportServicesPage: React.FC = () => {
         const buffer = e.target?.result as ArrayBuffer;
         const wb = XLSX.read(buffer, { type: 'array' });
         const ws = wb.Sheets[wb.SheetNames[0]];
-        const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+        const rows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
         const parsed: ImportServiceRow[] = [];
         let currentCategory = 'OTHER';
@@ -257,7 +261,7 @@ const ImportServicesPage: React.FC = () => {
           {result.errors.length > 0 && (
             <Table
               dataSource={result.errors}
-              rowKey={(r: any) => r.clientCode || r.ownerName}
+              rowKey={(r: ImportError) => r.clientCode || r.ownerName}
               size='small'
               pagination={false}
               columns={[

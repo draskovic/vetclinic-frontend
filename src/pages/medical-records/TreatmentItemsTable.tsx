@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -33,7 +33,6 @@ interface TreatmentItemsTableProps {
 
 export default function TreatmentItemsTable({ medicalRecordId, vetId }: TreatmentItemsTableProps) {
   const [form] = Form.useForm();
-  const [treatments, setTreatments] = useState<Treatment[]>([]);
   const [editingId, setEditingId] = useState<string | null>(null);
   const queryClient = useQueryClient();
   const [serviceSearch, setServiceSearch] = useState('');
@@ -50,11 +49,7 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
     enabled: !!medicalRecordId,
   });
 
-  useEffect(() => {
-    if (treatmentsData) {
-      setTreatments(treatmentsData.data);
-    }
-  }, [treatmentsData]);
+  const treatments = treatmentsData?.data ?? [];
 
   // Low-stock artikli za upozorenja
   const { data: lowStockData } = useQuery({

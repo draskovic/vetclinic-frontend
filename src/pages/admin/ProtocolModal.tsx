@@ -62,7 +62,6 @@ export default function ProtocolModal({ open, protocol, onClose }: ProtocolModal
       } else {
         form.resetFields();
         form.setFieldsValue({ active: true });
-        setCreatedProtocol(null);
       }
     }
   }, [open, protocol, form]);

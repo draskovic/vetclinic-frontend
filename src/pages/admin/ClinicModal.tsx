@@ -92,7 +92,12 @@ export default function ClinicModal({ open, clinic, onClose }: ClinicModalProps)
     onError: () => message.error('Greška pri izmeni!'),
   });
 
-  const handleSubmit = (values: any) => {
+  // Ista forma puni i provision (create) i update payload; polja su `required` u formi,
+  // pa su prisutna u submit-u. DatePicker vraća Dayjs → konvertuje se u ISO string ispod.
+  const handleSubmit = (
+    values: ProvisionClinicRequest &
+      UpdateClinicRequest & { subscriptionExpiresAt?: dayjs.Dayjs | null },
+  ) => {
     const payload = {
       ...values,
       active: values.active ?? true,

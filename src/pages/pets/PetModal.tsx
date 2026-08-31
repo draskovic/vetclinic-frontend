@@ -38,7 +38,13 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!pet;
-  const [selectedSpeciesId, setSelectedSpeciesId] = useState<string | null>(null);
+  // Inicijalizacija iz prop-a: modal je conditional-no renderovan (svež mount na svako
+  // otvaranje), pa je početna vrednost tačna bez sinhronizacije kroz useEffect.
+  const [selectedSpeciesId, setSelectedSpeciesId] = useState<string | null>(
+    pet?.speciesId ?? null,
+  );
+  // Primitiv u deps umesto celog objekta — stabilan po vrednosti.
+  const defaultOwnerId = defaultValues?.ownerId;
 
   const { data: ownersData } = useQuery({
     queryKey: ['owners-all'],
@@ -75,7 +81,6 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
   useEffect(() => {
     if (open) {
       if (pet) {
-        setSelectedSpeciesId(pet.speciesId);
         form.setFieldsValue({
           ...pet,
           dateOfBirth: pet.dateOfBirth ? dayjs(pet.dateOfBirth) : null,
@@ -84,13 +89,12 @@ export default function PetModal({ open, pet, onClose, defaultValues }: PetModal
         });
       } else {
         form.resetFields();
-        setSelectedSpeciesId(null);
-        if (defaultValues?.ownerId) {
-          form.setFieldsValue({ ownerId: defaultValues.ownerId });
+        if (defaultOwnerId) {
+          form.setFieldsValue({ ownerId: defaultOwnerId });
         }
       }
     }
-  }, [open, pet, form]);
+  }, [open, pet, form, defaultOwnerId]);
 
   useEffect(() => {
     if (open && pet?.breedId && breedsData) {

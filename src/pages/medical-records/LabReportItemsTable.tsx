@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Table, Button, Popconfirm, message, Typography, Tag, Space, Tooltip } from 'antd';
 import {
   PlusOutlined,
@@ -25,7 +25,6 @@ interface LabReportItemsTableProps {
 }
 
 export default function LabReportItemsTable({ medicalRecordId, petId }: LabReportItemsTableProps) {
-  const [labReports, setLabReports] = useState<LabReport[]>([]);
   const [modalOpen, setModalOpen] = useState(false);
   const [editingReport, setEditingReport] = useState<LabReport | null>(null);
 
@@ -35,11 +34,7 @@ export default function LabReportItemsTable({ medicalRecordId, petId }: LabRepor
     enabled: !!medicalRecordId,
   });
 
-  useEffect(() => {
-    if (labReportsData) {
-      setLabReports(labReportsData.data);
-    }
-  }, [labReportsData]);
+  const labReports = labReportsData?.data ?? [];
 
   const deleteMutation = useMutation({
     mutationFn: (id: string) => labReportsApi.delete(id),

@@ -23,7 +23,9 @@ export interface UnreadCount {
 }
 
 export const getMyNotifications = (page = 0, size = 50) =>
-  apiClient.get('/notifications/my', { params: { page, size, sort: 'createdAt,desc' } });
+  apiClient.get<{ content: Notification[]; totalElements: number }>('/notifications/my', {
+    params: { page, size, sort: 'createdAt,desc' },
+  });
 
 export const getUnreadCount = () => apiClient.get<UnreadCount>('/notifications/my/unread-count');
 

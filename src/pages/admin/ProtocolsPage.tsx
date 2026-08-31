@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { Table, Button, Space, Input, Popconfirm, message, Tag, Typography } from 'antd';
 import { PlusOutlined, EditOutlined, DeleteOutlined, SearchOutlined } from '@ant-design/icons';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
@@ -16,9 +16,13 @@ export default function ProtocolsPage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState<TreatmentProtocol | null>(null);
 
-  useEffect(() => {
+  // Reset na 1. stranu kad se filter promeni — "adjust state during render"
+  // (react.dev preporuka umesto setState u effect-u → nema cascading-render warning-a)
+  const [prevSearch, setPrevSearch] = useState(debouncedSearch);
+  if (prevSearch !== debouncedSearch) {
+    setPrevSearch(debouncedSearch);
     setPage(1);
-  }, [debouncedSearch]);
+  }
 
   const queryClient = useQueryClient();
 

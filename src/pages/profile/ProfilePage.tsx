@@ -52,11 +52,11 @@ const ProfilePage = () => {
     },
   });
 
-  const handleProfileSubmit = (values: any) => {
+  const handleProfileSubmit = (values: Parameters<typeof usersApi.updateProfile>[0]) => {
     updateProfileMutation.mutate(values);
   };
 
-  const handlePasswordSubmit = (values: any) => {
+  const handlePasswordSubmit = (values: { currentPassword: string; newPassword: string }) => {
     changePasswordMutation.mutate({
       currentPassword: values.currentPassword,
       newPassword: values.newPassword,

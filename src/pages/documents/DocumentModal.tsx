@@ -117,8 +117,6 @@ export default function DocumentModal({
         if (petId) form.setFieldValue('petId', petId);
         if (medicalRecordId) form.setFieldValue('medicalRecordId', medicalRecordId);
       }
-      setFileToUpload(null);
-      setFileList([]);
     }
   }, [open, document, form, petId, medicalRecordId]);
 

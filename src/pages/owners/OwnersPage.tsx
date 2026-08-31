@@ -66,7 +66,7 @@ export default function OwnersPage() {
     {
       title: 'Ime i prezime',
       key: 'name',
-      render: (_: any, record: any) => (
+      render: (_: unknown, record: Owner) => (
         <a onClick={() => navigate(`/owners/${record.id}`)}>
           {record.firstName} {record.lastName}
         </a>

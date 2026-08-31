@@ -28,6 +28,7 @@ import dayjs from 'dayjs';
 import PaymentItemsTable from './PaymentItemsTable';
 import { paymentsApi } from '@/api/payments';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
+import { getApiErrorStatus } from '@/lib/apiError';
 import { FilePdfOutlined } from '@ant-design/icons';
 
 interface InvoiceModalProps {
@@ -52,6 +53,11 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const [ownerSearch, setOwnerSearch] = useState('');
   const debouncedOwnerSearch = useDebouncedValue(ownerSearch, 300);
 
+  // Primitivi umesto celog objekta: defaultValues je inline literal iz parenta (nova referencija
+  // na svaki render) → u deps effect-a bi pregazio korisnikov unos. Stringovi su stabilni po vrednosti.
+  const defaultOwnerId = defaultValues?.ownerId;
+  const defaultMedicalRecordId = defaultValues?.medicalRecordId;
+
   const currentInvoice = createdInvoice ?? invoice;
 
   const selectedOwnerId = Form.useWatch('ownerId', form);
@@ -72,18 +78,12 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   });
 
   const { data: locationsData } = useQuery({
-    queryKey: ['clinic-locations-active'],
+    queryKey: ['clinic-locations', 'active'],
     queryFn: () => clinicLocationsApi.getActive().then((r) => r.data),
   });
 
   useEffect(() => {
     if (open) {
-      // KRITIČNO: reset uvek (i pri editu i pri novom), inače createdInvoice
-      // iz prethodne session-e modala pregazi novi invoice prop preko
-      // currentInvoice = createdInvoice ?? invoice.
-      setCreatedInvoice(null);
-      setPaidImmediately(false);
-
       if (invoice) {
         form.setFieldsValue({
           ...invoice,
@@ -98,12 +98,15 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
           issuedAt: dayjs(),
           dueDate: dayjs(),
         });
-        if (defaultValues) {
-          form.setFieldsValue(defaultValues);
+        if (defaultOwnerId || defaultMedicalRecordId) {
+          form.setFieldsValue({
+            ...(defaultOwnerId ? { ownerId: defaultOwnerId } : {}),
+            ...(defaultMedicalRecordId ? { medicalRecordId: defaultMedicalRecordId } : {}),
+          });
         }
       }
     }
-  }, [open, invoice, form]);
+  }, [open, invoice, form, defaultOwnerId, defaultMedicalRecordId]);
 
   // Standardna kreacija — koristi se kad NEMA medicalRecordId u defaultValues
   const createMutation = useMutation({
@@ -129,9 +132,8 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
       queryClient.setQueryData(['invoice-items', invoice.id], items);
       setCreatedInvoice(invoice);
     },
-    onError: (error: any) => {
-      const status = error?.response?.status;
-      if (status === 409) {
+    onError: (error) => {
+      if (getApiErrorStatus(error) === 409) {
         message.warning('Za ovu intervenciju već postoji faktura!');
       } else {
         message.error('Greška pri kreiranju!');
@@ -154,12 +156,12 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
   const handleSubmit = async (
     values: CreateInvoiceRequest & { issuedAt?: dayjs.Dayjs; dueDate?: dayjs.Dayjs },
   ) => {
-    const { status: formStatus, ...rest } = values as any;
+    const { status: formStatus, ...rest } = values;
     const autoStatus = !isEditing ? (values.issuedAt ? 'ISSUED' : 'DRAFT') : formStatus;
     const manualStatuses = ['CANCELLED', 'REFUNDED', 'OVERDUE'];
     const payload = {
       ...rest,
-      ...(!isEditing || manualStatuses.includes(autoStatus) ? { status: autoStatus } : {}),
+      ...(!isEditing || manualStatuses.includes(autoStatus ?? '') ? { status: autoStatus } : {}),
       issuedAt: values.issuedAt ? values.issuedAt.toISOString() : undefined,
       dueDate: values.dueDate ? values.dueDate.format('YYYY-MM-DD') : undefined,
       ...(!isEditing && defaultValues?.medicalRecordId
@@ -177,10 +179,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
           const invoiceRes = await invoicesApi.getById(currentInvoice!.id);
           const freshInvoice = invoiceRes.data;
           const existingPayments = await paymentsApi.getByInvoice(freshInvoice.id);
-          const totalPaid = existingPayments.reduce(
-            (sum: number, p: any) => sum + (p.amount ?? 0),
-            0,
-          );
+          const totalPaid = existingPayments.reduce((sum, p) => sum + (p.amount ?? 0), 0);
           const remaining = freshInvoice.total - totalPaid;
           if (remaining > 0) {
             await paymentsApi.create({
@@ -205,7 +204,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
               // ignore — fallback na stari version, backend će vratiti 409 ako se desio konflikt
             }
           }
-        } catch (e) {
+        } catch {
           message.warning('Plaćanje nije evidentirano. Dodajte ručno u tab Plaćanja.');
         }
       }
@@ -415,7 +414,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                         });
                         // Ažuriraj createdInvoice da svež version dođe u sledeći update payload
                         setCreatedInvoice(inv);
-                      } catch (e) {
+                      } catch {
                         // ignore
                       }
                     }}
@@ -443,7 +442,7 @@ export default function InvoiceModal({ open, invoice, onClose, defaultValues }: 
                         });
                         // Ažuriraj createdInvoice da svež version dođe u sledeći update payload
                         setCreatedInvoice(inv);
-                      } catch (e) {
+                      } catch {
                         // ignore
                       }
                     }}

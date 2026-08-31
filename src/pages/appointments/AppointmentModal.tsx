@@ -17,6 +17,8 @@ interface AppointmentModalProps {
   appointment: Appointment | null;
   onClose: () => void;
   initialDates?: { start: string; end: string } | null;
+  /** Lokacija iz konteksta iz kog je modal otvoren (npr. izabrana lokacija u kalendaru). */
+  initialLocationId?: string;
 }
 
 const typeOptions = [
@@ -42,11 +44,16 @@ export default function AppointmentModal({
   appointment,
   onClose,
   initialDates,
+  initialLocationId,
 }: AppointmentModalProps) {
   const [form] = Form.useForm();
   const queryClient = useQueryClient();
   const isEditing = !!appointment;
-  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(null);
+  // Inicijalizacija iz prop-a: modal je conditional-no renderovan (svež mount na svako
+  // otvaranje), pa je početna vrednost tačna bez sinhronizacije kroz useEffect.
+  const [selectedOwnerId, setSelectedOwnerId] = useState<string | null>(
+    appointment?.ownerId ?? null,
+  );
   const [ownerSearch, setOwnerSearch] = useState('');
   const debouncedOwnerSearch = useDebouncedValue(ownerSearch, 300);
 
@@ -67,11 +74,14 @@ export default function AppointmentModal({
   });
 
   const { data: locationsData } = useQuery({
-    queryKey: ['clinic-locations-active'],
+    queryKey: ['clinic-locations', 'active'],
     queryFn: () => clinicLocationsApi.getActive().then((r) => r.data),
   });
 
   const currentUser = useAuthStore((s) => s.user);
+  // Primitivi u deps umesto celog objekta — stabilni po vrednosti, effect se ne okida bez potrebe.
+  const currentUserId = currentUser?.id;
+  const currentUserRole = currentUser?.roleName;
 
   const watchedPetId = Form.useWatch('petId', form);
   const selectedPetNote = petsData?.find((p) => p.id === watchedPetId)?.note ?? null;
@@ -79,7 +89,6 @@ export default function AppointmentModal({
   useEffect(() => {
     if (open) {
       if (appointment) {
-        setSelectedOwnerId(appointment.ownerId);
         form.setFieldsValue({
           ...appointment,
           startTime: dayjs(appointment.startTime),
@@ -87,25 +96,36 @@ export default function AppointmentModal({
         });
       } else {
         form.resetFields();
-        setSelectedOwnerId(null);
         if (initialDates) {
           form.setFieldsValue({
             startTime: dayjs(initialDates.start),
             endTime: dayjs(initialDates.end),
           });
         }
-        // Ako klinika ima samo jednu lokaciju, postavi je kao podrazumevanu
-        if (locationsData?.length === 1) {
-          form.setFieldsValue({ locationId: locationsData[0].id });
+        // Lokacija: preuzmi iz konteksta (izabrana lokacija u kalendaru),
+        // a ako ga nema — jedina lokacija klinike.
+        const presetLocationId =
+          initialLocationId ?? (locationsData?.length === 1 ? locationsData[0].id : undefined);
+        if (presetLocationId) {
+          form.setFieldsValue({ locationId: presetLocationId });
         }
 
         // Podrazumevani veterinar = ulogovani korisnik (osim SUPER_ADMIN)
-        if (currentUser?.id && currentUser.roleName !== 'SUPER_ADMIN') {
-          form.setFieldsValue({ vetId: currentUser.id });
+        if (currentUserId && currentUserRole !== 'SUPER_ADMIN') {
+          form.setFieldsValue({ vetId: currentUserId });
         }
       }
     }
-  }, [open, appointment, form, initialDates, locationsData]);
+  }, [
+    open,
+    appointment,
+    form,
+    initialDates,
+    locationsData,
+    currentUserId,
+    currentUserRole,
+    initialLocationId,
+  ]);
 
   const createMutation = useMutation({
     mutationFn: (data: CreateAppointmentRequest) => appointmentsApi.create(data),

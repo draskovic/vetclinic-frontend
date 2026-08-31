@@ -19,6 +19,7 @@ import { inventoryItemsApi, productsApi, taxRatesApi } from '@/api';
 import Papa from 'papaparse';
 import * as XLSX from 'xlsx';
 import type { InventoryItem, TaxRate } from '@/types';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const { Title, Text } = Typography;
 
@@ -124,7 +125,7 @@ const ImportMedicationsPage: React.FC = () => {
           const buffer = e.target?.result as ArrayBuffer;
           const wb = XLSX.read(buffer, { type: 'array' });
           const ws = wb.Sheets[wb.SheetNames[0]];
-          const rows: any[] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
+          const rows: unknown[][] = XLSX.utils.sheet_to_json(ws, { header: 1, defval: '' });
 
           const parsed: { name: string; taxLabel: string }[] = [];
           rows.forEach((row, idx) => {
@@ -148,7 +149,7 @@ const ImportMedicationsPage: React.FC = () => {
           skipEmptyLines: true,
           complete: (results) => {
             const parsed: { name: string; taxLabel: string }[] = [];
-            (results.data as any[]).forEach((row, idx) => {
+            (results.data as unknown[][]).forEach((row, idx) => {
               const name = String(row[0] || '').trim();
               const taxLabel = String(row[1] || '').trim();
               if (!name) return;
@@ -210,10 +211,10 @@ const ImportMedicationsPage: React.FC = () => {
         });
         created++;
         counter++;
-      } catch (err: any) {
+      } catch (err) {
         errors.push({
           name: item.name,
-          message: err?.response?.data?.message || err?.message || 'Nepoznata greška',
+          message: getApiErrorMessage(err, 'Nepoznata greška'),
         });
       }
       setProgress(Math.round(((i + 1) / toImport.length) * 100));

@@ -15,13 +15,13 @@ import { UploadOutlined, ImportOutlined, DeleteOutlined } from '@ant-design/icon
 import { useMutation } from '@tanstack/react-query';
 import { diagnosesApi } from '@/api/diagnoses';
 import Papa from 'papaparse';
-import type { ImportDiagnosisRequest } from '@/types';
+import type { ImportDiagnosisRequest, ImportError, ImportResultResponse } from '@/types';
 
 const { Title, Text } = Typography;
 
 const ImportDiagnosesPage: React.FC = () => {
   const [data, setData] = useState<ImportDiagnosisRequest[]>([]);
-  const [result, setResult] = useState<any | null>(null);
+  const [result, setResult] = useState<ImportResultResponse | null>(null);
   const [parseError, setParseError] = useState<string | null>(null);
 
   const importMutation = useMutation({
@@ -54,7 +54,9 @@ const ImportDiagnosesPage: React.FC = () => {
           header: true,
           skipEmptyLines: true,
           complete: (results) => {
-            const mapped: ImportDiagnosisRequest[] = results.data.map((row: any) => ({
+            const mapped: ImportDiagnosisRequest[] = (
+              results.data as Record<string, string | undefined>[]
+            ).map((row) => ({
               name: row.name || row.naziv || '',
               code: row.code || row.sifra || row.šifra || undefined,
               category: row.category || row.kategorija || undefined,
@@ -140,7 +142,7 @@ const ImportDiagnosesPage: React.FC = () => {
           {result.errors.length > 0 && (
             <Table
               dataSource={result.errors}
-              rowKey={(r: any) => r.clientCode || r.ownerName}
+              rowKey={(r: ImportError) => r.clientCode || r.ownerName}
               size='small'
               pagination={false}
               columns={[

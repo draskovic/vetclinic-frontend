@@ -89,7 +89,7 @@ export default function NotificationBell() {
         <List
           style={{ maxHeight: 400, overflow: 'auto' }}
           dataSource={notifications}
-          renderItem={(item: any) => (
+          renderItem={(item) => (
             <List.Item
               style={{
                 padding: '10px 16px',

@@ -44,7 +44,9 @@ const ClinicSettingsPage = () => {
   const queryClient = useQueryClient();
   const [form] = Form.useForm();
   const clinicId = useAuthStore((s) => s.clinicId);
-  const [logoPreviewUrl, setLogoPreviewUrl] = useState<string | null>(null);
+  // Blob URL se čuva u state-u, ali PRIKAZANA vrednost se izvodi — kad klinika nema logo,
+  // nema potrebe za setState-om u effect-u (react-hooks/set-state-in-effect).
+  const [fetchedLogoUrl, setFetchedLogoUrl] = useState<string | null>(null);
 
   const { data: clinic, isLoading } = useQuery({
     queryKey: ['clinic', clinicId],
@@ -54,6 +56,8 @@ const ClinicSettingsPage = () => {
     },
     enabled: !!clinicId,
   });
+
+  const logoPreviewUrl = clinic?.logoUrl ? fetchedLogoUrl : null;
 
   const updateMutation = useMutation({
     mutationFn: (data: UpdateClinicRequest) => clinicsApi.update(clinicId!, data),
@@ -67,10 +71,7 @@ const ClinicSettingsPage = () => {
   });
 
   useEffect(() => {
-    if (!clinicId || !clinic?.logoUrl) {
-      setLogoPreviewUrl(null);
-      return;
-    }
+    if (!clinicId || !clinic?.logoUrl) return;
     let cancelled = false;
     let objectUrl: string | null = null;
     apiClient
@@ -78,10 +79,10 @@ const ClinicSettingsPage = () => {
       .then((res) => {
         if (cancelled) return;
         objectUrl = URL.createObjectURL(res.data);
-        setLogoPreviewUrl(objectUrl);
+        setFetchedLogoUrl(objectUrl);
       })
       .catch(() => {
-        if (!cancelled) setLogoPreviewUrl(null);
+        if (!cancelled) setFetchedLogoUrl(null);
       });
     return () => {
       cancelled = true;
@@ -104,7 +105,7 @@ const ClinicSettingsPage = () => {
     mutationFn: () => clinicsApi.deleteLogo(clinicId!),
     onSuccess: () => {
       message.success('Logo je uklonjen');
-      setLogoPreviewUrl(null);
+      setFetchedLogoUrl(null);
       queryClient.invalidateQueries({ queryKey: ['clinic', clinicId] });
     },
     onError: () => {
@@ -192,6 +193,11 @@ const ClinicSettingsPage = () => {
     { key: 'sunday', label: 'Nedelja' },
   ];
 
+  // Radno vreme: u formi TimePicker drži Dayjs (može biti prazan), a pri snimanju
+  // vrednost može doći i kao string (učitano iz JSON-a) — otud dva oblika.
+  type TimePeriod = { open: string | dayjs.Dayjs; close: string | dayjs.Dayjs };
+  type TimePeriodForm = { open: dayjs.Dayjs | null; close: dayjs.Dayjs | null };
+
   const parseWorkingHours = (
     json: string | null,
   ): Record<string, Array<{ open: string; close: string }>> => {
@@ -206,7 +212,9 @@ const ClinicSettingsPage = () => {
       DAYS.forEach((d) => {
         const val = parsed[d.key];
         if (Array.isArray(val)) {
-          defaults[d.key] = val.filter((p: any) => p.open && p.close);
+          defaults[d.key] = val.filter(
+            (p: { open?: string; close?: string }) => p.open && p.close,
+          );
         } else if (val && val.open && val.close) {
           defaults[d.key] = [{ open: val.open, close: val.close }];
         } else {
@@ -219,10 +227,10 @@ const ClinicSettingsPage = () => {
     return defaults;
   };
 
-  const buildWorkingHoursJson = (formValues: any): string => {
+  const buildWorkingHoursJson = (formValues: Record<string, unknown>): string => {
     const result: Record<string, Array<{ open: string; close: string }> | null> = {};
     DAYS.forEach((d) => {
-      const periods: Array<{ open: any; close: any }> = formValues[`day_${d.key}`] || [];
+      const periods = (formValues[`day_${d.key}`] as TimePeriod[] | undefined) ?? [];
       const valid = periods
         .filter((p) => p.open && p.close)
         .map((p) => ({
@@ -238,7 +246,7 @@ const ClinicSettingsPage = () => {
     if (location) {
       setEditingLocation(location);
       const hours = parseWorkingHours(location.workingHours);
-      const formValues: any = {
+      const formValues: Record<string, unknown> = {
         name: location.name,
         address: location.address,
         city: location.city,
@@ -255,7 +263,7 @@ const ClinicSettingsPage = () => {
       locationForm.setFieldsValue(formValues);
     } else {
       setEditingLocation(null);
-      const formValues: any = { active: true };
+      const formValues: Record<string, unknown> = { active: true };
       const defaults = parseWorkingHours(null);
       DAYS.forEach((d) => {
         formValues[`day_${d.key}`] = defaults[d.key].map((p) => ({
@@ -304,7 +312,7 @@ const ClinicSettingsPage = () => {
     return false; // sprečava default upload ponašanje Ant Design-a
   };
 
-  const handleSubmit = (values: any) => {
+  const handleSubmit = (values: UpdateClinicRequest) => {
     const payload: UpdateClinicRequest = {
       name: values.name,
       email: values.email || undefined,
@@ -668,7 +676,7 @@ const ClinicSettingsPage = () => {
           {DAYS.map((day) => (
             <Form.Item key={day.key} noStyle shouldUpdate>
               {() => {
-                const periods: Array<{ open: any; close: any }> =
+                const periods: TimePeriodForm[] =
                   locationForm.getFieldValue(`day_${day.key}`) || [];
                 return (
                   <div style={{ marginBottom: 12 }}>

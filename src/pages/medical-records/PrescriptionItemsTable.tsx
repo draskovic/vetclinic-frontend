@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Table,
   Button,
@@ -25,7 +25,7 @@ import { prescriptionsApi } from '@/api/prescriptions';
 import { inventoryItemsApi } from '@/api/inventory';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import type { Prescription, InventoryItem } from '@/types';
+import type { InventoryItem } from '@/types';
 import dayjs from 'dayjs';
 
 interface PrescriptionItemsTableProps {
@@ -39,7 +39,6 @@ export default function PrescriptionItemsTable({
   petId,
   vetId,
 }: PrescriptionItemsTableProps) {
-  const [prescriptions, setPrescriptions] = useState<Prescription[]>([]);
   const [adding, setAdding] = useState(false);
   const [medicationName, setMedicationName] = useState('');
   const [dosage, setDosage] = useState('');
@@ -58,6 +57,8 @@ export default function PrescriptionItemsTable({
     enabled: !!medicalRecordId,
   });
 
+  const prescriptions = prescriptionsData?.data ?? [];
+
   const { data: medicationsData } = useQuery({
     queryKey: ['inventory-medications-search', debouncedMedicationSearch],
     queryFn: () =>
@@ -66,12 +67,6 @@ export default function PrescriptionItemsTable({
   });
 
   const medications: InventoryItem[] = medicationsData?.data?.content ?? [];
-
-  useEffect(() => {
-    if (prescriptionsData) {
-      setPrescriptions(prescriptionsData.data);
-    }
-  }, [prescriptionsData]);
 
   const resetForm = () => {
     setMedicationName('');

@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -90,9 +90,14 @@ export default function MedicalRecordsPage() {
     }
   }, [activeFilter, user?.id, selectedOwnerId]);
 
-  useEffect(() => {
+  // Reset na 1. stranu kad se filter promeni — "adjust state during render"
+  // (react.dev preporuka umesto setState u effect-u → nema cascading-render warning-a)
+  const filterKey = `${debouncedSearch}|${activeFilter}|${selectedOwnerId ?? ''}`;
+  const [prevFilterKey, setPrevFilterKey] = useState(filterKey);
+  if (prevFilterKey !== filterKey) {
+    setPrevFilterKey(filterKey);
     setPage(1);
-  }, [debouncedSearch, activeFilter, selectedOwnerId]);
+  }
 
   const { data, isLoading } = useQuery({
     queryKey: ['medical-records', page, pageSize, debouncedSearch, activeFilter, selectedOwnerId],
@@ -111,7 +116,7 @@ export default function MedicalRecordsPage() {
     onError: () => message.error('Greška pri brisanju!'),
   });
 
-  const handleDownloadPdf = async (id: string, _petName: string) => {
+  const handleDownloadPdf = async (id: string) => {
     try {
       const response = await medicalRecordsApi.downloadPdf(id);
       const blob = new Blob([response.data], { type: 'application/pdf' });
@@ -250,7 +255,7 @@ export default function MedicalRecordsPage() {
             <Button
               type='text'
               icon={<FilePdfOutlined style={{ color: '#ff4d4f' }} />}
-              onClick={() => handleDownloadPdf(record.id, record.petName)}
+              onClick={() => handleDownloadPdf(record.id)}
             />
           </Tooltip>
 

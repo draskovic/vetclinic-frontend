@@ -18,8 +18,12 @@ interface CommandPaletteProps {
 export default function CommandPalette({ open: externalOpen, onOpenChange }: CommandPaletteProps) {
   const [internalOpen, setInternalOpen] = useState(false);
   const open = externalOpen ?? internalOpen;
+  // Ref se ažurira u effect-u (ne tokom render-a) — čita ga globalni keydown handler
+  // koji je registrovan jednom, pa mu treba uvek sveža vrednost bez re-registracije.
   const openRef = useRef(open);
-  openRef.current = open;
+  useEffect(() => {
+    openRef.current = open;
+  }, [open]);
 
   const setOpen = (v: boolean | ((prev: boolean) => boolean)) => {
     const newVal = typeof v === 'function' ? v(open) : v;
@@ -31,7 +35,7 @@ export default function CommandPalette({ open: externalOpen, onOpenChange }: Com
   const debouncedSearch = useDebouncedValue(search, 200);
   const navigate = useNavigate();
 
-  // Ctrl+K / Cmd+K listener
+  // Ctrl+K / Cmd+K toggle + Esc zatvaranje
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key === 'k') {
@@ -39,6 +43,13 @@ export default function CommandPalette({ open: externalOpen, onOpenChange }: Com
         const next = !openRef.current;
         setInternalOpen(next);
         onOpenChange?.(next);
+        return;
+      }
+      // cmdk <Command> (za razliku od <Command.Dialog>) ne hvata Escape sam
+      if (e.key === 'Escape' && openRef.current) {
+        e.preventDefault();
+        setInternalOpen(false);
+        onOpenChange?.(false);
       }
     };
     document.addEventListener('keydown', handler);

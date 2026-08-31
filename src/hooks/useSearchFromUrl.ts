@@ -11,18 +11,24 @@ import { useSearchParams } from 'react-router-dom';
  */
 export function useSearchFromUrl(): [string, (value: string) => void] {
   const [searchParams, setSearchParams] = useSearchParams();
-  const [search, setSearch] = useState(searchParams.get('search') || '');
+  const searchFromUrl = searchParams.get('search');
+  const [search, setSearch] = useState(searchFromUrl || '');
+
+  // State se menja TOKOM RENDER-a (react.dev "adjust state when props change"),
+  // a čišćenje URL-a ostaje u effect-u jer je navigacija eksterni sistem.
+  const [prevUrlSearch, setPrevUrlSearch] = useState(searchFromUrl);
+  if (prevUrlSearch !== searchFromUrl) {
+    setPrevUrlSearch(searchFromUrl);
+    if (searchFromUrl) setSearch(searchFromUrl);
+  }
 
   useEffect(() => {
-    const searchFromUrl = searchParams.get('search');
-    if (searchFromUrl) {
-      setSearch(searchFromUrl);
-      // Ukloni samo 'search' parametar — ostavi ostale netaknute
-      const newParams = new URLSearchParams(searchParams);
-      newParams.delete('search');
-      setSearchParams(newParams, { replace: true });
-    }
-  }, [searchParams, setSearchParams]);
+    if (!searchFromUrl) return;
+    // Ukloni samo 'search' parametar — ostavi ostale netaknute
+    const newParams = new URLSearchParams(searchParams);
+    newParams.delete('search');
+    setSearchParams(newParams, { replace: true });
+  }, [searchFromUrl, searchParams, setSearchParams]);
 
   return [search, setSearch];
 }

@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Table,
   Button,
@@ -14,7 +14,6 @@ import {
 import { PlusOutlined, DeleteOutlined, SaveOutlined, CloseOutlined } from '@ant-design/icons';
 import { vaccinationsApi } from '@/api';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import type { Vaccination } from '@/types';
 import dayjs from 'dayjs';
 
 interface VaccinationItemsTableProps {
@@ -28,7 +27,6 @@ export default function VaccinationItemsTable({
   petId,
   vetId,
 }: VaccinationItemsTableProps) {
-  const [vaccinations, setVaccinations] = useState<Vaccination[]>([]);
   const [adding, setAdding] = useState(false);
   const [vaccineName, setVaccineName] = useState('');
   const [batchNumber, setBatchNumber] = useState('');
@@ -43,11 +41,7 @@ export default function VaccinationItemsTable({
     enabled: !!medicalRecordId,
   });
 
-  useEffect(() => {
-    if (vaccinationsData) {
-      setVaccinations(vaccinationsData.data);
-    }
-  }, [vaccinationsData]);
+  const vaccinations = vaccinationsData?.data ?? [];
 
   const resetForm = () => {
     setVaccineName('');

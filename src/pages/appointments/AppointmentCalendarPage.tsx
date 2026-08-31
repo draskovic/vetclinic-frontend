@@ -12,6 +12,7 @@ import dayjs from 'dayjs';
 import { appointmentsApi } from '../../api';
 import { usersApi } from '../../api';
 import { clinicLocationsApi } from '../../api/clinic-locations';
+import type { EventContentArg } from '@fullcalendar/core';
 import AppointmentModal from './AppointmentModal';
 import type { Appointment, AppointmentStatus, AppointmentType } from '../../types';
 
@@ -104,22 +105,23 @@ const AppointmentCalendarPage = () => {
   // State za filter po veterinaru
   const [selectedVetId, setSelectedVetId] = useState<string | undefined>(undefined);
 
-  const [selectedLocationId, setSelectedLocationId] = useState<string | undefined>(undefined);
+  // `pickedLocationId` = eksplicitan izbor korisnika; efektivna lokacija se IZVODI
+  // (izbor → jedina/glavna). Derived umesto setState-u-effect-u: nema cascading render-a
+  // i nema stale vrednosti ako se lista lokacija promeni.
+  const [pickedLocationId, setSelectedLocationId] = useState<string | undefined>(undefined);
 
   const { data: locations = [] } = useQuery({
     queryKey: ['clinic-locations', 'active'],
     queryFn: () => clinicLocationsApi.getActive().then((r) => r.data),
   });
 
-  // Auto-selektuj kad postoji samo jedna lokacija, ili glavnu kad ih je više
-  useEffect(() => {
-    if (!selectedLocationId && locations.length > 0) {
-      const main = locations.find((l) => l.isMain) ?? locations[0];
-      if (locations.length === 1 || main.isMain) {
-        setSelectedLocationId(main.id);
-      }
-    }
-  }, [locations, selectedLocationId]);
+  const autoLocationId = useMemo(() => {
+    if (locations.length === 0) return undefined;
+    const main = locations.find((l) => l.isMain) ?? locations[0];
+    return locations.length === 1 || main.isMain ? main.id : undefined;
+  }, [locations]);
+
+  const selectedLocationId = pickedLocationId ?? autoLocationId;
 
   const businessHours = useMemo(() => {
     const loc = locations.find((l) => l.id === selectedLocationId);
@@ -220,7 +222,7 @@ const AppointmentCalendarPage = () => {
   };
 
   // Renderovanje sadržaja događaja u kalendaru
-  const renderEventContent = (eventInfo: any) => {
+  const renderEventContent = (eventInfo: EventContentArg) => {
     const apt = eventInfo.event.extendedProps.appointment as Appointment;
     return (
       <Tooltip
@@ -350,6 +352,7 @@ const AppointmentCalendarPage = () => {
           appointment={editingAppointment}
           onClose={handleModalClose}
           initialDates={selectedDates}
+          initialLocationId={selectedLocationId}
         />
       )}
     </div>

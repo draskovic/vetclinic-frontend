@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useMemo } from 'react';
 import {
   Table,
   Button,
@@ -42,7 +42,6 @@ export default function AdministeredMedicationItemsTable({
   petId,
   vetId,
 }: AdministeredMedicationItemsTableProps) {
-  const [items, setItems] = useState<MedicationAdministration[]>([]);
   const [adding, setAdding] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [bulkOpen, setBulkOpen] = useState(false);
@@ -70,22 +69,16 @@ export default function AdministeredMedicationItemsTable({
 
   const medications: InventoryItem[] = medicationsData?.data?.content ?? [];
 
-  useEffect(() => {
-    if (itemsData) {
-      setItems(itemsData.data);
-    }
-  }, [itemsData]);
-
   const sortedItems = useMemo(
     () =>
-      [...items].sort((a, b) => {
+      [...(itemsData?.data ?? [])].sort((a, b) => {
         // Primarno: datum primene DESC (najnoviji prvo)
         const dateCmp = b.administeredDate.localeCompare(a.administeredDate);
         if (dateCmp !== 0) return dateCmp;
         // Tie-breaker: createdAt ASC (hronološki redosled unosa)
         return a.createdAt.localeCompare(b.createdAt);
       }),
-    [items],
+    [itemsData],
   );
 
   const resetForm = () => {

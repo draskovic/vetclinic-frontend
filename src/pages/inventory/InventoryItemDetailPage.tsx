@@ -35,6 +35,7 @@ import dayjs from 'dayjs';
 import InventoryBatchModal from './InventoryBatchModal';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
 import { INVENTORY_FULL_KEYS } from '@/lib/queryKeySets';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 const categoryLabels: Record<string, string> = {
   MEDICATION: 'Lekovi',
@@ -99,8 +100,8 @@ export default function InventoryItemDetailPage() {
       message.success('Transakcija stornirana');
       invalidateAndBroadcast(queryClient, [...INVENTORY_FULL_KEYS]);
     },
-    onError: (err: any) => {
-      message.error(err?.response?.data?.message ?? 'Greška pri storniranju');
+    onError: (err) => {
+      message.error(getApiErrorMessage(err, 'Greška pri storniranju'));
     },
   });
 
@@ -111,8 +112,8 @@ export default function InventoryItemDetailPage() {
       invalidateAndBroadcast(queryClient, [...INVENTORY_FULL_KEYS]);
     },
 
-    onError: (err: any) => {
-      message.error(err?.response?.data?.message ?? 'Greška pri brisanju lota');
+    onError: (err) => {
+      message.error(getApiErrorMessage(err, 'Greška pri brisanju lota'));
     },
   });
 

@@ -17,11 +17,28 @@ import { clinicLocationsApi } from '../../api/clinic-locations';
 import type { InventoryItem, Product } from '../../types';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
 import { invalidateAndBroadcast } from '@/lib/queryBroadcast';
+import { getApiErrorMessage } from '@/lib/apiError';
 
 interface Props {
   open: boolean;
   item: InventoryItem | null;
   onClose: () => void;
+}
+
+/** Vrednosti forme: gornja sekcija = Product (šifarnik), donja = InventoryItem (per-lokacija). */
+interface InventoryItemFormValues {
+  name?: string;
+  sku?: string;
+  // category i taxRateId su `required` u formi (Ant validacija) → uvek prisutni u submit-u
+  category: InventoryItem['category'];
+  unit?: string;
+  trackBatches?: boolean;
+  locationId?: string | null;
+  reorderLevel?: number;
+  sellPrice?: number;
+  taxRateId: string;
+  active?: boolean;
+  initialQuantity?: number;
 }
 
 export default function InventoryItemModal({ open, item, onClose }: Props) {
@@ -30,7 +47,9 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
   const isEditing = !!item;
 
   // --- Product picker (samo u create modu) ---
-  const [productInput, setProductInput] = useState('');
+  // Inicijalizacija iz prop-a: modal je conditional-no renderovan (svež mount na svako
+  // otvaranje), pa je početna vrednost tačna bez sinhronizacije kroz useEffect.
+  const [productInput, setProductInput] = useState(item?.name ?? '');
   const [productSearch, setProductSearch] = useState('');
   const debouncedProductSearch = useDebouncedValue(productSearch, 300);
   const [pickedProduct, setPickedProduct] = useState<Product | null>(null);
@@ -88,8 +107,7 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
   };
 
   const createMutation = useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: InventoryItemFormValues) => {
       let productId = pickedProduct?.id ?? null;
       if (!productId) {
         // Scenario B: nov proizvod → prvo Product, pa InventoryItem
@@ -124,14 +142,11 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
       ]);
       onClose();
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (err: any) =>
-      message.error(err?.response?.data?.message ?? 'Greška pri kreiranju artikla'),
+    onError: (err) => message.error(getApiErrorMessage(err, 'Greška pri kreiranju artikla')),
   });
 
   const updateMutation = useMutation({
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    mutationFn: async (values: any) => {
+    mutationFn: async (values: InventoryItemFormValues) => {
       // Gornja sekcija → Product; donja → InventoryItem (per-lokacija)
       await productsApi.update(item!.productId, {
         name: values.name,
@@ -159,16 +174,12 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
       ]);
       onClose();
     },
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    onError: (err: any) =>
-      message.error(err?.response?.data?.message ?? 'Greška pri izmeni artikla'),
+    onError: (err) => message.error(getApiErrorMessage(err, 'Greška pri izmeni artikla')),
   });
 
   useEffect(() => {
     if (!open) return;
-    setPickedProduct(null);
     if (item) {
-      setProductInput(item.name);
       form.setFieldsValue({
         name: item.name,
         sku: item.sku,
@@ -182,8 +193,6 @@ export default function InventoryItemModal({ open, item, onClose }: Props) {
         active: item.active,
       });
     } else {
-      setProductInput('');
-      setProductSearch('');
       form.resetFields();
     }
   }, [open, item, form]);

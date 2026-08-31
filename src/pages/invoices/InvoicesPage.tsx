@@ -46,13 +46,19 @@ export default function InvoicesPage() {
     searchParams.get('status') || undefined,
   );
 
+  // State se menja tokom render-a; čišćenje URL-a (navigacija) ostaje u effect-u.
+  const statusFromUrl = searchParams.get('status');
+  const [prevUrlStatus, setPrevUrlStatus] = useState(statusFromUrl);
+  if (prevUrlStatus !== statusFromUrl) {
+    setPrevUrlStatus(statusFromUrl);
+    if (statusFromUrl) setStatusFilter(statusFromUrl);
+  }
+
   useEffect(() => {
-    const statusFromUrl = searchParams.get('status');
     if (statusFromUrl) {
-      setStatusFilter(statusFromUrl);
       setSearchParams({}, { replace: true });
     }
-  }, [searchParams, setSearchParams]);
+  }, [statusFromUrl, setSearchParams]);
 
   const debouncedSearch = useDebouncedValue(search);
   const [modalOpen, setModalOpen] = useState(false);

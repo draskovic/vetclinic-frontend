@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import {
   Table,
   Button,
@@ -61,7 +61,12 @@ export default function AppointmentsPage() {
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [search, setSearch] = useState('');
-  const [statusFilter, setStatusFilter] = useState<string | undefined>(undefined);
+  const [searchParams] = useSearchParams();
+  // Inicijalizacija IZ URL-a (dolazak sa Dashboard-a) — bez ovoga filter ne bi bio
+  // primenjen pri prvom renderu, jer adjust-during-render hvata samo PROMENU parametra.
+  const [statusFilter, setStatusFilter] = useState<string | undefined>(
+    searchParams.get('status') || undefined,
+  );
 
   const debouncedSearch = useDebouncedValue(search);
 
@@ -73,14 +78,13 @@ export default function AppointmentsPage() {
   const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const [startedRecord, setStartedRecord] = useState<MedicalRecord | null>(null);
 
-  const [searchParams] = useSearchParams();
-
-  useEffect(() => {
-    const statusFromUrl = searchParams.get('status');
-    if (statusFromUrl) {
-      setStatusFilter(statusFromUrl);
-    }
-  }, [searchParams]);
+  // Naknadna PROMENA parametra (npr. drugi klik sa Dashboard-a bez remount-a)
+  const statusFromUrl = searchParams.get('status');
+  const [prevUrlStatus, setPrevUrlStatus] = useState(statusFromUrl);
+  if (prevUrlStatus !== statusFromUrl) {
+    setPrevUrlStatus(statusFromUrl);
+    if (statusFromUrl) setStatusFilter(statusFromUrl);
+  }
 
   const startMutation = useMutation({
     mutationFn: (appointmentId: string) => medicalRecordsApi.startFromAppointment(appointmentId),

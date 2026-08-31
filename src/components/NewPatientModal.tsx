@@ -104,8 +104,9 @@ export default function NewPatientModal({ open, onClose }: NewPatientModalProps)
         setSelectedOwner(response.data);
         message.success('Vlasnik kreiran!');
         setCurrentStep(1);
-      } catch (error: any) {
-        if (error?.errorFields) return; // validation error
+      } catch (error) {
+        // Ant Form validacija baca objekat sa `errorFields` — tada nema poruke korisniku
+        if (error && typeof error === 'object' && 'errorFields' in error) return;
         message.error('Greška pri kreiranju vlasnika!');
       }
     } else {
@@ -141,8 +142,9 @@ export default function NewPatientModal({ open, onClose }: NewPatientModalProps)
       handleReset();
       onClose();
       navigate(`/pets/${response.data.id}`);
-    } catch (error: any) {
-      if (error?.errorFields) return;
+    } catch (error) {
+      // Ant Form validacija baca objekat sa `errorFields`
+      if (error && typeof error === 'object' && 'errorFields' in error) return;
       message.error('Greška pri dodavanju ljubimca!');
     }
   };

@@ -24,7 +24,7 @@ const QrUploadModal: React.FC<QrUploadModalProps> = ({ open, onClose, petId, pet
     try {
       const response = await documentsApi.generateUploadToken(petId);
       setToken(response.data.token);
-    } catch (err) {
+    } catch {
       setError('Greška pri generisanju QR koda. Pokušajte ponovo.');
       message.error('Greška pri generisanju QR koda');
     } finally {
