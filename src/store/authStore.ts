@@ -8,9 +8,11 @@ interface AuthState {
   clinicId: string | null;
   permissions: string[];
   isAuthenticated: boolean;
+  activeLocationId: string | null;
 
   setAuth: (user: User, accessToken: string, refreshToken: string, clinicId: string) => void;
   clearAuth: () => void;
+  setActiveLocationId: (locationId: string | null) => void;
 }
 
 const parsePermissionsFromToken = (token: string): string[] => {
@@ -35,6 +37,7 @@ export const useAuthStore = create<AuthState>((set) => ({
   clinicId: localStorage.getItem('clinicId'),
   permissions: storedToken ? parsePermissionsFromToken(storedToken) : [],
   isAuthenticated: !!storedToken,
+  activeLocationId: localStorage.getItem('activeLocationId'),
 
   setAuth: (user, accessToken, refreshToken, clinicId) => {
     localStorage.setItem('accessToken', accessToken);
@@ -60,6 +63,12 @@ export const useAuthStore = create<AuthState>((set) => ({
       clinicId: null,
       permissions: [],
       isAuthenticated: false,
+      activeLocationId: null,
     });
+  },
+  setActiveLocationId: (locationId) => {
+    if (locationId) localStorage.setItem('activeLocationId', locationId);
+    else localStorage.removeItem('activeLocationId');
+    set({ activeLocationId: locationId });
   },
 }));
