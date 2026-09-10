@@ -20,6 +20,7 @@ import {
   CloseOutlined,
 } from '@ant-design/icons';
 import { servicesApi, treatmentsApi, inventoryItemsApi, serviceInventoryItemsApi } from '@/api';
+import { getApiErrorMessage } from '@/lib/apiError';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import type { Treatment } from '@/types';
 import { useDebouncedValue } from '@/hooks/useDebouncedValue';
@@ -139,7 +140,7 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
         ...INVENTORY_FULL_KEYS,
       ]);
     },
-    onError: () => message.error('Greška pri brisanju!'),
+    onError: (e) => message.error(getApiErrorMessage(e, 'Greška pri brisanju!')),
   });
 
   const startEditing = (record: Treatment) => {
