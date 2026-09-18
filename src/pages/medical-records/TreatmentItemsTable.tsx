@@ -126,7 +126,7 @@ export default function TreatmentItemsTable({ medicalRecordId, vetId }: Treatmen
       // izmena qty/cene/popusta sinhronizuje fakturnu stavku (korak 4), ne dira lager (BOM po usluzi)
       invalidateAndBroadcast(queryClient, [...INVOICE_KEYS]);
     },
-    onError: () => message.error('Greška pri izmeni!'),
+    onError: (e) => message.error(getApiErrorMessage(e, 'Greška pri izmeni!')),
   });
 
   const deleteMutation = useMutation({
